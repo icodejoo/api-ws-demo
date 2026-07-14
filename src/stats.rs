@@ -16,6 +16,11 @@ pub async fn stats(State(state): State<AppState>) -> Json<ApiResponse<serde_json
         .zip(disk_available_bytes)
         .map(|(t, a)| t.saturating_sub(a));
 
+    let memory_used_percent = memory.as_ref().map(|m| used_percent(m.used_kb, m.total_kb));
+    let disk_used_percent = disk_used_bytes
+        .zip(disk_total_bytes)
+        .map(|(used, total)| used_percent(used, total));
+
     Json(ApiResponse::ok(json!({
         "cpu_percent": cpu_percent,
         "memory": {
@@ -23,6 +28,7 @@ pub async fn stats(State(state): State<AppState>) -> Json<ApiResponse<serde_json
             "total_kb": memory.as_ref().map(|m| m.total_kb),
             "available_kb": memory.as_ref().map(|m| m.available_kb),
             "used_kb": memory.as_ref().map(|m| m.used_kb),
+            "used_percent": memory_used_percent,
             "process_rss_kb": process_rss_kb,
         },
         "disk": {
@@ -30,8 +36,18 @@ pub async fn stats(State(state): State<AppState>) -> Json<ApiResponse<serde_json
             "total_bytes": disk_total_bytes,
             "available_bytes": disk_available_bytes,
             "used_bytes": disk_used_bytes,
+            "used_percent": disk_used_percent,
         },
     })))
+}
+
+/// Rounds to one decimal place (e.g. `0.2`, `60.5`, `90.1`) — plain integer
+/// percent would round small-but-nonzero usage down to a misleading `0`.
+fn used_percent(used: u64, total: u64) -> f64 {
+    if total == 0 {
+        return 0.0;
+    }
+    (used as f64 / total as f64 * 1000.0).round() / 10.0
 }
 
 struct Memory {
@@ -155,4 +171,26 @@ fn read_disk_usage(path: &str) -> Option<(u64, u64)> {
 #[cfg(not(target_os = "linux"))]
 fn read_disk_usage(_path: &str) -> Option<(u64, u64)> {
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rounds_to_one_decimal() {
+        assert_eq!(used_percent(1049, 524288), 0.2);
+        assert_eq!(used_percent(314573, 524288), 60.0);
+        assert_eq!(used_percent(471859, 524288), 90.0);
+    }
+
+    #[test]
+    fn zero_total_is_zero_percent() {
+        assert_eq!(used_percent(5, 0), 0.0);
+    }
+
+    #[test]
+    fn full_usage_is_100_percent() {
+        assert_eq!(used_percent(1000, 1000), 100.0);
+    }
 }

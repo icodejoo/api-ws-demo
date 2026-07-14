@@ -34,9 +34,10 @@ CORS 是完全放开的（`Access-Control-Allow-Origin: *` 等），包括限流
     会标 `"cgroup_v2"` 或 `"cgroup_v1"`），这才是 Render 实际给这个容器分配的配额；只有在没有设置
     cgroup 限额时（比如本地非容器化的 Linux）才会退化成读 `/proc/meminfo` 的整机内存（`source` 会标
     `"system"`）——这种情况下数字是宿主机级别的，不代表容器配额，仅供参考。`process_rss_kb` 是本进程
-    自己占用的常驻内存，这个不管哪种情况都是准的。
-  - `disk`：挂载点 `/` 的 `total_bytes`/`available_bytes`/`used_bytes`，通过 `statvfs` 系统调用读取
-    （这个目前还是宿主机/所在卷的视角，不是 cgroup 级别的配额）。
+    自己占用的常驻内存，这个不管哪种情况都是准的。另外还有 `used_percent`（保留一位小数，比如 `0.2`、
+    `60.5`、`90.1`，避免占用很少时被整数百分比四舍五入成 `0` 而看不出实际情况）。
+  - `disk`：挂载点 `/` 的 `total_bytes`/`available_bytes`/`used_bytes`/`used_percent`，通过 `statvfs`
+    系统调用读取（这个目前还是宿主机/所在卷的视角，不是 cgroup 级别的配额）。
   这几项数据全部来自 Linux 的 `/proc`、`/sys/fs/cgroup` 伪文件系统和 `statvfs` 系统调用，**只在 Linux
   容器里有效**——本地 Windows/macOS 开发时这几个字段会是 `null`（优雅降级，不会报错）。
 - **`POST /api/echo`** —— 原样把请求体和 `Content-Type` 回显给客户端（不套用统一响应格式，因为它的
