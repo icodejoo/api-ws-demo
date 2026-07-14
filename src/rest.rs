@@ -7,6 +7,19 @@ use serde_json::json;
 
 use crate::state::AppState;
 
+pub async fn index() -> impl IntoResponse {
+    Json(json!({
+        "name": "api-ws-demo",
+        "endpoints": [
+            "GET /health",
+            "GET /api/info",
+            "POST /api/echo",
+            "GET /ws (websocket)",
+            "GET /stomp (stomp over websocket)",
+        ],
+    }))
+}
+
 pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
     Json(json!({
         "status": "ok",

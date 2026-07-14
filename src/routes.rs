@@ -14,6 +14,7 @@ async fn stomp_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> i
 
 pub fn build_router(state: AppState) -> Router {
     Router::new()
+        .route("/", get(rest::index))
         .route("/health", get(rest::health))
         .route("/api/info", get(rest::info))
         .route("/api/echo", post(rest::echo))
