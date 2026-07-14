@@ -1,0 +1,18 @@
+{
+  "name": "api-ws-demo",
+  "topic": "/topic/compressed",
+  "description": "Static, pre-gzipped sample payload used to test STOMP client decompression without any per-message server-side compression CPU cost.",
+  "items": [
+    { "id": 1, "label": "alpha", "value": 3.14159 },
+    { "id": 2, "label": "bravo", "value": 2.71828 },
+    { "id": 3, "label": "charlie", "value": 1.41421 },
+    { "id": 4, "label": "delta", "value": 0.57721 },
+    { "id": 5, "label": "echo", "value": 1.61803 },
+    { "id": 6, "label": "foxtrot", "value": 6.28318 },
+    { "id": 7, "label": "golf", "value": 4.66920 },
+    { "id": 8, "label": "hotel", "value": 2.30258 },
+    { "id": 9, "label": "india", "value": 0.30103 },
+    { "id": 10, "label": "juliet", "value": 9.86960 }
+  ],
+  "generated_by": "build-time static asset, not runtime-compressed"
+}

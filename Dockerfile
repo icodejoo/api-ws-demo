@@ -13,6 +13,7 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs \
 
 # Now build the real binary.
 COPY src ./src
+COPY assets ./assets
 RUN touch src/main.rs \
     && cargo build --release --locked
 

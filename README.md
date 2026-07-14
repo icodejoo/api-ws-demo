@@ -5,14 +5,62 @@ in-memory STOMP 1.2 broker over WebSocket. Built by GitHub Actions into a Docker
 to GHCR, and deployed on Render.com's free Web Service tier via the "Existing Image" deploy
 source — Render just pulls and runs the prebuilt image, no build step on Render's side.
 
+All plain JSON REST responses use a unified envelope: `{"code": 0, "data": ..., "message": "ok"}`
+(non-zero `code` + an HTTP error status on failure). `/api/echo` is the one exception — it's a
+byte/content-type passthrough, not a JSON response.
+
+CORS is wide open (`Access-Control-Allow-Origin: *` etc.) on every route, including error
+responses from the rate limiter/CPU breaker — this is a test server, not something serving
+credentialed/cookie-based sessions, so permissive CORS has no real downside here.
+
 ## Endpoints
 
 - `GET /health` — status/uptime JSON
 - `GET /api/info` — server name/version/uptime JSON
-- `POST /api/echo` — echoes the request body back with the same Content-Type
-- `GET /ws` — raw WebSocket, echoes back any text/binary frame sent
+- `POST /api/echo` — echoes the request body back with the same Content-Type (not enveloped)
+- `GET|POST /api/mock` — universal controllable test response: `delay_ms` (clamped to 10s),
+  `status`, `code`, `message`, `data` (POST body supports nested JSON; GET query params only
+  support a flat string for `data`)
+- `GET /api/compressed`, `/api/compressed-zstd`, `/api/compressed-mp`, `/api/compressed-mp-gzip`,
+  `/api/compressed-mp-zstd` — the same five static pre-encoded/pre-compressed test payloads as the
+  matching STOMP topics below, served over plain HTTP with correct `Content-Type`/`Content-Encoding`
+  response headers (not enveloped — raw bytes), for testing HTTP client compression handling (e.g.
+  `curl --compressed` auto-decodes the gzip ones transparently; zstd support varies by client, which
+  is exactly what these exist to test).
+- `POST /auth/register` — `{"username", "password"}`
+- `POST /auth/login` — `{"username", "password"}` → `{access_token, refresh_token, token_type, expires_in}`
+- `POST /auth/refresh` — `{"refresh_token"}` → rotates to a new access+refresh token pair,
+  invalidating the old refresh token
+- `POST /auth/logout` — `{"refresh_token"}` → revokes it
+- `GET /api/me` — requires `Authorization: Bearer <access_token>`
+- `GET /ws` — raw WebSocket, echoes back any text/binary frame sent, no auth
+- `GET /ws/secure` — same echo behavior, requires `?token=<access_token>` at connect time
 - `GET /stomp` — STOMP 1.2 over WebSocket: CONNECT, SUBSCRIBE/UNSUBSCRIBE, SEND (broadcasts to
   all subscribers of the destination), DISCONNECT, ERROR. No SockJS fallback.
+  Destination-based auth: `/topic/public/*` is open to anyone; `/topic/secure/*` requires the
+  CONNECT frame to carry a valid `Authorization: Bearer <access_token>` header (present-but-invalid
+  tokens reject the CONNECT outright; an absent header just means anonymous/public-only access).
+  There are also five special open topics that always broadcast the same fixed, build-time-generated
+  payload regardless of what's SENT to them — for testing client-side decompression/decoding without
+  any server-side CPU cost (nothing is ever compressed or encoded at request time, only read from a
+  `include_bytes!`-embedded static asset in `assets/`):
+  | Topic | Content-Type | Content-Encoding |
+  |---|---|---|
+  | `/topic/compressed` | `application/json` | `gzip` |
+  | `/topic/compressed-zstd` | `application/json` | `zstd` |
+  | `/topic/compressed-mp` | `application/msgpack` | _(none)_ |
+  | `/topic/compressed-mp-gzip` | `application/msgpack` | `gzip` |
+  | `/topic/compressed-mp-zstd` | `application/msgpack` | `zstd` |
+
+### Rate limiting & CPU circuit breaker
+
+- Per-IP rate limiting (via `tower_governor`, reading `X-Forwarded-For`/`X-Real-Ip` since Render
+  sits in front as a proxy): `RATE_LIMIT_PER_SECOND` (default 5), `RATE_LIMIT_BURST` (default 10).
+- CPU circuit breaker: if CPU usage (sampled from `/proc/stat`, Linux only — always reads 0% in
+  local dev on Windows/macOS) is at or above `CPU_BREAKER_THRESHOLD_PCT` (default 90), every
+  request immediately gets a `503` in the unified envelope, before even reaching the rate limiter.
+- `JWT_SECRET` — HS256 signing secret for access tokens. If unset, a random secret is generated at
+  startup (fine for this ephemeral test server — all sessions already reset on restart/redeploy).
 
 ## Local development
 

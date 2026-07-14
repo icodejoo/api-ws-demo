@@ -1,3 +1,10 @@
+mod auth;
+mod compressed_assets;
+mod compressed_http;
+mod cpu;
+mod mock;
+mod ratelimit;
+mod response;
 mod rest;
 mod routes;
 mod state;
@@ -16,7 +23,8 @@ async fn main() {
         )
         .init();
 
-    let state = AppState::new();
+    let cpu_usage = cpu::spawn_sampler();
+    let state = AppState::new(cpu_usage);
     let app = routes::build_router(state);
 
     let port: u16 = std::env::var("PORT")
@@ -30,10 +38,13 @@ async fn main() {
         .await
         .expect("failed to bind port");
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .expect("server error");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .expect("server error");
 }
 
 async fn shutdown_signal() {

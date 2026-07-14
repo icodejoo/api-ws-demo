@@ -60,8 +60,17 @@ impl Broker {
     }
 
     /// Publishes to every subscriber of `dest`, building a distinct MESSAGE frame per
-    /// subscriber (each needs its own `subscription` + `message-id`).
-    pub fn publish(&self, dest: &str, content_type: Option<&str>, body: &[u8]) {
+    /// subscriber (each needs its own `subscription` + `message-id`). `extra_headers`
+    /// lets callers attach destination-specific metadata (e.g. `content-encoding: gzip`
+    /// for the static-compressed test topic) without the broker needing any special
+    /// knowledge of individual destinations.
+    pub fn publish(
+        &self,
+        dest: &str,
+        content_type: Option<&str>,
+        body: &[u8],
+        extra_headers: &[(&str, &str)],
+    ) {
         let subs = self.subs.read().unwrap();
         if let Some(list) = subs.get(dest) {
             for sub in list {
@@ -72,6 +81,9 @@ impl Broker {
                     .header("content-length", body.len().to_string());
                 if let Some(ct) = content_type {
                     frame = frame.header("content-type", ct);
+                }
+                for (k, v) in extra_headers {
+                    frame = frame.header(*k, *v);
                 }
                 frame.body = body.to_vec();
                 let _ = sub.sender.send(frame);

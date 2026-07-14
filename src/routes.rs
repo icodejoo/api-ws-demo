@@ -2,14 +2,16 @@ use axum::extract::{State, WebSocketUpgrade};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Router;
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::state::AppState;
 use crate::stomp::connection::handle_stomp_socket;
-use crate::{rest, ws};
+use crate::{auth, compressed_http, cpu, mock, ratelimit, rest, ws};
 
 async fn stomp_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_stomp_socket(socket, state.broker.clone()))
+    let jwt_secret = state.jwt_secret.clone();
+    ws.on_upgrade(move |socket| handle_stomp_socket(socket, state.broker.clone(), jwt_secret))
 }
 
 pub fn build_router(state: AppState) -> Router {
@@ -18,8 +20,33 @@ pub fn build_router(state: AppState) -> Router {
         .route("/health", get(rest::health))
         .route("/api/info", get(rest::info))
         .route("/api/echo", post(rest::echo))
+        .route("/api/mock", get(mock::mock_get).post(mock::mock_post))
+        .route("/api/compressed", get(compressed_http::json_gzip))
+        .route("/api/compressed-zstd", get(compressed_http::json_zstd))
+        .route("/api/compressed-mp", get(compressed_http::msgpack_plain))
+        .route("/api/compressed-mp-gzip", get(compressed_http::msgpack_gzip))
+        .route("/api/compressed-mp-zstd", get(compressed_http::msgpack_zstd))
+        .route("/api/me", get(auth::handlers::me))
+        .route("/auth/register", post(auth::handlers::register))
+        .route("/auth/login", post(auth::handlers::login))
+        .route("/auth/refresh", post(auth::handlers::refresh))
+        .route("/auth/logout", post(auth::handlers::logout))
         .route("/ws", get(ws::ws_handler))
+        .route("/ws/secure", get(ws::ws_secure_handler))
         .route("/stomp", get(stomp_handler))
+        // Layers apply outermost-first in REVERSE declaration order: the last
+        // .layer() call here is the outermost/first-run gate. CORS is outermost
+        // so every response — including 429s and 503s from the layers below —
+        // still carries CORS headers (otherwise a browser can't even read the
+        // rejection body). CPU breaker runs before the rate limiter (cheapest
+        // possible rejection under load), rate limiter before tracing (so 429s
+        // still get a trace span, but CPU-breaker-rejected requests skip it).
+        .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
+        .layer(ratelimit::build_layer())
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            cpu::cpu_breaker_mw,
+        ))
         .with_state(state)
 }
