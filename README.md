@@ -5,6 +5,10 @@
 构建成 Docker 镜像并推送到 GHCR，部署在 Render.com 免费 Web Service（"Existing Image" 部署方式——
 Render 只拉取镜像直接运行，完全不在 Render 侧编译）。
 
+> 给用 Claude Code 参与本项目开发的人：项目背景/架构/硬性约束见 [`CLAUDE.md`](./CLAUDE.md)；如果改了
+> `assets/compressed_sample.json`，记得同步重新生成另外 5 个压缩衍生文件，具体步骤见
+> `.claude/skills/regenerate-compressed-assets/SKILL.md`。
+
 ## 统一响应格式
 
 除了 `/api/echo` 和几个静态压缩测试接口（返回原始字节）之外，所有 REST 接口的 JSON 响应都遵循同一个
