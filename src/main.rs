@@ -8,6 +8,7 @@ mod response;
 mod rest;
 mod routes;
 mod state;
+mod stats;
 mod stomp;
 mod ws;
 

@@ -20,3 +20,6 @@ base64 = "0.22"
 rand = "0.10"
 tower_governor = { version = "0.5", features = ["axum"] }
 governor = "0.8"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"

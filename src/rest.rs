@@ -14,6 +14,7 @@ pub async fn index() -> Json<ApiResponse<serde_json::Value>> {
         "endpoints": [
             "GET /health",
             "GET /api/info",
+            "GET /api/stats",
             "POST /api/echo",
             "GET|POST /api/mock",
             "GET /api/compressed",

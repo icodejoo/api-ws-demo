@@ -7,7 +7,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::state::AppState;
 use crate::stomp::connection::handle_stomp_socket;
-use crate::{auth, compressed_http, cpu, mock, ratelimit, rest, ws};
+use crate::{auth, compressed_http, cpu, mock, ratelimit, rest, stats, ws};
 
 async fn stomp_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
     let jwt_secret = state.jwt_secret.clone();
@@ -19,6 +19,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/", get(rest::index))
         .route("/health", get(rest::health))
         .route("/api/info", get(rest::info))
+        .route("/api/stats", get(stats::stats))
         .route("/api/echo", post(rest::echo))
         .route("/api/mock", get(mock::mock_get).post(mock::mock_post))
         .route("/api/compressed", get(compressed_http::json_gzip))
