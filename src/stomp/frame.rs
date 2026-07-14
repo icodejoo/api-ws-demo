@@ -198,6 +198,14 @@ fn encode_header(s: &str) -> String {
         .replace(':', "\\c")
 }
 
+/// Wraps everything a connection's outgoing channel can carry: either a full
+/// STOMP frame, or a bare heartbeat — which per spec is NOT a frame at all,
+/// just a lone `\n` byte with no command/headers/body.
+pub enum OutgoingItem {
+    Frame(StompFrame),
+    Heartbeat,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
