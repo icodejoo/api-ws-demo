@@ -28,6 +28,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Extract image metadata
@@ -38,6 +39,34 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha,format=short
+
+      # RUN --mount=type=cache in the Dockerfile is invisible to the `gha`
+      # layer-cache backend below (BuildKit deliberately excludes cache mount
+      # contents from image layers). buildkit-cache-dance bridges that gap: it
+      # extracts the cargo registry/target cache mounts into a plain directory
+      # that actions/cache can persist across separate workflow runs, and
+      # re-injects it before the next build. Without this, adding a new Cargo
+      # dependency would force a full from-scratch recompile of every
+      # dependency every time, regardless of the `cache-to: type=gha` below.
+      - name: Cache cargo registry/target (for BuildKit cache mounts)
+        id: cargo-cache
+        uses: actions/cache@v4
+        with:
+          path: cache-mount
+          key: cargo-cache-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            cargo-cache-
+
+      - name: Restore cargo registry/target into BuildKit cache mounts
+        uses: reproducible-containers/buildkit-cache-dance@v3
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-map: |
+            {
+              "cache-mount/cargo-registry": "/usr/local/cargo/registry",
+              "cache-mount/cargo-target": "/app/target"
+            }
+          skip-extraction: ${{ steps.cargo-cache.outputs.cache-hit }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
