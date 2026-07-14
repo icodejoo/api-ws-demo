@@ -28,11 +28,17 @@ CORS 是完全放开的（`Access-Control-Allow-Origin: *` 等），包括限流
 - **`GET /`** —— 首页，返回当前所有可用接口列表（JSON），方便直接打开浏览器看一眼服务是否正常、有哪些接口。
 - **`GET /health`** —— 健康检查，返回 `{status, version, uptime_seconds}`。Render 的健康检查也是打这个接口。
 - **`GET /api/info`** —— 和 `/health` 类似，返回服务名/版本号/运行时长，纯粹的信息查询接口。
-- **`GET /api/stats`** —— 查看当前服务器资源占用：`cpu_percent`（跟 CPU 熔断用的是同一个采样值）、
-  `memory`（`total_kb`/`available_kb`/`used_kb` 是整机内存，`process_rss_kb` 是本进程自己占用的常驻内存）、
-  `disk`（挂载点 `/` 的 `total_bytes`/`available_bytes`/`used_bytes`，通过 `statvfs` 系统调用读取）。
-  这几项数据全部来自 Linux 的 `/proc` 伪文件系统和 `statvfs` 系统调用，**只在 Linux 容器里有效**——本地
-  Windows/macOS 开发时这几个字段会是 `null`（优雅降级，不会报错）。
+- **`GET /api/stats`** —— 查看当前服务器资源占用：
+  - `cpu_percent`：跟 CPU 熔断用的是同一个采样值。
+  - `memory`：`total_kb`/`available_kb`/`used_kb` **优先读容器的 cgroup 内存限额**（`memory.source`
+    会标 `"cgroup_v2"` 或 `"cgroup_v1"`），这才是 Render 实际给这个容器分配的配额；只有在没有设置
+    cgroup 限额时（比如本地非容器化的 Linux）才会退化成读 `/proc/meminfo` 的整机内存（`source` 会标
+    `"system"`）——这种情况下数字是宿主机级别的，不代表容器配额，仅供参考。`process_rss_kb` 是本进程
+    自己占用的常驻内存，这个不管哪种情况都是准的。
+  - `disk`：挂载点 `/` 的 `total_bytes`/`available_bytes`/`used_bytes`，通过 `statvfs` 系统调用读取
+    （这个目前还是宿主机/所在卷的视角，不是 cgroup 级别的配额）。
+  这几项数据全部来自 Linux 的 `/proc`、`/sys/fs/cgroup` 伪文件系统和 `statvfs` 系统调用，**只在 Linux
+  容器里有效**——本地 Windows/macOS 开发时这几个字段会是 `null`（优雅降级，不会报错）。
 - **`POST /api/echo`** —— 原样把请求体和 `Content-Type` 回显给客户端（不套用统一响应格式，因为它的
   用途就是测试"发什么就收到什么"，包括非 JSON 的二进制内容，套上 JSON 封装会破坏这个语义）。
 
