@@ -18,11 +18,13 @@ use crate::stomp::frame::{OutgoingItem, StompCommand, StompFrame};
 const MAX_CONNECTION_LIFETIME: Duration = Duration::from_secs(180);
 
 /// Server's own heartbeat guarantees, offered on CONNECTED and negotiated
-/// against whatever the client proposed on CONNECT. 10s gives ~18 beats
-/// within the 180s connection lifetime — plenty of margin to detect a dead
-/// peer well before the hard TTL would kick in anyway.
-const SERVER_HEARTBEAT_SEND_MS: u64 = 10_000;
-const SERVER_HEARTBEAT_WANT_MS: u64 = 10_000;
+/// against whatever the client proposed on CONNECT. At 60s, the incoming-
+/// heartbeat timeout (60s × HEARTBEAT_MISS_GRACE_FACTOR = 180s) lands right at
+/// the 180s hard TTL — a dead peer is caught by whichever of the two fires
+/// first, they're no longer meaningfully staggered the way a shorter interval
+/// would allow.
+const SERVER_HEARTBEAT_SEND_MS: u64 = 60_000;
+const SERVER_HEARTBEAT_WANT_MS: u64 = 60_000;
 
 /// A negotiated interval of 0 means "disabled" — represented internally as an
 /// interval so long it will never practically fire within a connection's
