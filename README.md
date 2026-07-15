@@ -146,7 +146,10 @@ WebSocket 推送而不是一次性 HTTP 响应。
 ## STOMP 接口 `/stomp`
 
 一个建在 WebSocket 之上的、极简的内存版 STOMP 1.2 消息代理（broker），支持 CONNECT、SUBSCRIBE、
-UNSUBSCRIBE、SEND、ACK、NACK、DISCONNECT、ERROR 这几种帧。没有实现 SockJS 兼容层。
+UNSUBSCRIBE、SEND、ACK、NACK、DISCONNECT、ERROR 这几种帧。没有实现 SockJS 兼容层。握手时正确
+协商 `v12.stomp`/`v11.stomp`/`v10.stomp` WebSocket 子协议——标准 STOMP 客户端库（比如
+`@stomp/stompjs`）连接时会请求这几个子协议之一，按 WebSocket 规范服务端不确认的话客户端会
+直接中止连接，裸手写的 WebSocket 测试脚本因为不主动请求子协议，不会碰到这个问题。
 
 ### 基本用法
 

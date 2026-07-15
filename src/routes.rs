@@ -11,7 +11,15 @@ use crate::{auth, compressed_http, cpu, mock, ratelimit, rest, stats, ws};
 
 async fn stomp_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
     let jwt_secret = state.jwt_secret.clone();
-    ws.on_upgrade(move |socket| handle_stomp_socket(socket, state.broker.clone(), jwt_secret))
+    // Standards-compliant STOMP client libraries (e.g. @stomp/stompjs) request one of these
+    // WebSocket subprotocols on the handshake. Per the WebSocket spec, if the client offers a
+    // subprotocol list and the server's response doesn't echo one back, the client MUST abort
+    // the connection — so without this, no real STOMP.js-based client can ever connect here,
+    // even though a bare `new WebSocket(url)` (no subprotocol requested) works fine either way.
+    // We only speak one frame dialect (STOMP 1.2-level) regardless of which of these gets
+    // negotiated; declaring all three just satisfies clients pinned to older protocol versions.
+    ws.protocols(["v12.stomp", "v11.stomp", "v10.stomp"])
+        .on_upgrade(move |socket| handle_stomp_socket(socket, state.broker.clone(), jwt_secret))
 }
 
 pub fn build_router(state: AppState) -> Router {
