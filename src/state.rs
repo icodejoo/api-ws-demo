@@ -26,7 +26,7 @@ impl AppState {
             _ => {
                 let mut buf = [0u8; 32];
                 rand::rng().fill_bytes(&mut buf);
-                tracing::warn!(
+                eprintln!(
                     "JWT_SECRET not set — generated an ephemeral secret; all sessions invalidate on restart"
                 );
                 Arc::from(buf.to_vec())

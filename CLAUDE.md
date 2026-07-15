@@ -29,8 +29,7 @@ step on Render's side). Live at `https://api-ws-demo-latest.onrender.com`.
 - `src/main.rs` — binds `0.0.0.0:$PORT` (Render injects `PORT`), spawns the CPU sampler, builds
   the router.
 - `src/routes.rs` — all route registration + layer ordering (CORS outermost, then rate limiter,
-  then the CPU-breaker middleware, then tracing — see the comment there for why this order
-  matters).
+  then the CPU-breaker middleware — see the comment there for why this order matters).
 - `src/response.rs` — the `{code, data, message}` envelope (`ApiResponse<T>`, `AppError`) used by
   every JSON REST handler except `/api/echo` (which is a raw byte/content-type passthrough by
   design) and the `/api/compressed*` endpoints (raw bytes with real `Content-Encoding` headers).

@@ -3,7 +3,6 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Router;
 use tower_http::cors::CorsLayer;
-use tower_http::trace::TraceLayer;
 
 use crate::state::AppState;
 use crate::stomp::connection::handle_stomp_socket;
@@ -48,10 +47,8 @@ pub fn build_router(state: AppState) -> Router {
         // so every response — including 429s and 503s from the layers below —
         // still carries CORS headers (otherwise a browser can't even read the
         // rejection body). CPU breaker runs before the rate limiter (cheapest
-        // possible rejection under load), rate limiter before tracing (so 429s
-        // still get a trace span, but CPU-breaker-rejected requests skip it).
+        // possible rejection under load).
         .layer(CorsLayer::permissive())
-        .layer(TraceLayer::new_for_http())
         .layer(ratelimit::build_layer())
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
