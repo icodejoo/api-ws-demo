@@ -107,11 +107,18 @@ impl StompFrame {
                 .iter()
                 .position(|&b| b == b'\n')
                 .ok_or_else(|| FrameParseError("missing header/body separator".into()))?;
-            if line_end == 0 {
-                idx += 1;
+            // STOMP 1.2 allows CRLF line endings: strip a trailing '\r' so the
+            // blank-line separator (\r\n) reads as empty and header values don't
+            // carry a stray '\r'.
+            let mut content_end = line_end;
+            if content_end > 0 && raw[idx + content_end - 1] == b'\r' {
+                content_end -= 1;
+            }
+            if content_end == 0 {
+                idx += line_end + 1;
                 break;
             }
-            let line = std::str::from_utf8(&raw[idx..idx + line_end])
+            let line = std::str::from_utf8(&raw[idx..idx + content_end])
                 .map_err(|_| FrameParseError("non-utf8 header".into()))?;
             if let Some((k, v)) = line.split_once(':') {
                 headers.push((decode_header(k), decode_header(v)));
@@ -217,6 +224,16 @@ mod tests {
             .header("host", "localhost");
         let bytes = frame.serialize();
         let parsed = StompFrame::parse(&bytes[..bytes.len() - 1]).unwrap();
+        assert_eq!(parsed.command, StompCommand::Connect);
+        assert_eq!(parsed.get("accept-version"), Some("1.2"));
+        assert_eq!(parsed.get("host"), Some("localhost"));
+    }
+
+    #[test]
+    fn parses_crlf_line_endings() {
+        // STOMP 1.2 permits CRLF EOL; clients that use it must not be rejected.
+        let raw = b"CONNECT\r\naccept-version:1.2\r\nhost:localhost\r\n\r\n";
+        let parsed = StompFrame::parse(raw).unwrap();
         assert_eq!(parsed.command, StompCommand::Connect);
         assert_eq!(parsed.get("accept-version"), Some("1.2"));
         assert_eq!(parsed.get("host"), Some("localhost"));
