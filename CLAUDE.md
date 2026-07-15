@@ -11,7 +11,7 @@ step on Render's side). Live at `https://api-ws-demo-latest.onrender.com`.
   constraint: hand-rolled HS256 JWT instead of `jsonwebtoken` (its only pure-Rust backend drags in
   `rsa`/`ed25519-dalek`/`p256` etc.), fast HMAC-SHA256 password hashing instead of argon2/bcrypt
   (deliberately slow algorithms cost real CPU here for no real security benefit on test data),
-  hand-rolled `/proc/stat` CPU sampling instead of `sysinfo`, `tower_governor = "0.5"` pinned
+  hand-rolled cgroup-v2 CPU sampling instead of `sysinfo`, `tower_governor = "0.5"` pinned
   specifically to avoid the latest version's `governor 0.10.x` → `getrandom 0.3` →
   `wasm-bindgen`/`js-sys` chain. Before adding a new crate, check whether it pulls in something
   heavy transitively (`cargo tree` or a scratch-project `cargo add --dry-run` against the same
@@ -43,8 +43,10 @@ step on Render's side). Live at `https://api-ws-demo-latest.onrender.com`.
   outgoing-heartbeat interval, an incoming-heartbeat-timeout check, and a 3-minute hard connection
   TTL. Every SUBSCRIBE also spawns an independent 3-second delayed push (static asset for the 5
   compressed topics, `{"response": <cached>|"ready"}` for anything else).
-- `src/cpu.rs` — background `/proc/stat` sampler (Linux-only, degrades to 0% elsewhere) backing
-  both `/api/stats`'s `cpu_percent` and the CPU circuit breaker middleware.
+- `src/cpu.rs` — background cgroup-v2 CPU sampler (reads `cpu.stat`'s `usage_usec`, scaled by the
+  container's `cpu.max` quota, so it reflects *our* container's usage, not the shared host;
+  degrades to 0% where cgroup v2 isn't present) backing both `/api/stats`'s `cpu_percent` and the
+  CPU circuit breaker middleware.
 - `src/stats.rs` — `/api/stats`. Memory prefers the container's actual cgroup v2/v1 limit over
   `/proc/meminfo` (which on a shared host reports host-wide memory, wildly overstating headroom).
 - `src/compressed_assets.rs` / `src/compressed_http.rs` — the 5 static pre-compressed test assets,
