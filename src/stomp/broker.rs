@@ -4,7 +4,7 @@ use std::sync::RwLock;
 use tokio::sync::mpsc::UnboundedSender;
 use uuid::Uuid;
 
-use crate::stomp::frame::{OutgoingItem, StompCommand, StompFrame};
+use crate::stomp::frame::{next_wire_id, OutgoingItem, StompCommand, StompFrame};
 
 pub type ConnId = Uuid;
 
@@ -101,7 +101,7 @@ impl Broker {
                 let mut frame = StompFrame::new(StompCommand::Message)
                     .header("destination", dest)
                     .header("subscription", &sub.sub_id)
-                    .header("message-id", Uuid::new_v4().to_string())
+                    .header("message-id", next_wire_id().to_string())
                     .header("content-length", body.len().to_string());
                 if let Some(ct) = content_type {
                     frame = frame.header("content-type", ct);
@@ -110,7 +110,7 @@ impl Broker {
                     frame = frame.header(*k, *v);
                 }
                 if sub.ack_mode != AckMode::Auto {
-                    frame = frame.header("ack", Uuid::new_v4().to_string());
+                    frame = frame.header("ack", next_wire_id().to_string());
                 }
                 frame.body = body.to_vec();
                 let _ = sub.sender.send(OutgoingItem::Frame(frame));

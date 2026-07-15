@@ -1,3 +1,16 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+
+/// Process-wide monotonic counter for wire ids (MESSAGE `message-id`, `ack`).
+static WIRE_ID: AtomicU64 = AtomicU64::new(1);
+
+/// A process-unique, monotonically increasing id for `message-id`/`ack` headers.
+/// Much cheaper than `Uuid::new_v4` on the hot path — no `getrandom` syscall and
+/// no 36-char formatting — and per-process uniqueness is all STOMP ack/message-id
+/// correlation needs (ids are never persisted or shared across processes).
+pub fn next_wire_id() -> u64 {
+    WIRE_ID.fetch_add(1, Ordering::Relaxed)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StompCommand {
     Connect,

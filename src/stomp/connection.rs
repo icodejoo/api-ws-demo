@@ -11,7 +11,14 @@ use uuid::Uuid;
 use crate::auth::jwt;
 use crate::compressed_assets;
 use crate::stomp::broker::{AckMode, Broker};
-use crate::stomp::frame::{OutgoingItem, StompCommand, StompFrame};
+use crate::stomp::frame::{next_wire_id, OutgoingItem, StompCommand, StompFrame};
+
+/// Pre-serialized auto-push body when a destination has no cached message —
+/// avoids re-running `json!` + `to_string` on every SUBSCRIBE's delayed push.
+const READY_BODY: &[u8] = br#"{"response":"ready"}"#;
+
+/// Pre-serialized ACK/NACK confirmation body — avoids `json!` per ACK/NACK.
+const STATUS_OK_BODY: &[u8] = br#"{"status":"ok"}"#;
 
 /// How long a connection may live at all, regardless of activity/heartbeat
 /// health — forces recycling of long-lived connections on the free tier.
@@ -304,7 +311,7 @@ fn send_delayed_push(out_tx: &mpsc::UnboundedSender<OutgoingItem>, broker: &Brok
     let mut frame = StompFrame::new(StompCommand::Message)
         .header("destination", dest)
         .header("subscription", sub_id)
-        .header("message-id", Uuid::new_v4().to_string());
+        .header("message-id", next_wire_id().to_string());
 
     if let Some(asset) = compressed_assets::lookup_by_topic(dest) {
         frame = frame
@@ -317,7 +324,7 @@ fn send_delayed_push(out_tx: &mpsc::UnboundedSender<OutgoingItem>, broker: &Brok
     } else {
         let body = broker
             .last_message(dest)
-            .unwrap_or_else(|| json!({ "response": "ready" }).to_string().into_bytes());
+            .unwrap_or_else(|| READY_BODY.to_vec());
         frame = frame
             .header("content-type", "application/json")
             .header("content-length", body.len().to_string());
@@ -328,12 +335,11 @@ fn send_delayed_push(out_tx: &mpsc::UnboundedSender<OutgoingItem>, broker: &Brok
 }
 
 fn send_status_ok(out_tx: &mpsc::UnboundedSender<OutgoingItem>, ack_id: &str) {
-    let body = json!({ "status": "ok" }).to_string().into_bytes();
     let mut frame = StompFrame::new(StompCommand::Receipt)
         .header("receipt-id", ack_id)
         .header("content-type", "application/json")
-        .header("content-length", body.len().to_string());
-    frame.body = body;
+        .header("content-length", STATUS_OK_BODY.len().to_string());
+    frame.body = STATUS_OK_BODY.to_vec();
     let _ = out_tx.send(OutgoingItem::Frame(frame));
 }
 
