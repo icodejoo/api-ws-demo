@@ -66,7 +66,7 @@ pub async fn handle_stomp_socket(socket: WebSocket, broker: Arc<Broker>, jwt_sec
                 }
                 OutgoingItem::Heartbeat => vec![b'\n'],
             };
-            if ws_tx.send(Message::Binary(bytes)).await.is_err() {
+            if ws_tx.send(ws_message_for(bytes)).await.is_err() {
                 break;
             }
         }
@@ -356,6 +356,22 @@ fn is_heartbeat(b: &[u8]) -> bool {
     b.iter().all(|&c| c == b'\n' || c == b'\r')
 }
 
+/// Chooses the WebSocket frame type to carry `bytes`: `Text` when they're
+/// valid UTF-8 (the common case — CONNECTED/RECEIPT/ERROR frames and
+/// JSON-bodied MESSAGE frames), `Binary` otherwise (the 5 static
+/// compressed-asset topics' gzip/zstd/msgpack bodies, which aren't valid
+/// UTF-8). This matters specifically because this is a *test* server for
+/// STOMP client implementations: some real-world servers send Text frames
+/// for text content, and a client with a bug in its Text-frame handling path
+/// (e.g. assuming `event.data` is always a Blob/ArrayBuffer) would never be
+/// caught here if every frame were sent as Binary regardless of content.
+fn ws_message_for(bytes: Vec<u8>) -> Message {
+    match String::from_utf8(bytes) {
+        Ok(text) => Message::Text(text),
+        Err(e) => Message::Binary(e.into_bytes()),
+    }
+}
+
 fn destination_allowed(dest: &str, auth_user: &Option<String>) -> bool {
     if dest.starts_with("/topic/secure/") {
         auth_user.is_some()
@@ -367,6 +383,22 @@ fn destination_allowed(dest: &str, auth_user: &Option<String>) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn valid_utf8_becomes_a_text_frame() {
+        assert!(matches!(ws_message_for(b"hello".to_vec()), Message::Text(t) if t == "hello"));
+    }
+
+    #[test]
+    fn invalid_utf8_becomes_a_binary_frame() {
+        let raw = vec![0x1f, 0x8b, 0x08, 0x00, 0xff, 0xfe, 0xfd];
+        assert!(matches!(ws_message_for(raw.clone()), Message::Binary(b) if b == raw));
+    }
+
+    #[test]
+    fn lone_heartbeat_newline_becomes_a_text_frame() {
+        assert!(matches!(ws_message_for(vec![b'\n']), Message::Text(t) if t == "\n"));
+    }
 
     #[test]
     fn negotiates_both_directions_when_both_sides_want_heartbeats() {

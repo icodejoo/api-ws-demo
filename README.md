@@ -165,6 +165,15 @@ UNSUBSCRIBE、SEND、ACK、NACK、DISCONNECT、ERROR 这几种帧。没有实现
 这是一个纯内存的广播路由，**不做消息持久化**，服务重启后所有订阅关系都会清空——纯粹用来测试客户端
 STOMP 协议实现是否正确（连接握手、订阅、收发消息、断开的完整流程）。
 
+### WebSocket 帧类型（Text / Binary）
+
+服务器发出的每条 WebSocket 消息，帧类型会根据内容自动选择：内容是合法 UTF-8（`CONNECTED`/`RECEIPT`/
+`ERROR`、JSON body 的 `MESSAGE`、心跳字节 `\n`）就用 **Text** 帧发送；不是合法 UTF-8 的（5 个静态压缩
+资源 topic 的 gzip/zstd/msgpack 二进制 body）就用 **Binary** 帧发送——不会不管内容一律用 Binary。这是
+故意的：既然是给客户端测试用的服务器，就要让 Text 和 Binary 两条 WebSocket 帧处理路径都被真实覆盖到，
+不然客户端如果只在"假设 `event.data` 一定是 Blob/ArrayBuffer"这类 Text 帧处理上有 bug，用这个测试服务
+器永远测不出来。
+
 ### 心跳（heart-beat）
 
 真正实现了 STOMP 1.2 的双向心跳协商，不是摆设：
