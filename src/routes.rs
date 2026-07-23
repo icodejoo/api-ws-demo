@@ -34,6 +34,23 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/compressed-mp", get(compressed_http::msgpack_plain))
         .route("/api/compressed-mp-gzip", get(compressed_http::msgpack_gzip))
         .route("/api/compressed-mp-zstd", get(compressed_http::msgpack_zstd))
+        .route("/api/compressed-octet", get(compressed_http::json_gzip_octet))
+        .route(
+            "/api/compressed-zstd-octet",
+            get(compressed_http::json_zstd_octet),
+        )
+        .route(
+            "/api/compressed-mp-octet",
+            get(compressed_http::msgpack_plain_octet),
+        )
+        .route(
+            "/api/compressed-mp-gzip-octet",
+            get(compressed_http::msgpack_gzip_octet),
+        )
+        .route(
+            "/api/compressed-mp-zstd-octet",
+            get(compressed_http::msgpack_zstd_octet),
+        )
         .route("/api/me", get(auth::handlers::me))
         .route("/auth/register", post(auth::handlers::register))
         .route("/auth/login", post(auth::handlers::login))

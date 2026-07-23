@@ -38,3 +38,23 @@ pub async fn msgpack_gzip() -> impl IntoResponse {
 pub async fn msgpack_zstd() -> impl IntoResponse {
     asset_response(compressed_assets::MSGPACK_ZSTD)
 }
+
+pub async fn json_gzip_octet() -> impl IntoResponse {
+    asset_response(compressed_assets::JSON_GZIP_OCTET)
+}
+
+pub async fn json_zstd_octet() -> impl IntoResponse {
+    asset_response(compressed_assets::JSON_ZSTD_OCTET)
+}
+
+pub async fn msgpack_plain_octet() -> impl IntoResponse {
+    asset_response(compressed_assets::MSGPACK_PLAIN_OCTET)
+}
+
+pub async fn msgpack_gzip_octet() -> impl IntoResponse {
+    asset_response(compressed_assets::MSGPACK_GZIP_OCTET)
+}
+
+pub async fn msgpack_zstd_octet() -> impl IntoResponse {
+    asset_response(compressed_assets::MSGPACK_ZSTD_OCTET)
+}

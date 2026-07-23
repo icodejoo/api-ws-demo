@@ -364,7 +364,7 @@ fn is_heartbeat(b: &[u8]) -> bool {
 
 /// Chooses the WebSocket frame type to carry `bytes`: `Text` when they're
 /// valid UTF-8 (the common case — CONNECTED/RECEIPT/ERROR frames and
-/// JSON-bodied MESSAGE frames), `Binary` otherwise (the 5 static
+/// JSON-bodied MESSAGE frames), `Binary` otherwise (the static
 /// compressed-asset topics' gzip/zstd/msgpack bodies, which aren't valid
 /// UTF-8). This matters specifically because this is a *test* server for
 /// STOMP client implementations: some real-world servers send Text frames

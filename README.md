@@ -99,6 +99,11 @@ curl "http://localhost:8080/api/mock?status=9999"
 | `GET /api/compressed-mp` | `application/msgpack` | （无） | 未压缩的 MessagePack 二进制序列化数据，测试客户端解析 MessagePack 格式的能力（和 JSON 相比更紧凑）。 |
 | `GET /api/compressed-mp-gzip` | `application/msgpack` | `gzip` | MessagePack + gzip 双重处理，测试"先解压再解析二进制格式"的组合能力。 |
 | `GET /api/compressed-mp-zstd` | `application/msgpack` | `zstd` | MessagePack + zstd。 |
+| `GET /api/compressed-octet` | `application/octet-stream` | `gzip` | 数据字节和 `/api/compressed` 完全一样，只是 Content-Type 换成通用的 `application/octet-stream`，测试客户端是否依赖具体的 Content-Type 值而不是直接按字节处理。 |
+| `GET /api/compressed-zstd-octet` | `application/octet-stream` | `zstd` | 对应 `/api/compressed-zstd` 的 octet-stream 版本。 |
+| `GET /api/compressed-mp-octet` | `application/octet-stream` | （无） | 对应 `/api/compressed-mp` 的 octet-stream 版本。 |
+| `GET /api/compressed-mp-gzip-octet` | `application/octet-stream` | `gzip` | 对应 `/api/compressed-mp-gzip` 的 octet-stream 版本。 |
+| `GET /api/compressed-mp-zstd-octet` | `application/octet-stream` | `zstd` | 对应 `/api/compressed-mp-zstd` 的 octet-stream 版本。 |
 
 用法示例：
 
@@ -230,7 +235,7 @@ JSON——发 `"hello"` 过去，所有订阅者收到的是 `{"response":"hello
   - **带了但 token 无效/过期** —— `CONNECT` 直接被拒绝，连接不会建立（因为一个"看起来带了 token
     但实际无效"的情况，比"完全没带"更可能是客户端的 bug，直接报错比静默降级成匿名更安全）。
 
-### 五个静态压缩测试 topic
+### 静态压缩测试 topic
 
 和上面 HTTP 版 `/api/compressed*` 完全对应的一组 topic。SEND 任何内容到这些 topic，服务器都会无视
 你发的内容，直接把对应的静态预压缩数据作为 `MESSAGE` 广播给所有订阅者；**SUBSCRIBE 成功后 3 秒也会
@@ -243,6 +248,11 @@ JSON——发 `"hello"` 过去，所有订阅者收到的是 `{"response":"hello
 | `/topic/compressed-mp` | `application/msgpack` | （无） |
 | `/topic/compressed-mp-gzip` | `application/msgpack` | `gzip` |
 | `/topic/compressed-mp-zstd` | `application/msgpack` | `zstd` |
+| `/topic/compressed-octet` | `application/octet-stream` | `gzip` |
+| `/topic/compressed-zstd-octet` | `application/octet-stream` | `zstd` |
+| `/topic/compressed-mp-octet` | `application/octet-stream` | （无） |
+| `/topic/compressed-mp-gzip-octet` | `application/octet-stream` | `gzip` |
+| `/topic/compressed-mp-zstd-octet` | `application/octet-stream` | `zstd` |
 
 这两个字段作为 STOMP 帧的自定义 header 附在 `MESSAGE` 帧上（不是 HTTP 协议层面的头，是 STOMP 帧里的
 文本 header），客户端收到消息后可以读这两个 header 来决定怎么解码 body。这几个 topic 完全开放，不需要

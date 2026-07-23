@@ -43,6 +43,35 @@ pub const MSGPACK_ZSTD: StaticAsset = StaticAsset {
     content_encoding: Some("zstd"),
 };
 
+// Same bytes as the assets above, but declared with `application/octet-stream`
+// instead of `application/json`/`application/msgpack` — for testing clients
+// that branch on Content-Type rather than sniffing the body.
+pub const JSON_GZIP_OCTET: StaticAsset = StaticAsset {
+    bytes: JSON_GZ,
+    content_type: "application/octet-stream",
+    content_encoding: Some("gzip"),
+};
+pub const JSON_ZSTD_OCTET: StaticAsset = StaticAsset {
+    bytes: JSON_ZST,
+    content_type: "application/octet-stream",
+    content_encoding: Some("zstd"),
+};
+pub const MSGPACK_PLAIN_OCTET: StaticAsset = StaticAsset {
+    bytes: MSGPACK,
+    content_type: "application/octet-stream",
+    content_encoding: None,
+};
+pub const MSGPACK_GZIP_OCTET: StaticAsset = StaticAsset {
+    bytes: MSGPACK_GZ,
+    content_type: "application/octet-stream",
+    content_encoding: Some("gzip"),
+};
+pub const MSGPACK_ZSTD_OCTET: StaticAsset = StaticAsset {
+    bytes: MSGPACK_ZST,
+    content_type: "application/octet-stream",
+    content_encoding: Some("zstd"),
+};
+
 /// Looks an asset up by its STOMP destination name (e.g. `/topic/compressed`).
 pub fn lookup_by_topic(dest: &str) -> Option<StaticAsset> {
     Some(match dest {
@@ -51,6 +80,11 @@ pub fn lookup_by_topic(dest: &str) -> Option<StaticAsset> {
         "/topic/compressed-mp" => MSGPACK_PLAIN,
         "/topic/compressed-mp-gzip" => MSGPACK_GZIP,
         "/topic/compressed-mp-zstd" => MSGPACK_ZSTD,
+        "/topic/compressed-octet" => JSON_GZIP_OCTET,
+        "/topic/compressed-zstd-octet" => JSON_ZSTD_OCTET,
+        "/topic/compressed-mp-octet" => MSGPACK_PLAIN_OCTET,
+        "/topic/compressed-mp-gzip-octet" => MSGPACK_GZIP_OCTET,
+        "/topic/compressed-mp-zstd-octet" => MSGPACK_ZSTD_OCTET,
         _ => return None,
     })
 }
