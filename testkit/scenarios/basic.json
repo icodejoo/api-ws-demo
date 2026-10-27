@@ -1,0 +1,1967 @@
+[
+  {
+    "id": "basic.get-ok",
+    "title": "最简 GET 成功",
+    "why": "客户端装好插件后，普通请求仍要原样成功",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"a\":1}"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "a": 1
+              }
+            },
+            "hit": 1
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "a": 1
+              }
+            },
+            "hit": 1
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "base_timeout_ms": 4000
+    }
+  },
+  {
+    "id": "basic.post-json-body",
+    "title": "POST JSON 请求体原样到达",
+    "why": "防请求体被插件改写、丢失或编码错误",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "method": "POST",
+          "body": {
+            "name": "x",
+            "n": [
+              1,
+              2
+            ],
+            "nested": {
+              "ok": true
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "POST",
+                "body": {
+                  "json": {
+                    "name": "x",
+                    "n": [
+                      1,
+                      2
+                    ],
+                    "nested": {
+                      "ok": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "POST",
+                "body": {
+                  "json": {
+                    "name": "x",
+                    "n": [
+                      1,
+                      2
+                    ],
+                    "nested": {
+                      "ok": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "base_timeout_ms": 4000
+    }
+  },
+  {
+    "id": "basic.unicode-body",
+    "title": "Unicode 与表情请求体",
+    "why": "防编码层把中文/emoji 弄坏",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "method": "POST",
+          "body": {
+            "text": "你好，世界 😀 é"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "body": {
+                  "json": {
+                    "text": "你好，世界 😀 é"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "body": {
+                  "json": {
+                    "text": "你好，世界 😀 é"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.query-echo",
+    "title": "查询参数原样到达",
+    "why": "防查询参数序列化/转义错误",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "a": "1",
+            "b": "x y",
+            "c": "中文"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "a": "1",
+                  "b": "x y",
+                  "c": "中文"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "a": "1",
+                  "b": "x y",
+                  "c": "中文"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "base_timeout_ms": 4000
+    }
+  },
+  {
+    "id": "basic.custom-header",
+    "title": "自定义请求头到达服务器",
+    "why": "防插件覆盖或丢弃用户自带请求头",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "headers": {
+            "X-Custom": "v1"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "headers": {
+                  "x-custom": "v1"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "headers": {
+                  "x-custom": "v1"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.all-methods",
+    "title": "五种方法都能走通",
+    "why": "防某个方法被误判成不可用",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns"
+    ],
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "g",
+              "path": "/t/echo",
+              "method": "GET"
+            }
+          },
+          {
+            "request": {
+              "id": "po",
+              "path": "/t/echo",
+              "method": "POST",
+              "body": {
+                "a": 1
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "pu",
+              "path": "/t/echo",
+              "method": "PUT",
+              "body": {
+                "a": 1
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "pa",
+              "path": "/t/echo",
+              "method": "PATCH",
+              "body": {
+                "a": 1
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "d",
+              "path": "/t/echo",
+              "method": "DELETE"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "g": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "GET"
+              }
+            }
+          },
+          "po": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "POST"
+              }
+            }
+          },
+          "pu": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "PUT"
+              }
+            }
+          },
+          "pa": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "PATCH"
+              }
+            }
+          },
+          "d": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "DELETE"
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 5
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "g": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "GET"
+              }
+            }
+          },
+          "po": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "POST"
+              }
+            }
+          },
+          "pu": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "PUT"
+              }
+            }
+          },
+          "pa": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "PATCH"
+              }
+            }
+          },
+          "d": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "DELETE"
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 5
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "g": {
+            "ok": false,
+            "error": "network"
+          },
+          "po": {
+            "ok": false,
+            "error": "network"
+          },
+          "pu": {
+            "ok": false,
+            "error": "network"
+          },
+          "pa": {
+            "ok": false,
+            "error": "network"
+          },
+          "d": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "g": {
+            "ok": false,
+            "error": "network"
+          },
+          "po": {
+            "ok": false,
+            "error": "network"
+          },
+          "pu": {
+            "ok": false,
+            "error": "network"
+          },
+          "pa": {
+            "ok": false,
+            "error": "network"
+          },
+          "d": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.public-path",
+    "title": "匿名 /t/public 路径",
+    "why": "匿名接口不能被任何插件当成受保护接口",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/public/a/b/c"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/a/b/c"
+              },
+              "meta": {
+                "auth": null
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/a/b/c"
+              },
+              "meta": {
+                "auth": null
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.http-404",
+    "title": "HTTP 404 归为 status:404",
+    "why": "错误分类必须稳定",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 404
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:404"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:404"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "base_timeout_ms": 4000,
+      "plugins": {
+        "normalize": {}
+      }
+    }
+  },
+  {
+    "id": "basic.status-matrix",
+    "title": "常见 4xx/5xx 状态码分类",
+    "why": "一次覆盖各状态码被正确归类，且互不影响",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "s400",
+              "path": "/t/echo",
+              "query": {
+                "status": 400,
+                "key": "k400"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s403",
+              "path": "/t/echo",
+              "query": {
+                "status": 403,
+                "key": "k403"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s404",
+              "path": "/t/echo",
+              "query": {
+                "status": 404,
+                "key": "k404"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s409",
+              "path": "/t/echo",
+              "query": {
+                "status": 409,
+                "key": "k409"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s422",
+              "path": "/t/echo",
+              "query": {
+                "status": 422,
+                "key": "k422"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s429",
+              "path": "/t/echo",
+              "query": {
+                "status": 429,
+                "key": "k429"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s500",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "key": "k500"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s502",
+              "path": "/t/echo",
+              "query": {
+                "status": 502,
+                "key": "k502"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s503",
+              "path": "/t/echo",
+              "query": {
+                "status": 503,
+                "key": "k503"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "s400": {
+            "ok": false,
+            "error": "status:400"
+          },
+          "s403": {
+            "ok": false,
+            "error": "status:403"
+          },
+          "s404": {
+            "ok": false,
+            "error": "status:404"
+          },
+          "s409": {
+            "ok": false,
+            "error": "status:409"
+          },
+          "s422": {
+            "ok": false,
+            "error": "status:422"
+          },
+          "s429": {
+            "ok": false,
+            "error": "status:429"
+          },
+          "s500": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "s502": {
+            "ok": false,
+            "error": "status:502"
+          },
+          "s503": {
+            "ok": false,
+            "error": "status:503"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 9
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "s400": {
+            "ok": false,
+            "error": "status:400"
+          },
+          "s403": {
+            "ok": false,
+            "error": "status:403"
+          },
+          "s404": {
+            "ok": false,
+            "error": "status:404"
+          },
+          "s409": {
+            "ok": false,
+            "error": "status:409"
+          },
+          "s422": {
+            "ok": false,
+            "error": "status:422"
+          },
+          "s429": {
+            "ok": false,
+            "error": "status:429"
+          },
+          "s500": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "s502": {
+            "ok": false,
+            "error": "status:502"
+          },
+          "s503": {
+            "ok": false,
+            "error": "status:503"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 9
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    }
+  },
+  {
+    "id": "basic.business-code-without-normalize",
+    "title": "未装 normalize 时业务码不当错误",
+    "why": "没装信封判定插件时，HTTP 200 就是成功，防库擅自判错",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "code": 5001,
+            "message": "biz"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.sequential-hits",
+    "title": "顺序请求命中计数递增",
+    "why": "确认没有隐式缓存/合并",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo"
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo"
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          },
+          "r3": {
+            "ok": true,
+            "hit": 3
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          },
+          "r3": {
+            "ok": true,
+            "hit": 3
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.custom-key-param",
+    "title": "key 参数独立计数",
+    "why": "验证 key 控制参数分组，后续场景依赖它",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "a1",
+              "path": "/t/echo",
+              "query": {
+                "key": "a"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "a2",
+              "path": "/t/echo",
+              "query": {
+                "key": "a"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b1",
+              "path": "/t/echo",
+              "query": {
+                "key": "b"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a1": {
+            "ok": true,
+            "hit": 1
+          },
+          "a2": {
+            "ok": true,
+            "hit": 2
+          },
+          "b1": {
+            "ok": true,
+            "hit": 1
+          }
+        },
+        "server": {
+          "by_key": {
+            "a": {
+              "eq": 2
+            },
+            "b": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "basic.server-reset",
+    "title": "server_reset 清空轮次状态",
+    "why": "轮次隔离的基础：重置后命中数重新从 1 算",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      },
+      {
+        "server_reset": {}
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "basic.delay-respected",
+    "title": "服务端延迟被如实等待",
+    "why": "防客户端提前返回或默认超时过短",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 400
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "duration_ms": {
+          "min": 350
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.large-sequence",
+    "title": "连续 20 次请求稳定",
+    "why": "防资源泄漏（pending 不归零）或计数漂移",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "repeat": {
+          "times": 20,
+          "step": {
+            "request": {
+              "id": "r",
+              "path": "/t/echo"
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r#0": {
+            "ok": true
+          },
+          "r#19": {
+            "ok": true,
+            "hit": 20
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 20
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "basic.parallel-independent",
+    "title": "并行请求各自独立",
+    "why": "并发请求之间不能串数据",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "key": "k1",
+                "data": "{\"i\":1}"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "key": "k2",
+                "data": "{\"i\":2}"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "key": "k3",
+                "data": "{\"i\":3}"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "key": "k4",
+                "data": "{\"i\":4}"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "key": "k5",
+                "data": "{\"i\":5}"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 1
+              }
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 2
+              }
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 3
+              }
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 4
+              }
+            }
+          },
+          "r5": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 5
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 5
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 1
+              }
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 2
+              }
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 3
+              }
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 4
+              }
+            }
+          },
+          "r5": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "i": 5
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 5
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          },
+          "r5": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          },
+          "r5": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.head-request",
+    "title": "HEAD 请求",
+    "why": "无响应体的方法不应被解析逻辑卡住",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "method": "HEAD"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "basic.status-201-empty-data",
+    "title": "2xx 非 200 也算成功",
+    "why": "防只认 200",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 201
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    }
+  }
+]

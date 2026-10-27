@@ -15,7 +15,10 @@ pub struct AuthUser {
 impl FromRequestParts<AppState> for AuthUser {
     type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let token =
             extract_bearer(parts).ok_or_else(|| AppError::unauthorized("missing bearer token"))?;
         let claims = jwt::decode(&token, &state.jwt_secret)

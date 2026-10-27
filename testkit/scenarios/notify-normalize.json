@@ -1,0 +1,1229 @@
+[
+  {
+    "id": "notify.http-error-once",
+    "title": "HTTP 失败只通知一次",
+    "why": "一次失败一个提示，不能重复弹",
+    "requires": [
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {}
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "notify.silent",
+    "title": "silent 请求不通知",
+    "why": "静默请求失败也不能弹提示",
+    "requires": [
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "offline"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 500
+          },
+          "options": {
+            "silent": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "notify.success-no-notify",
+    "title": "成功不通知",
+    "why": "成功路径不触发失败提示",
+    "requires": [
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "notify.business-error-once",
+    "title": "业务失败通知一次",
+    "why": "HTTP 200 业务失败也要提示一次",
+    "requires": [
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "code": 5001,
+            "message": "boom"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:5001"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "notify.retry-recovered-silent",
+    "title": "重试恢复后不通知",
+    "why": "中间失败的尝试不能提示，用户只关心最终结果",
+    "requires": [
+      "notify",
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {},
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 2
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "notify.retry-exhausted-once",
+    "title": "重试耗尽只通知一次",
+    "why": "一次逻辑请求至多一次提示",
+    "requires": [
+      "notify",
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {},
+        "retry": {
+          "max": 2,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 10
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "notify.parallel-failures-each",
+    "title": "并发各自失败各自通知",
+    "why": "三个独立失败请求各一次",
+    "requires": [
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "key": "k2"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 3
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "notify.cancel-not-notified",
+    "title": "主动取消不通知",
+    "why": "用户自己取消的请求不该提示错误",
+    "requires": [
+      "notify",
+      "cancel",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {},
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 5000
+          },
+          "cancel_after_ms": 1000
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "notify.parse-error-once",
+    "title": "解析错误通知一次",
+    "why": "坏响应也要提示一次",
+    "requires": [
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "bad_json"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "parse"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "notify.timeout-once",
+    "title": "超时通知一次",
+    "why": "超时也提示一次",
+    "requires": [
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "hang"
+          },
+          "options": {
+            "timeout_ms": 500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "normalize.envelope-unwrap",
+    "title": "成功信封解包",
+    "why": "code=0 时客户端拿到 data 本体",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"x\":1}"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "x": 1
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "x": 1
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "normalize.business-fail",
+    "title": "业务失败归类 business:<code>",
+    "why": "HTTP 200 + code≠0 必须当错误",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "code": 5001
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:5001"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:5001"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "normalize.business-negative-code",
+    "title": "负数业务码",
+    "why": "code=-1 也是业务失败",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "code": -1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:-1"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "normalize.business-multi-codes",
+    "title": "多个业务码分别归类",
+    "why": "不同业务码各归各的类，互不混淆",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "code": 1001,
+                "key": "a"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "code": 2002,
+                "key": "b"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c",
+              "path": "/t/echo",
+              "query": {
+                "key": "c"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "business:1001"
+          },
+          "b": {
+            "ok": false,
+            "error": "business:2002"
+          },
+          "c": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "normalize.http-error-wins",
+    "title": "HTTP 错误优先于业务码",
+    "why": "status=500 且 code=5001 时按 status:500 归类",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 500,
+            "code": 5001
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:5001"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "normalize.no-envelope-passthrough",
+    "title": "无信封响应透传",
+    "why": "裸 JSON 不能被当成业务失败",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "no_envelope"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "normalize.per-request-off",
+    "title": "请求级 normalize:false 不判业务码",
+    "why": "单次请求可关闭业务判定",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "code": 5001
+          },
+          "options": {
+            "normalize": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "normalize.business-notify-retry-combo",
+    "title": "业务失败：不重试、通知一次",
+    "why": "normalize + notify + retry 同时开启时的交互",
+    "requires": [
+      "normalize",
+      "notify",
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {},
+        "normalize": {},
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "code": 5001
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:5001"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "notify": {
+            "eq": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "normalize.style-switch",
+    "title": "运行中切换风格后错误分类不变",
+    "why": "同样的 status=500，http 与 business 风格下都应归为 status:500",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "styles": [
+      "http"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "a",
+          "path": "/t/echo",
+          "query": {
+            "status": 500,
+            "key": "a"
+          }
+        }
+      },
+      {
+        "style": "business"
+      },
+      {
+        "request": {
+          "id": "b",
+          "path": "/t/echo",
+          "query": {
+            "status": 500,
+            "key": "b"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "b": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  }
+]

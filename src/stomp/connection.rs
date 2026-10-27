@@ -66,7 +66,10 @@ pub async fn handle_stomp_socket(socket: WebSocket, broker: Arc<Broker>, jwt_sec
                 OutgoingItem::Frame(frame) => {
                     if frame.command == StompCommand::Message {
                         if let Some(ack_id) = frame.get("ack") {
-                            writer_pending_acks.lock().unwrap().insert(ack_id.to_string());
+                            writer_pending_acks
+                                .lock()
+                                .unwrap()
+                                .insert(ack_id.to_string());
                         }
                     }
                     frame.serialize()
@@ -283,7 +286,11 @@ pub async fn handle_stomp_socket(socket: WebSocket, broker: Arc<Broker>, jwt_sec
 /// defaults to `0,0` (disabled) rather than failing CONNECT over a soft
 /// feature. Returns `(effective_outgoing_ms, effective_incoming_ms)` — what
 /// the server will actually send at / expects to receive at (0 = disabled).
-fn negotiate_heartbeat(client_header: Option<&str>, server_send_ms: u64, server_want_ms: u64) -> (u64, u64) {
+fn negotiate_heartbeat(
+    client_header: Option<&str>,
+    server_send_ms: u64,
+    server_want_ms: u64,
+) -> (u64, u64) {
     let (client_send_ms, client_want_ms) = client_header
         .and_then(|h| h.split_once(','))
         .and_then(|(a, b)| Some((a.trim().parse::<u64>().ok()?, b.trim().parse::<u64>().ok()?)))
@@ -307,7 +314,12 @@ fn negotiate_heartbeat(client_header: Option<&str>, server_send_ms: u64, server_
 /// (same binary format as an explicit SEND would produce). For any other
 /// destination, replays the broker's cached last-sent message for it, or
 /// `{"response":"ready"}` if nothing has ever been sent there.
-fn send_delayed_push(out_tx: &mpsc::UnboundedSender<OutgoingItem>, broker: &Broker, dest: &str, sub_id: &str) {
+fn send_delayed_push(
+    out_tx: &mpsc::UnboundedSender<OutgoingItem>,
+    broker: &Broker,
+    dest: &str,
+    sub_id: &str,
+) {
     let mut frame = StompFrame::new(StompCommand::Message)
         .header("destination", dest)
         .header("subscription", sub_id)
@@ -408,7 +420,10 @@ mod tests {
 
     #[test]
     fn negotiates_both_directions_when_both_sides_want_heartbeats() {
-        assert_eq!(negotiate_heartbeat(Some("10000,10000"), 10_000, 10_000), (10_000, 10_000));
+        assert_eq!(
+            negotiate_heartbeat(Some("10000,10000"), 10_000, 10_000),
+            (10_000, 10_000)
+        );
     }
 
     #[test]
@@ -424,17 +439,26 @@ mod tests {
     #[test]
     fn client_declining_to_receive_disables_outgoing_only() {
         // client: "I can send every 5000ms, I don't want to receive any (0)"
-        assert_eq!(negotiate_heartbeat(Some("5000,0"), 10_000, 10_000), (0, 10_000));
+        assert_eq!(
+            negotiate_heartbeat(Some("5000,0"), 10_000, 10_000),
+            (0, 10_000)
+        );
     }
 
     #[test]
     fn client_declining_to_send_disables_incoming_only() {
         // client: "I won't send any (0), I want to receive every 5000ms"
-        assert_eq!(negotiate_heartbeat(Some("0,5000"), 10_000, 10_000), (10_000, 0));
+        assert_eq!(
+            negotiate_heartbeat(Some("0,5000"), 10_000, 10_000),
+            (10_000, 0)
+        );
     }
 
     #[test]
     fn takes_the_larger_of_the_two_proposed_intervals() {
-        assert_eq!(negotiate_heartbeat(Some("20000,20000"), 10_000, 10_000), (20_000, 20_000));
+        assert_eq!(
+            negotiate_heartbeat(Some("20000,20000"), 10_000, 10_000),
+            (20_000, 20_000)
+        );
     }
 }

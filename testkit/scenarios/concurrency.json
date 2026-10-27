@@ -1,0 +1,5156 @@
+[
+  {
+    "id": "conc.barrier-asc",
+    "title": "顺序放行",
+    "why": "服务端升序放行，结果名次与到达无关",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g1",
+              "query": {
+                "n": 5,
+                "idx": 0,
+                "order": "asc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g1",
+              "query": {
+                "n": 5,
+                "idx": 1,
+                "order": "asc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g1",
+              "query": {
+                "n": 5,
+                "idx": 2,
+                "order": "asc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/barrier/g1",
+              "query": {
+                "n": 5,
+                "idx": 3,
+                "order": "asc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/barrier/g1",
+              "query": {
+                "n": 5,
+                "idx": 4,
+                "order": "asc"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 0
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 1
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 2
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3,
+              "rank": 3
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4,
+              "rank": 4
+            }
+          }
+        },
+        "order": [
+          "r0",
+          "r1",
+          "r2",
+          "r3",
+          "r4"
+        ],
+        "server": {
+          "peak_inflight": {
+            "min": 5
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 0
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 1
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 2
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3,
+              "rank": 3
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4,
+              "rank": 4
+            }
+          }
+        },
+        "server": {
+          "peak_inflight": {
+            "min": 5
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r2": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r3": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r4": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "base_timeout_ms": 4000
+    }
+  },
+  {
+    "id": "conc.barrier-desc",
+    "title": "倒序放行",
+    "why": "后发的请求先返回，客户端不能假设 FIFO",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g2",
+              "query": {
+                "n": 5,
+                "idx": 0,
+                "order": "desc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g2",
+              "query": {
+                "n": 5,
+                "idx": 1,
+                "order": "desc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g2",
+              "query": {
+                "n": 5,
+                "idx": 2,
+                "order": "desc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/barrier/g2",
+              "query": {
+                "n": 5,
+                "idx": 3,
+                "order": "desc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/barrier/g2",
+              "query": {
+                "n": 5,
+                "idx": 4,
+                "order": "desc"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 4
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 3
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 2
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3,
+              "rank": 1
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4,
+              "rank": 0
+            }
+          }
+        },
+        "order": [
+          "r4",
+          "r3",
+          "r2",
+          "r1",
+          "r0"
+        ],
+        "server": {
+          "peak_inflight": {
+            "min": 5
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 4
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 3
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 2
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3,
+              "rank": 1
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4,
+              "rank": 0
+            }
+          }
+        },
+        "server": {
+          "peak_inflight": {
+            "min": 5
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "conc.barrier-given",
+    "title": "指定顺序放行",
+    "why": "seq=2,0,1：idx2 先、idx0 次之、idx1 最后",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g3",
+              "query": {
+                "n": 3,
+                "idx": 0,
+                "order": "given",
+                "seq": "2,0,1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g3",
+              "query": {
+                "n": 3,
+                "idx": 1,
+                "order": "given",
+                "seq": "2,0,1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g3",
+              "query": {
+                "n": 3,
+                "idx": 2,
+                "order": "given",
+                "seq": "2,0,1"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 0
+            }
+          },
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 1
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 2
+            }
+          }
+        },
+        "order": [
+          "r2",
+          "r0",
+          "r1"
+        ],
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 0
+            }
+          },
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 1
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "conc.barrier-shuffle",
+    "title": "乱序放行",
+    "why": "乱序下每个请求仍拿到自己的 idx（不串响应）",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g4",
+              "query": {
+                "n": 8,
+                "idx": 0,
+                "order": "shuffle",
+                "seed": 7
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g4",
+              "query": {
+                "n": 8,
+                "idx": 1,
+                "order": "shuffle",
+                "seed": 7
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g4",
+              "query": {
+                "n": 8,
+                "idx": 2,
+                "order": "shuffle",
+                "seed": 7
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/barrier/g4",
+              "query": {
+                "n": 8,
+                "idx": 3,
+                "order": "shuffle",
+                "seed": 7
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/barrier/g4",
+              "query": {
+                "n": 8,
+                "idx": 4,
+                "order": "shuffle",
+                "seed": 7
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/barrier/g4",
+              "query": {
+                "n": 8,
+                "idx": 5,
+                "order": "shuffle",
+                "seed": 7
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r6",
+              "path": "/t/barrier/g4",
+              "query": {
+                "n": 8,
+                "idx": 6,
+                "order": "shuffle",
+                "seed": 7
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r7",
+              "path": "/t/barrier/g4",
+              "query": {
+                "n": 8,
+                "idx": 7,
+                "order": "shuffle",
+                "seed": 7
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4
+            }
+          },
+          "r5": {
+            "ok": true,
+            "data": {
+              "idx": 5
+            }
+          },
+          "r6": {
+            "ok": true,
+            "data": {
+              "idx": 6
+            }
+          },
+          "r7": {
+            "ok": true,
+            "data": {
+              "idx": 7
+            }
+          }
+        },
+        "server": {
+          "peak_inflight": {
+            "min": 8
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4
+            }
+          },
+          "r5": {
+            "ok": true,
+            "data": {
+              "idx": 5
+            }
+          },
+          "r6": {
+            "ok": true,
+            "data": {
+              "idx": 6
+            }
+          },
+          "r7": {
+            "ok": true,
+            "data": {
+              "idx": 7
+            }
+          }
+        },
+        "server": {
+          "peak_inflight": {
+            "min": 8
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "conc.barrier-all-fail",
+    "title": "整组失败",
+    "why": "全部失败时每个请求各自得到错误，且无残留",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g5",
+              "query": {
+                "n": 4,
+                "idx": 0,
+                "order": "asc",
+                "fail": "all"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g5",
+              "query": {
+                "n": 4,
+                "idx": 1,
+                "order": "asc",
+                "fail": "all"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g5",
+              "query": {
+                "n": 4,
+                "idx": 2,
+                "order": "asc",
+                "fail": "all"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/barrier/g5",
+              "query": {
+                "n": 4,
+                "idx": 3,
+                "order": "asc",
+                "fail": "all"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    }
+  },
+  {
+    "id": "conc.barrier-partial-fail",
+    "title": "部分失败互不影响",
+    "why": "idx 1、3 失败，其余成功，成功者数据不被污染",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g6",
+              "query": {
+                "n": 5,
+                "idx": 0,
+                "order": "asc",
+                "fail": "1,3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g6",
+              "query": {
+                "n": 5,
+                "idx": 1,
+                "order": "asc",
+                "fail": "1,3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g6",
+              "query": {
+                "n": 5,
+                "idx": 2,
+                "order": "asc",
+                "fail": "1,3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/barrier/g6",
+              "query": {
+                "n": 5,
+                "idx": 3,
+                "order": "asc",
+                "fail": "1,3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/barrier/g6",
+              "query": {
+                "n": 5,
+                "idx": 4,
+                "order": "asc",
+                "fail": "1,3"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0
+            }
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2
+            }
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0
+            }
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2
+            }
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    }
+  },
+  {
+    "id": "conc.barrier-32-peak",
+    "title": "32 并发峰值",
+    "why": "32 个请求同时在途，客户端不能悄悄串行化或限流",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 0,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 1,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 2,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 3,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 4,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 5,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r6",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 6,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r7",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 7,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r8",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 8,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r9",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 9,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r10",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 10,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r11",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 11,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r12",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 12,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r13",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 13,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r14",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 14,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r15",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 15,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r16",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 16,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r17",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 17,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r18",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 18,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r19",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 19,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r20",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 20,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r21",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 21,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r22",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 22,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r23",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 23,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r24",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 24,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r25",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 25,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r26",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 26,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r27",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 27,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r28",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 28,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r29",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 29,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r30",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 30,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r31",
+              "path": "/t/barrier/g7",
+              "query": {
+                "n": 32,
+                "idx": 31,
+                "order": "asc",
+                "gap_ms": 10
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 0
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 1
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 2
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3,
+              "rank": 3
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4,
+              "rank": 4
+            }
+          },
+          "r5": {
+            "ok": true,
+            "data": {
+              "idx": 5,
+              "rank": 5
+            }
+          },
+          "r6": {
+            "ok": true,
+            "data": {
+              "idx": 6,
+              "rank": 6
+            }
+          },
+          "r7": {
+            "ok": true,
+            "data": {
+              "idx": 7,
+              "rank": 7
+            }
+          },
+          "r8": {
+            "ok": true,
+            "data": {
+              "idx": 8,
+              "rank": 8
+            }
+          },
+          "r9": {
+            "ok": true,
+            "data": {
+              "idx": 9,
+              "rank": 9
+            }
+          },
+          "r10": {
+            "ok": true,
+            "data": {
+              "idx": 10,
+              "rank": 10
+            }
+          },
+          "r11": {
+            "ok": true,
+            "data": {
+              "idx": 11,
+              "rank": 11
+            }
+          },
+          "r12": {
+            "ok": true,
+            "data": {
+              "idx": 12,
+              "rank": 12
+            }
+          },
+          "r13": {
+            "ok": true,
+            "data": {
+              "idx": 13,
+              "rank": 13
+            }
+          },
+          "r14": {
+            "ok": true,
+            "data": {
+              "idx": 14,
+              "rank": 14
+            }
+          },
+          "r15": {
+            "ok": true,
+            "data": {
+              "idx": 15,
+              "rank": 15
+            }
+          },
+          "r16": {
+            "ok": true,
+            "data": {
+              "idx": 16,
+              "rank": 16
+            }
+          },
+          "r17": {
+            "ok": true,
+            "data": {
+              "idx": 17,
+              "rank": 17
+            }
+          },
+          "r18": {
+            "ok": true,
+            "data": {
+              "idx": 18,
+              "rank": 18
+            }
+          },
+          "r19": {
+            "ok": true,
+            "data": {
+              "idx": 19,
+              "rank": 19
+            }
+          },
+          "r20": {
+            "ok": true,
+            "data": {
+              "idx": 20,
+              "rank": 20
+            }
+          },
+          "r21": {
+            "ok": true,
+            "data": {
+              "idx": 21,
+              "rank": 21
+            }
+          },
+          "r22": {
+            "ok": true,
+            "data": {
+              "idx": 22,
+              "rank": 22
+            }
+          },
+          "r23": {
+            "ok": true,
+            "data": {
+              "idx": 23,
+              "rank": 23
+            }
+          },
+          "r24": {
+            "ok": true,
+            "data": {
+              "idx": 24,
+              "rank": 24
+            }
+          },
+          "r25": {
+            "ok": true,
+            "data": {
+              "idx": 25,
+              "rank": 25
+            }
+          },
+          "r26": {
+            "ok": true,
+            "data": {
+              "idx": 26,
+              "rank": 26
+            }
+          },
+          "r27": {
+            "ok": true,
+            "data": {
+              "idx": 27,
+              "rank": 27
+            }
+          },
+          "r28": {
+            "ok": true,
+            "data": {
+              "idx": 28,
+              "rank": 28
+            }
+          },
+          "r29": {
+            "ok": true,
+            "data": {
+              "idx": 29,
+              "rank": 29
+            }
+          },
+          "r30": {
+            "ok": true,
+            "data": {
+              "idx": 30,
+              "rank": 30
+            }
+          },
+          "r31": {
+            "ok": true,
+            "data": {
+              "idx": 31,
+              "rank": 31
+            }
+          }
+        },
+        "order": [
+          "r0",
+          "r1",
+          "r2",
+          "r3",
+          "r4",
+          "r5",
+          "r6",
+          "r7",
+          "r8",
+          "r9",
+          "r10",
+          "r11",
+          "r12",
+          "r13",
+          "r14",
+          "r15",
+          "r16",
+          "r17",
+          "r18",
+          "r19",
+          "r20",
+          "r21",
+          "r22",
+          "r23",
+          "r24",
+          "r25",
+          "r26",
+          "r27",
+          "r28",
+          "r29",
+          "r30",
+          "r31"
+        ],
+        "server": {
+          "peak_inflight": {
+            "min": 32
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "conc.barrier-64-shuffle",
+    "title": "64 并发乱序",
+    "why": "上限规模下乱序放行，响应不串位",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "timeout_ms": 40000,
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 0,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 1,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 2,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 3,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 4,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 5,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r6",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 6,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r7",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 7,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r8",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 8,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r9",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 9,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r10",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 10,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r11",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 11,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r12",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 12,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r13",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 13,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r14",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 14,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r15",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 15,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r16",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 16,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r17",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 17,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r18",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 18,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r19",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 19,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r20",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 20,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r21",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 21,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r22",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 22,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r23",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 23,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r24",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 24,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r25",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 25,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r26",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 26,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r27",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 27,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r28",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 28,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r29",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 29,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r30",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 30,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r31",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 31,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r32",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 32,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r33",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 33,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r34",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 34,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r35",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 35,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r36",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 36,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r37",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 37,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r38",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 38,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r39",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 39,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r40",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 40,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r41",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 41,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r42",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 42,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r43",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 43,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r44",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 44,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r45",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 45,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r46",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 46,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r47",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 47,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r48",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 48,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r49",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 49,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r50",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 50,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r51",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 51,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r52",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 52,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r53",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 53,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r54",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 54,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r55",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 55,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r56",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 56,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r57",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 57,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r58",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 58,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r59",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 59,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r60",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 60,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r61",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 61,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r62",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 62,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r63",
+              "path": "/t/barrier/g8",
+              "query": {
+                "n": 64,
+                "idx": 63,
+                "order": "shuffle",
+                "seed": 42,
+                "gap_ms": 5
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4
+            }
+          },
+          "r5": {
+            "ok": true,
+            "data": {
+              "idx": 5
+            }
+          },
+          "r6": {
+            "ok": true,
+            "data": {
+              "idx": 6
+            }
+          },
+          "r7": {
+            "ok": true,
+            "data": {
+              "idx": 7
+            }
+          },
+          "r8": {
+            "ok": true,
+            "data": {
+              "idx": 8
+            }
+          },
+          "r9": {
+            "ok": true,
+            "data": {
+              "idx": 9
+            }
+          },
+          "r10": {
+            "ok": true,
+            "data": {
+              "idx": 10
+            }
+          },
+          "r11": {
+            "ok": true,
+            "data": {
+              "idx": 11
+            }
+          },
+          "r12": {
+            "ok": true,
+            "data": {
+              "idx": 12
+            }
+          },
+          "r13": {
+            "ok": true,
+            "data": {
+              "idx": 13
+            }
+          },
+          "r14": {
+            "ok": true,
+            "data": {
+              "idx": 14
+            }
+          },
+          "r15": {
+            "ok": true,
+            "data": {
+              "idx": 15
+            }
+          },
+          "r16": {
+            "ok": true,
+            "data": {
+              "idx": 16
+            }
+          },
+          "r17": {
+            "ok": true,
+            "data": {
+              "idx": 17
+            }
+          },
+          "r18": {
+            "ok": true,
+            "data": {
+              "idx": 18
+            }
+          },
+          "r19": {
+            "ok": true,
+            "data": {
+              "idx": 19
+            }
+          },
+          "r20": {
+            "ok": true,
+            "data": {
+              "idx": 20
+            }
+          },
+          "r21": {
+            "ok": true,
+            "data": {
+              "idx": 21
+            }
+          },
+          "r22": {
+            "ok": true,
+            "data": {
+              "idx": 22
+            }
+          },
+          "r23": {
+            "ok": true,
+            "data": {
+              "idx": 23
+            }
+          },
+          "r24": {
+            "ok": true,
+            "data": {
+              "idx": 24
+            }
+          },
+          "r25": {
+            "ok": true,
+            "data": {
+              "idx": 25
+            }
+          },
+          "r26": {
+            "ok": true,
+            "data": {
+              "idx": 26
+            }
+          },
+          "r27": {
+            "ok": true,
+            "data": {
+              "idx": 27
+            }
+          },
+          "r28": {
+            "ok": true,
+            "data": {
+              "idx": 28
+            }
+          },
+          "r29": {
+            "ok": true,
+            "data": {
+              "idx": 29
+            }
+          },
+          "r30": {
+            "ok": true,
+            "data": {
+              "idx": 30
+            }
+          },
+          "r31": {
+            "ok": true,
+            "data": {
+              "idx": 31
+            }
+          },
+          "r32": {
+            "ok": true,
+            "data": {
+              "idx": 32
+            }
+          },
+          "r33": {
+            "ok": true,
+            "data": {
+              "idx": 33
+            }
+          },
+          "r34": {
+            "ok": true,
+            "data": {
+              "idx": 34
+            }
+          },
+          "r35": {
+            "ok": true,
+            "data": {
+              "idx": 35
+            }
+          },
+          "r36": {
+            "ok": true,
+            "data": {
+              "idx": 36
+            }
+          },
+          "r37": {
+            "ok": true,
+            "data": {
+              "idx": 37
+            }
+          },
+          "r38": {
+            "ok": true,
+            "data": {
+              "idx": 38
+            }
+          },
+          "r39": {
+            "ok": true,
+            "data": {
+              "idx": 39
+            }
+          },
+          "r40": {
+            "ok": true,
+            "data": {
+              "idx": 40
+            }
+          },
+          "r41": {
+            "ok": true,
+            "data": {
+              "idx": 41
+            }
+          },
+          "r42": {
+            "ok": true,
+            "data": {
+              "idx": 42
+            }
+          },
+          "r43": {
+            "ok": true,
+            "data": {
+              "idx": 43
+            }
+          },
+          "r44": {
+            "ok": true,
+            "data": {
+              "idx": 44
+            }
+          },
+          "r45": {
+            "ok": true,
+            "data": {
+              "idx": 45
+            }
+          },
+          "r46": {
+            "ok": true,
+            "data": {
+              "idx": 46
+            }
+          },
+          "r47": {
+            "ok": true,
+            "data": {
+              "idx": 47
+            }
+          },
+          "r48": {
+            "ok": true,
+            "data": {
+              "idx": 48
+            }
+          },
+          "r49": {
+            "ok": true,
+            "data": {
+              "idx": 49
+            }
+          },
+          "r50": {
+            "ok": true,
+            "data": {
+              "idx": 50
+            }
+          },
+          "r51": {
+            "ok": true,
+            "data": {
+              "idx": 51
+            }
+          },
+          "r52": {
+            "ok": true,
+            "data": {
+              "idx": 52
+            }
+          },
+          "r53": {
+            "ok": true,
+            "data": {
+              "idx": 53
+            }
+          },
+          "r54": {
+            "ok": true,
+            "data": {
+              "idx": 54
+            }
+          },
+          "r55": {
+            "ok": true,
+            "data": {
+              "idx": 55
+            }
+          },
+          "r56": {
+            "ok": true,
+            "data": {
+              "idx": 56
+            }
+          },
+          "r57": {
+            "ok": true,
+            "data": {
+              "idx": 57
+            }
+          },
+          "r58": {
+            "ok": true,
+            "data": {
+              "idx": 58
+            }
+          },
+          "r59": {
+            "ok": true,
+            "data": {
+              "idx": 59
+            }
+          },
+          "r60": {
+            "ok": true,
+            "data": {
+              "idx": 60
+            }
+          },
+          "r61": {
+            "ok": true,
+            "data": {
+              "idx": 61
+            }
+          },
+          "r62": {
+            "ok": true,
+            "data": {
+              "idx": 62
+            }
+          },
+          "r63": {
+            "ok": true,
+            "data": {
+              "idx": 63
+            }
+          }
+        },
+        "server": {
+          "peak_inflight": {
+            "min": 64
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "conc.barrier-64-desc-order",
+    "title": "64 并发倒序落定顺序",
+    "why": "落定顺序与服务端放行顺序一致",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "timeout_ms": 40000,
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 0,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 1,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 2,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 3,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 4,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 5,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r6",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 6,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r7",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 7,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r8",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 8,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r9",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 9,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r10",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 10,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r11",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 11,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r12",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 12,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r13",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 13,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r14",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 14,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r15",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 15,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r16",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 16,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r17",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 17,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r18",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 18,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r19",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 19,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r20",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 20,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r21",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 21,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r22",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 22,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r23",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 23,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r24",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 24,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r25",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 25,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r26",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 26,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r27",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 27,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r28",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 28,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r29",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 29,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r30",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 30,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r31",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 31,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r32",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 32,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r33",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 33,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r34",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 34,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r35",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 35,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r36",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 36,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r37",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 37,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r38",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 38,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r39",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 39,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r40",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 40,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r41",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 41,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r42",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 42,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r43",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 43,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r44",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 44,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r45",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 45,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r46",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 46,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r47",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 47,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r48",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 48,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r49",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 49,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r50",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 50,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r51",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 51,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r52",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 52,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r53",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 53,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r54",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 54,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r55",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 55,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r56",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 56,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r57",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 57,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r58",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 58,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r59",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 59,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r60",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 60,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r61",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 61,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r62",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 62,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r63",
+              "path": "/t/barrier/g9",
+              "query": {
+                "n": 64,
+                "idx": 63,
+                "order": "desc",
+                "gap_ms": 5
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 63
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 62
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 61
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "idx": 3,
+              "rank": 60
+            }
+          },
+          "r4": {
+            "ok": true,
+            "data": {
+              "idx": 4,
+              "rank": 59
+            }
+          },
+          "r5": {
+            "ok": true,
+            "data": {
+              "idx": 5,
+              "rank": 58
+            }
+          },
+          "r6": {
+            "ok": true,
+            "data": {
+              "idx": 6,
+              "rank": 57
+            }
+          },
+          "r7": {
+            "ok": true,
+            "data": {
+              "idx": 7,
+              "rank": 56
+            }
+          },
+          "r8": {
+            "ok": true,
+            "data": {
+              "idx": 8,
+              "rank": 55
+            }
+          },
+          "r9": {
+            "ok": true,
+            "data": {
+              "idx": 9,
+              "rank": 54
+            }
+          },
+          "r10": {
+            "ok": true,
+            "data": {
+              "idx": 10,
+              "rank": 53
+            }
+          },
+          "r11": {
+            "ok": true,
+            "data": {
+              "idx": 11,
+              "rank": 52
+            }
+          },
+          "r12": {
+            "ok": true,
+            "data": {
+              "idx": 12,
+              "rank": 51
+            }
+          },
+          "r13": {
+            "ok": true,
+            "data": {
+              "idx": 13,
+              "rank": 50
+            }
+          },
+          "r14": {
+            "ok": true,
+            "data": {
+              "idx": 14,
+              "rank": 49
+            }
+          },
+          "r15": {
+            "ok": true,
+            "data": {
+              "idx": 15,
+              "rank": 48
+            }
+          },
+          "r16": {
+            "ok": true,
+            "data": {
+              "idx": 16,
+              "rank": 47
+            }
+          },
+          "r17": {
+            "ok": true,
+            "data": {
+              "idx": 17,
+              "rank": 46
+            }
+          },
+          "r18": {
+            "ok": true,
+            "data": {
+              "idx": 18,
+              "rank": 45
+            }
+          },
+          "r19": {
+            "ok": true,
+            "data": {
+              "idx": 19,
+              "rank": 44
+            }
+          },
+          "r20": {
+            "ok": true,
+            "data": {
+              "idx": 20,
+              "rank": 43
+            }
+          },
+          "r21": {
+            "ok": true,
+            "data": {
+              "idx": 21,
+              "rank": 42
+            }
+          },
+          "r22": {
+            "ok": true,
+            "data": {
+              "idx": 22,
+              "rank": 41
+            }
+          },
+          "r23": {
+            "ok": true,
+            "data": {
+              "idx": 23,
+              "rank": 40
+            }
+          },
+          "r24": {
+            "ok": true,
+            "data": {
+              "idx": 24,
+              "rank": 39
+            }
+          },
+          "r25": {
+            "ok": true,
+            "data": {
+              "idx": 25,
+              "rank": 38
+            }
+          },
+          "r26": {
+            "ok": true,
+            "data": {
+              "idx": 26,
+              "rank": 37
+            }
+          },
+          "r27": {
+            "ok": true,
+            "data": {
+              "idx": 27,
+              "rank": 36
+            }
+          },
+          "r28": {
+            "ok": true,
+            "data": {
+              "idx": 28,
+              "rank": 35
+            }
+          },
+          "r29": {
+            "ok": true,
+            "data": {
+              "idx": 29,
+              "rank": 34
+            }
+          },
+          "r30": {
+            "ok": true,
+            "data": {
+              "idx": 30,
+              "rank": 33
+            }
+          },
+          "r31": {
+            "ok": true,
+            "data": {
+              "idx": 31,
+              "rank": 32
+            }
+          },
+          "r32": {
+            "ok": true,
+            "data": {
+              "idx": 32,
+              "rank": 31
+            }
+          },
+          "r33": {
+            "ok": true,
+            "data": {
+              "idx": 33,
+              "rank": 30
+            }
+          },
+          "r34": {
+            "ok": true,
+            "data": {
+              "idx": 34,
+              "rank": 29
+            }
+          },
+          "r35": {
+            "ok": true,
+            "data": {
+              "idx": 35,
+              "rank": 28
+            }
+          },
+          "r36": {
+            "ok": true,
+            "data": {
+              "idx": 36,
+              "rank": 27
+            }
+          },
+          "r37": {
+            "ok": true,
+            "data": {
+              "idx": 37,
+              "rank": 26
+            }
+          },
+          "r38": {
+            "ok": true,
+            "data": {
+              "idx": 38,
+              "rank": 25
+            }
+          },
+          "r39": {
+            "ok": true,
+            "data": {
+              "idx": 39,
+              "rank": 24
+            }
+          },
+          "r40": {
+            "ok": true,
+            "data": {
+              "idx": 40,
+              "rank": 23
+            }
+          },
+          "r41": {
+            "ok": true,
+            "data": {
+              "idx": 41,
+              "rank": 22
+            }
+          },
+          "r42": {
+            "ok": true,
+            "data": {
+              "idx": 42,
+              "rank": 21
+            }
+          },
+          "r43": {
+            "ok": true,
+            "data": {
+              "idx": 43,
+              "rank": 20
+            }
+          },
+          "r44": {
+            "ok": true,
+            "data": {
+              "idx": 44,
+              "rank": 19
+            }
+          },
+          "r45": {
+            "ok": true,
+            "data": {
+              "idx": 45,
+              "rank": 18
+            }
+          },
+          "r46": {
+            "ok": true,
+            "data": {
+              "idx": 46,
+              "rank": 17
+            }
+          },
+          "r47": {
+            "ok": true,
+            "data": {
+              "idx": 47,
+              "rank": 16
+            }
+          },
+          "r48": {
+            "ok": true,
+            "data": {
+              "idx": 48,
+              "rank": 15
+            }
+          },
+          "r49": {
+            "ok": true,
+            "data": {
+              "idx": 49,
+              "rank": 14
+            }
+          },
+          "r50": {
+            "ok": true,
+            "data": {
+              "idx": 50,
+              "rank": 13
+            }
+          },
+          "r51": {
+            "ok": true,
+            "data": {
+              "idx": 51,
+              "rank": 12
+            }
+          },
+          "r52": {
+            "ok": true,
+            "data": {
+              "idx": 52,
+              "rank": 11
+            }
+          },
+          "r53": {
+            "ok": true,
+            "data": {
+              "idx": 53,
+              "rank": 10
+            }
+          },
+          "r54": {
+            "ok": true,
+            "data": {
+              "idx": 54,
+              "rank": 9
+            }
+          },
+          "r55": {
+            "ok": true,
+            "data": {
+              "idx": 55,
+              "rank": 8
+            }
+          },
+          "r56": {
+            "ok": true,
+            "data": {
+              "idx": 56,
+              "rank": 7
+            }
+          },
+          "r57": {
+            "ok": true,
+            "data": {
+              "idx": 57,
+              "rank": 6
+            }
+          },
+          "r58": {
+            "ok": true,
+            "data": {
+              "idx": 58,
+              "rank": 5
+            }
+          },
+          "r59": {
+            "ok": true,
+            "data": {
+              "idx": 59,
+              "rank": 4
+            }
+          },
+          "r60": {
+            "ok": true,
+            "data": {
+              "idx": 60,
+              "rank": 3
+            }
+          },
+          "r61": {
+            "ok": true,
+            "data": {
+              "idx": 61,
+              "rank": 2
+            }
+          },
+          "r62": {
+            "ok": true,
+            "data": {
+              "idx": 62,
+              "rank": 1
+            }
+          },
+          "r63": {
+            "ok": true,
+            "data": {
+              "idx": 63,
+              "rank": 0
+            }
+          }
+        },
+        "order": [
+          "r63",
+          "r62",
+          "r61",
+          "r60",
+          "r59",
+          "r58",
+          "r57",
+          "r56",
+          "r55",
+          "r54",
+          "r53",
+          "r52",
+          "r51",
+          "r50",
+          "r49",
+          "r48",
+          "r47",
+          "r46",
+          "r45",
+          "r44",
+          "r43",
+          "r42",
+          "r41",
+          "r40",
+          "r39",
+          "r38",
+          "r37",
+          "r36",
+          "r35",
+          "r34",
+          "r33",
+          "r32",
+          "r31",
+          "r30",
+          "r29",
+          "r28",
+          "r27",
+          "r26",
+          "r25",
+          "r24",
+          "r23",
+          "r22",
+          "r21",
+          "r20",
+          "r19",
+          "r18",
+          "r17",
+          "r16",
+          "r15",
+          "r14",
+          "r13",
+          "r12",
+          "r11",
+          "r10",
+          "r9",
+          "r8",
+          "r7",
+          "r6",
+          "r5",
+          "r4",
+          "r3",
+          "r2",
+          "r1",
+          "r0"
+        ],
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "conc.barrier-reuse",
+    "title": "同一组放行后可复用",
+    "why": "第二轮同组名请求不受第一轮残留影响",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a0",
+              "path": "/t/barrier/g10",
+              "query": {
+                "n": 3,
+                "idx": 0,
+                "order": "asc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "a1",
+              "path": "/t/barrier/g10",
+              "query": {
+                "n": 3,
+                "idx": 1,
+                "order": "asc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "a2",
+              "path": "/t/barrier/g10",
+              "query": {
+                "n": 3,
+                "idx": 2,
+                "order": "asc"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "b0",
+              "path": "/t/barrier/g10",
+              "query": {
+                "n": 3,
+                "idx": 0,
+                "order": "desc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b1",
+              "path": "/t/barrier/g10",
+              "query": {
+                "n": 3,
+                "idx": 1,
+                "order": "desc"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b2",
+              "path": "/t/barrier/g10",
+              "query": {
+                "n": 3,
+                "idx": 2,
+                "order": "desc"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a0": {
+            "ok": true,
+            "data": {
+              "rank": 0
+            }
+          },
+          "a2": {
+            "ok": true,
+            "data": {
+              "rank": 2
+            }
+          },
+          "b0": {
+            "ok": true,
+            "data": {
+              "rank": 2
+            }
+          },
+          "b2": {
+            "ok": true,
+            "data": {
+              "rank": 0
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/barrier/g10": {
+              "eq": 6
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "conc.barrier-partial-wait",
+    "title": "等不齐时超时放行",
+    "why": "n=4 只发 3 个，wait_ms 到期后放行已到者并标 partial",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g11",
+              "query": {
+                "n": 4,
+                "idx": 0,
+                "order": "asc",
+                "wait_ms": 600
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g11",
+              "query": {
+                "n": 4,
+                "idx": 1,
+                "order": "asc",
+                "wait_ms": 600
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g11",
+              "query": {
+                "n": 4,
+                "idx": 2,
+                "order": "asc",
+                "wait_ms": 600
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "partial": true
+              }
+            }
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "conc.parallel-failure-isolated",
+    "title": "并发中的失败互不影响",
+    "why": "奇数请求 500，偶数成功，错误不外溢",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "key": "k4"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "key": "k5"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 6
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 6
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    }
+  },
+  {
+    "id": "conc.fast-slow-settle-order",
+    "title": "快慢请求按完成先后落定",
+    "why": "慢请求不能阻塞快请求",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "slow",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 3000,
+                "key": "s"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "fast",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 100,
+                "key": "f"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "mid",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 1500,
+                "key": "m"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "slow": {
+            "ok": true
+          },
+          "fast": {
+            "ok": true
+          },
+          "mid": {
+            "ok": true
+          }
+        },
+        "order": [
+          "fast",
+          "mid",
+          "slow"
+        ],
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "slow": {
+            "ok": true
+          },
+          "fast": {
+            "ok": true
+          },
+          "mid": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "conc.no-share-peak-inflight",
+    "title": "无 share 时并发请求真并行",
+    "why": "10 个并发应同时在途（对照 share 场景）",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k4"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k5"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r6",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k6"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r7",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k7"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r8",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k8"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r9",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 500,
+                "key": "k9"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          },
+          "r6": {
+            "ok": true
+          },
+          "r7": {
+            "ok": true
+          },
+          "r8": {
+            "ok": true
+          },
+          "r9": {
+            "ok": true
+          }
+        },
+        "server": {
+          "peak_inflight": {
+            "min": 8
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "conc.fire-then-settle",
+    "title": "fire 的请求在场景结束前落定",
+    "why": "没有 await 的在途请求也必须落定，pending 归零",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "fire": {
+          "request": {
+            "id": "a",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 600,
+              "key": "a"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "b",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 300,
+              "key": "b"
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "c",
+          "path": "/t/echo",
+          "query": {
+            "key": "c"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": true
+          },
+          "c": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": true
+          },
+          "c": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "conc.barrier-mixed-with-other",
+    "title": "栅栏请求与普通请求混跑",
+    "why": "长时间挂起的栅栏组不阻塞其他请求",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/barrier/g12",
+              "query": {
+                "n": 3,
+                "idx": 0,
+                "order": "asc",
+                "gap_ms": 200
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/barrier/g12",
+              "query": {
+                "n": 3,
+                "idx": 1,
+                "order": "asc",
+                "gap_ms": 200
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/barrier/g12",
+              "query": {
+                "n": 3,
+                "idx": 2,
+                "order": "asc",
+                "gap_ms": 200
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "other",
+              "path": "/t/echo",
+              "query": {
+                "key": "o"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "idx": 0,
+              "rank": 0
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "idx": 1,
+              "rank": 1
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "idx": 2,
+              "rank": 2
+            }
+          },
+          "other": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  }
+]

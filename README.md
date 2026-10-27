@@ -271,6 +271,45 @@ JSON——发 `"hello"` 过去，所有订阅者收到的是 `{"response":"hello
 - `JWT_SECRET`：JWT 签名密钥。不设置的话服务启动时会随机生成一个（反正用户数据本来就是内存态的，
   重启就清空，密钥跟着一起换掉没有实际影响）。
 
+## 客户端验收测试（testkit）
+
+请求头 `X-Test-Style: http|business` 选择响应风格，单次请求的 `style=` 查询参数优先。
+所有 `/t/*` 失败都遵循该风格：http 使用逻辑 HTTP 状态，business 使用 HTTP 200；成功响应一致。
+`code` 默认等于逻辑状态（200 时为 0），显式 `code` 优先，所以单传 `code=1001` 在两种风格下都是 HTTP 200。
+失败的 `data.reason` 区分 missing、invalid、expired、revoked、reused、bad_credentials、forbidden 和 injected；
+鉴权统一 `code=401`，越权为 403。失败的 `Retry-After` 在两种风格下都保留。
+
+登录支持 `strict_rotation:true`，刷新后立即吊销同会话族的旧 access；默认保留旧 access 至过期。
+`no_refresh_` 前缀用户不返回 refresh_token。`POST /t/auth/revoke` 接受 `{username, scope?}`，
+默认 `all` 吊销该用户全部 access 和 refresh，`access` 只吊销 access；返回 `{revoked:<吊销数量>}`。
+`/t/mock/*` 匿名回显并带 `data.mock=true`；轮次日志逐条记录 `style`、实际 HTTP `status`、`code` 和 `reason`。
+
+完整接口、控制参数和网络场景见 [testkit/CONTRACT.md](testkit/CONTRACT.md)，语言无关的场景结构见
+[scenario.schema.json](testkit/scenario.schema.json)。`/t/*` 始终挂载；每轮使用独立的 `X-Test-Run` 请求头
+（或 `run=`），可控制回显、鉴权轮换、并发放行、坏响应，并通过 `/t/runs/{run}` 读取统计或删除状态。
+
+本地在两个终端启动主服务和 TCP 网络模拟器：
+
+```powershell
+$env:TEST_MODE = "1"
+cargo run --release
+```
+
+```powershell
+cargo run --release --bin netem -- --control 127.0.0.1:9090
+```
+
+在 Bash 中，第一条启动命令为 `TEST_MODE=1 cargo run --release`。`TEST_MODE=1` 跳过限流和 CPU 熔断，
+仍保留测试接口的资源上限；线上默认不开启。netem 仅在本地运行，不进入 Docker 镜像。
+
+向 netem 的 `POST /proxies` 发送 `{"upstream":"127.0.0.1:8080","profile":"weak"}`，拿返回的 `port`
+作为客户端连接端口。通过 `PUT /proxies/{id}` 的 `{"profile":"normal"}` 可以立即恢复已有连接和新连接；
+支持 normal、weak、lossy、offline、blackhole、flap 预设。dns 由执行器替换域名，不经过代理。
+
+运行 `cargo test --offline` 验证纯逻辑及 `tests/testkit.rs`、`tests/netem.rs` 中随机端口的真实网络测试，
+再运行 `cargo clippy --all-targets --offline` 和 `cargo build --release --offline`。依赖需已存在于本机缓存；
+如默认构建目录不可写，给三条命令追加 `--target-dir target`。文档修改后运行 `node testkit/tools/validate.mjs --check-index`。
+
 ## 本地开发
 
 ```powershell

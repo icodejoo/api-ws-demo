@@ -1,0 +1,564 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api-ws-demo/testkit/scenario.schema.json",
+  "title": "客户端验收场景",
+  "description": "与语言无关的验收场景。执行器读取后按 steps 驱动客户端，在指定网络预设下运行，再按 expect 断言。契约见 CONTRACT.md。",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "requires",
+    "networks",
+    "steps",
+    "expect"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$",
+      "description": "全局唯一，形如 auth.concurrent-401-single-refresh"
+    },
+    "title": {
+      "type": "string"
+    },
+    "why": {
+      "type": "string",
+      "description": "这个场景防的是哪类真实问题"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/capability"
+      },
+      "description": "客户端缺任一能力即跳过"
+    },
+    "networks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/network"
+      },
+      "description": "本场景在哪些网络预设下各跑一遍"
+    },
+    "styles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "http",
+          "business"
+        ]
+      },
+      "default": [
+        "http",
+        "business"
+      ],
+      "description": "在哪些响应风格下运行（CONTRACT §2.1），默认两种都跑"
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "default": 20000,
+      "description": "单次运行的总超时，超过即判失败"
+    },
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "base_timeout_ms": {
+          "type": "integer",
+          "description": "客户端默认请求超时"
+        },
+        "plugins": {
+          "type": "object",
+          "description": "中立插件配置；键为能力名，值为该能力的中立选项（见 $defs/pluginOptions）。未列出的能力不安装。",
+          "propertyNames": {
+            "$ref": "#/$defs/capability"
+          },
+          "additionalProperties": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    },
+    "expect": {
+      "type": "object",
+      "description": "按网络预设名给出预期；'*' 为默认，具体预设覆盖 '*' 的同名字段。需要区分风格时可用 '<网络>@<风格>' 或 '*@<风格>' 作为键（如 'normal@business'），优先级：网络@风格 > 网络 > *@风格 > *。",
+      "propertyNames": {
+        "pattern": "^(\\*|normal|weak|lossy|offline|blackhole|flap|dns)(@(http|business))?$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/expectation"
+      }
+    }
+  },
+  "$defs": {
+    "capability": {
+      "enum": [
+        "auth",
+        "cache",
+        "retry",
+        "share",
+        "cancel",
+        "loading",
+        "mock",
+        "normalize",
+        "notify",
+        "repath",
+        "key",
+        "filter",
+        "envs",
+        "breaker",
+        "offline",
+        "timeout",
+        "log"
+      ]
+    },
+    "network": {
+      "enum": [
+        "normal",
+        "weak",
+        "lossy",
+        "offline",
+        "blackhole",
+        "flap",
+        "dns"
+      ]
+    },
+    "errorKind": {
+      "type": "string",
+      "pattern": "^(status:\\d{3}|http:\\d{3}|business:-?\\d+|timeout|canceled|network|parse|breaker_open|offline|denied|expired|unauthenticated|any)$",
+      "description": "status:<n> 与风格无关（推荐）；http:/business: 仅用于针对单一风格的断言"
+    },
+    "request": {
+      "type": "object",
+      "required": [
+        "id",
+        "path"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "场景内唯一，用于 expect.results 引用"
+        },
+        "method": {
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "HEAD"
+          ],
+          "default": "GET"
+        },
+        "path": {
+          "type": "string",
+          "description": "相对 baseURL，可含 {var} 路径变量（配合 repath）"
+        },
+        "query": {
+          "type": "object",
+          "description": "查询参数（包括 CONTRACT §3 的控制参数）"
+        },
+        "body": {
+          "description": "请求体，任意 JSON"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "options": {
+          "type": "object",
+          "description": "中立的请求级选项，执行器映射成本库字段",
+          "additionalProperties": false,
+          "properties": {
+            "auth": {
+              "type": "boolean",
+              "description": "是否为受保护请求；默认按 path 是否以 /t/private 开头"
+            },
+            "cache": {
+              "description": "true | false | {ttl_ms, key}"
+            },
+            "retry": {
+              "description": "{ max, delay_ms, statuses?: [500,502,503,504], methods?: [...]（默认仅幂等方法 GET/PUT/HEAD/DELETE/OPTIONS）, respect_retry_after? }"
+            },
+            "share": {
+              "enum": [
+                true,
+                false,
+                "start",
+                "end",
+                "race",
+                "none"
+              ]
+            },
+            "loading": {
+              "type": "boolean"
+            },
+            "silent": {
+              "type": "boolean",
+              "description": "不触发 notify"
+            },
+            "timeout_ms": {
+              "type": "integer"
+            },
+            "key": {
+              "description": "true | 'simple' | 'deep' | 字符串"
+            },
+            "mock": {
+              "type": "boolean"
+            },
+            "normalize": {
+              "type": "boolean"
+            },
+            "breaker": {
+              "type": "boolean"
+            }
+          }
+        },
+        "cancel_after_ms": {
+          "type": "integer",
+          "description": "发出后多久取消本请求"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "description": "每个 step 只有一个键",
+      "properties": {
+        "request": {
+          "$ref": "#/$defs/request"
+        },
+        "parallel": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          },
+          "description": "同时启动，全部落定后才进入下一步"
+        },
+        "sequence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        },
+        "fire": {
+          "$ref": "#/$defs/step",
+          "description": "启动后不等待；在场景结束前统一等它落定"
+        },
+        "repeat": {
+          "type": "object",
+          "required": [
+            "times",
+            "step"
+          ],
+          "properties": {
+            "times": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "step": {
+              "$ref": "#/$defs/step"
+            },
+            "id_suffix": {
+              "type": "boolean",
+              "default": true,
+              "description": "为内部请求 id 追加 #i"
+            }
+          }
+        },
+        "wait": {
+          "type": "integer",
+          "description": "等待毫秒"
+        },
+        "login": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
+            },
+            "access_ttl_ms": {
+              "type": "integer"
+            },
+            "refresh_ttl_ms": {
+              "type": "integer"
+            },
+            "strict_rotation": {
+              "type": "boolean"
+            }
+          },
+          "description": "走旁路直接调用 /t/auth/login（不经过 netem 和插件链），拿到的 token 写入客户端的 token 存储（CONTRACT 附录 B.2）"
+        },
+        "set_token": {
+          "type": "object",
+          "description": "直接篡改客户端持有的令牌，模拟各种坏令牌",
+          "properties": {
+            "access": {
+              "enum": [
+                "none",
+                "empty",
+                "garbage",
+                "bad_signature",
+                "tampered_payload",
+                "wrong_scheme",
+                "previous",
+                "keep"
+              ],
+              "description": "none=删除；empty=空串；garbage=非 JWT 字符串；bad_signature=签名改坏；tampered_payload=改 sub 不重签；wrong_scheme=前缀写成 Token；previous=换回上一次登录或刷新前的旧 access；keep=不变"
+            },
+            "refresh": {
+              "enum": [
+                "none",
+                "garbage",
+                "previous",
+                "keep"
+              ],
+              "description": "previous=已被轮换掉的旧 refresh（服务器会判重用）"
+            }
+          }
+        },
+        "logout": {
+          "type": "object",
+          "description": "调 /t/auth/logout 并清空客户端 token"
+        },
+        "revoke": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "string"
+            },
+            "scope": {
+              "enum": [
+                "all",
+                "access"
+              ],
+              "default": "all"
+            }
+          },
+          "description": "服务端强制下线（走旁路）：all 同时吊销 refresh，access 只吊销 access"
+        },
+        "expire_local": {
+          "type": "object",
+          "description": "把客户端持有的 access token 改成一个已过期但签名合法的值（向服务器重新登录一个 ttl=1 的会话后等待过期）"
+        },
+        "cancel_all": {
+          "type": "object",
+          "properties": {
+            "after_ms": {
+              "type": "integer"
+            }
+          }
+        },
+        "clear_cache": {
+          "type": "object"
+        },
+        "network": {
+          "description": "运行中切换网络：预设名或 netem profile 对象"
+        },
+        "server_reset": {
+          "type": "object",
+          "description": "DELETE /t/runs/{run}"
+        },
+        "style": {
+          "enum": [
+            "http",
+            "business"
+          ],
+          "description": "从下一个请求开始切换响应风格（CONTRACT 附录 B.4）"
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/errorKind"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/errorKind"
+              }
+            }
+          ],
+          "description": "数组表示任一即可"
+        },
+        "data": {
+          "description": "对客户端最终拿到的数据做子集匹配（对象只比较列出的键）"
+        },
+        "hit": {
+          "type": "integer",
+          "description": "data.meta.hit 的期望值"
+        },
+        "from_cache": {
+          "type": "boolean",
+          "description": "true 表示该请求不应到达服务器（由 server log 推断）"
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eq": {
+          "type": "integer"
+        },
+        "min": {
+          "type": "integer"
+        },
+        "max": {
+          "type": "integer"
+        }
+      }
+    },
+    "expectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skip": {
+          "type": "string",
+          "description": "此网络下不适用，写明原因"
+        },
+        "results": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/result"
+          }
+        },
+        "order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "请求落定的先后顺序（按请求 id）"
+        },
+        "server": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "total": {
+              "$ref": "#/$defs/range"
+            },
+            "by_key": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/range"
+              }
+            },
+            "by_path": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/range"
+              }
+            },
+            "peak_inflight": {
+              "$ref": "#/$defs/range"
+            },
+            "aborted": {
+              "$ref": "#/$defs/range"
+            }
+          }
+        },
+        "client": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "loading": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              },
+              "description": "loading 回调序列的精确值"
+            },
+            "notify": {
+              "$ref": "#/$defs/range"
+            },
+            "refresh": {
+              "$ref": "#/$defs/range"
+            },
+            "expired": {
+              "$ref": "#/$defs/range"
+            },
+            "denied": {
+              "$ref": "#/$defs/range"
+            },
+            "pending_after": {
+              "$ref": "#/$defs/range"
+            }
+          }
+        },
+        "duration_ms": {
+          "$ref": "#/$defs/range"
+        }
+      }
+    },
+    "pluginOptions": {
+      "description": "中立插件选项参考（执行器必须支持的最小集合）",
+      "type": "object",
+      "properties": {
+        "auth": {
+          "description": "{ url_pattern?: '/t/private', refresh: 'endpoint'（默认，调 /t/auth/refresh）, refresh_query?: object（附加到刷新请求的查询参数，如 {delay_ms:1500} 或 {fail_times:1}，用于慢刷新/刷新失败） }。执行器按 CONTRACT §4.2 处理鉴权失败：code=401 时，reason=missing 且没有 refresh 令牌就不刷新，判 unauthenticated；其余情况（invalid/expired/revoked，或者没有 reason）最多刷新一次后重放。code=403 走 denied。http 和 business 两种风格都要识别。"
+        },
+        "cache": {
+          "description": "{ ttl_ms, max? }"
+        },
+        "retry": {
+          "description": "{ max, delay_ms, statuses?: [500,502,503,504], methods?: [...], respect_retry_after? }"
+        },
+        "share": {
+          "description": "{ policy: 'start'|'end'|'race' }"
+        },
+        "loading": {
+          "description": "{ delay_ms?, delay_close_ms? }"
+        },
+        "notify": {
+          "description": "{}：失败时触发一次 notify 事件"
+        },
+        "normalize": {
+          "description": "{}：按信封 code 判定业务成败"
+        },
+        "key": {
+          "description": "{ scope?: 'user' }：scope=user 时 key 并入当前登录用户标识，切换用户不串缓存/共享；请求级 options.key=true 才生成 key"
+        },
+        "timeout": {
+          "description": "{ connect_ms?, receive_ms?, total_ms? }"
+        },
+        "breaker": {
+          "description": "{ threshold, open_ms }"
+        },
+        "offline": {
+          "description": "{ probe: '/t/ping' }"
+        },
+        "mock": {
+          "description": "{ fallback_on_404?: boolean }：mock 基址由执行器固定为 <baseURL>/t/mock（CONTRACT §4.1），场景不写基址"
+        }
+      }
+    }
+  }
+}

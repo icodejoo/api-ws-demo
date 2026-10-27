@@ -1,0 +1,1326 @@
+[
+  {
+    "id": "cancel.single",
+    "title": "单个请求取消",
+    "why": "取消要真的掐断连接，服务端能观察到 aborted",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 5000
+          },
+          "cancel_after_ms": 1500
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "aborted": {
+            "min": 1
+          }
+        },
+        "duration_ms": {
+          "max": 4000
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "cancel.hang-is-canceled-not-timeout",
+    "title": "挂起的请求被取消归为 canceled",
+    "why": "主动取消不能被误报成 timeout",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "hang"
+          },
+          "cancel_after_ms": 1200
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "aborted": {
+            "min": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.all",
+    "title": "cancel_all 取消全部在途请求",
+    "why": "一次取消所有在途",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "fire": {
+          "request": {
+            "id": "a",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "a"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "b",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "b"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "c",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "c"
+            }
+          }
+        }
+      },
+      {
+        "cancel_all": {
+          "after_ms": 1500
+        }
+      },
+      {
+        "wait": 600
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "b": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "c": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "aborted": {
+            "min": 3
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.all-then-new-works",
+    "title": "cancel_all 之后新请求正常",
+    "why": "取消不是永久的",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "fire": {
+          "request": {
+            "id": "a",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "a"
+            }
+          }
+        }
+      },
+      {
+        "cancel_all": {
+          "after_ms": 800
+        }
+      },
+      {
+        "wait": 1500
+      },
+      {
+        "request": {
+          "id": "b",
+          "path": "/t/echo",
+          "query": {
+            "key": "b"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.one-of-many",
+    "title": "只取消其中一个",
+    "why": "取消不影响同时在途的其他请求",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 2500,
+                "key": "a"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 2500,
+                "key": "b"
+              },
+              "cancel_after_ms": 1000
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 2500,
+                "key": "c"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r3": {
+            "ok": true
+          }
+        },
+        "server": {
+          "aborted": {
+            "eq": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.after-complete-noop",
+    "title": "完成后再取消是空操作",
+    "why": "已完成的请求结果保持不变，不产生 aborted",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      },
+      {
+        "cancel_all": {}
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "query": {
+            "key": "b"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "server": {
+          "aborted": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "server": {
+          "aborted": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "cancel.all-with-nothing-inflight",
+    "title": "没有在途请求时 cancel_all 不报错",
+    "why": "空集合取消要安全",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "cancel_all": {}
+      },
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.double-cancel",
+    "title": "重复取消幂等",
+    "why": "连续两次 cancel_all 不应抛错或影响后续",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "fire": {
+          "request": {
+            "id": "a",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000
+            }
+          }
+        }
+      },
+      {
+        "cancel_all": {
+          "after_ms": 600
+        }
+      },
+      {
+        "cancel_all": {}
+      },
+      {
+        "wait": 500
+      },
+      {
+        "request": {
+          "id": "b",
+          "path": "/t/echo",
+          "query": {
+            "key": "b"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.slow-body",
+    "title": "响应体传输中取消",
+    "why": "收到一半 body 时取消也要干净落定",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "slow_body",
+            "size": 4000,
+            "chunk_bytes": 512,
+            "chunk_ms": 400
+          },
+          "cancel_after_ms": 800
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.before-reach-server",
+    "title": "发出即取消",
+    "why": "cancel_after_ms=0：要么没到服务端要么被掐断，pending 必须为 0",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 3000
+          },
+          "cancel_after_ms": 0
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "total": {
+            "max": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.parallel-32",
+    "title": "32 个请求同时取消",
+    "why": "大规模取消后无残留",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "fire": {
+          "request": {
+            "id": "r0",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k0"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r1",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k1"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r2",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k2"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r3",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k3"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r4",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k4"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r5",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k5"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r6",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k6"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r7",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k7"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r8",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k8"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r9",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k9"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r10",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k10"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r11",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k11"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r12",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k12"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r13",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k13"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r14",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k14"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r15",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k15"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r16",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k16"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r17",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k17"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r18",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k18"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r19",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k19"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r20",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k20"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r21",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k21"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r22",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k22"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r23",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k23"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r24",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k24"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r25",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k25"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r26",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k26"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r27",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k27"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r28",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k28"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r29",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k29"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r30",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k30"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r31",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000,
+              "key": "k31"
+            }
+          }
+        }
+      },
+      {
+        "cancel_all": {
+          "after_ms": 1500
+        }
+      },
+      {
+        "wait": 800
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r2": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r3": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r4": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r5": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r6": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r7": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r8": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r9": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r10": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r11": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r12": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r13": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r14": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r15": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r16": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r17": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r18": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r19": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r20": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r21": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r22": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r23": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r24": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r25": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r26": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r27": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r28": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r29": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r30": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r31": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "aborted": {
+            "min": 32
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cancel.blackhole-cancel-before-timeout",
+    "title": "黑洞下取消先于超时",
+    "why": "比超时更早的主动取消应归为 canceled",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "key": "k0"
+              },
+              "cancel_after_ms": 800
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "key": "k1"
+              },
+              "cancel_after_ms": 800
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "key": "k2"
+              },
+              "cancel_after_ms": 800
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "blackhole": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r2": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  }
+]

@@ -1,0 +1,751 @@
+[
+  {
+    "id": "timeout.total-hang",
+    "title": "总超时：hang 到点即超时",
+    "why": "total_ms 是硬上限",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "total_ms": 800
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "hang"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "duration_ms": {
+          "min": 700,
+          "max": 4000
+        },
+        "server": {
+          "aborted": {
+            "min": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.receive-slow-body",
+    "title": "接收超时：块间隔过大",
+    "why": "数据停顿超过 receive_ms 即超时",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "receive_ms": 300
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "slow_body",
+            "size": 8000,
+            "chunk_bytes": 1024,
+            "chunk_ms": 700
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.receive-ok-fast-chunks",
+    "title": "接收超时不误伤正常流",
+    "why": "块间隔小于 receive_ms 时成功",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "receive_ms": 1500
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "slow_body",
+            "size": 3000,
+            "chunk_bytes": 1024,
+            "chunk_ms": 50
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.total-over-slow-chunks",
+    "title": "总超时覆盖慢吐 body",
+    "why": "size=20000、chunk_bytes=1024（约 20 块）×400ms：每块间隔都没超过 receive_ms，但总时长远超 total_ms，仍应超时",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "receive_ms": 1500,
+          "total_ms": 1000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "slow_body",
+            "size": 20000,
+            "chunk_bytes": 1024,
+            "chunk_ms": 400
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.connect-blackhole",
+    "title": "连接超时：黑洞",
+    "why": "connect_ms 先于默认超时触发",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "blackhole"
+    ],
+    "client": {
+      "base_timeout_ms": 10000,
+      "plugins": {
+        "timeout": {
+          "connect_ms": 800
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "duration_ms": {
+          "min": 700,
+          "max": 3500
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "timeout.request-override-shorter",
+    "title": "请求级超时更短",
+    "why": "请求自己的 timeout_ms 能收紧",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "total_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 1500
+          },
+          "options": {
+            "timeout_ms": 500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.request-override-longer",
+    "title": "请求级超时更长",
+    "why": "请求自己的 timeout_ms 能放宽",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "total_ms": 500
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 1000
+          },
+          "options": {
+            "timeout_ms": 4000
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.within-budget",
+    "title": "预算内的慢响应成功",
+    "why": "不能误杀未超时的请求",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "total_ms": 3000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 400
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.recovers-after-timeout",
+    "title": "超时之后客户端仍正常",
+    "why": "一次超时不能让后续请求也超时",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "total_ms": 700
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "fault": "hang",
+                "key": "a"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "key": "b"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.parallel-all-timeout",
+    "title": "并发超时并行计时",
+    "why": "5 个并发超时总耗时不应叠加",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "total_ms": 500
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 4000,
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 4000,
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 4000,
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 4000,
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 4000,
+                "key": "k4"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r2": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r3": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r4": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "duration_ms": {
+          "max": 3000
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.weak-generous-budget",
+    "title": "弱网下宽松预算成功",
+    "why": "预算足够时弱网照样成功",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "connect_ms": 8000,
+          "receive_ms": 8000,
+          "total_ms": 15000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "timeout.total-slow-chunks-small",
+    "title": "总超时：小块慢吐",
+    "why": "size=4000、chunk_bytes=100：至少 40 块 ×100ms，每块都没超 receive_ms，但总时长超过 total_ms，仍应超时",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "receive_ms": 500,
+          "total_ms": 1500
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "slow_body",
+            "size": 4000,
+            "chunk_bytes": 100,
+            "chunk_ms": 100
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.total-budget-slow-body-ok",
+    "title": "总超时预算足够时慢吐 body 成功",
+    "why": "对照组：同样的慢吐 body，total_ms 放宽后应完整收下",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "receive_ms": 500,
+          "total_ms": 20000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "slow_body",
+            "size": 4000,
+            "chunk_bytes": 100,
+            "chunk_ms": 100
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "timeout.receive-gap-vs-chunk-bytes",
+    "title": "接收超时看块间隔，不看块大小",
+    "why": "chunk_bytes 很大（一块发完）时没有间隔，不应触发 receive 超时",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "receive_ms": 500,
+          "total_ms": 10000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "slow_body",
+            "size": 3000,
+            "chunk_bytes": 100000,
+            "chunk_ms": 2000
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  }
+]

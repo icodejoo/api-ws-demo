@@ -1,0 +1,1262 @@
+[
+  {
+    "id": "breaker.open-after-threshold",
+    "title": "连续失败后熔断，快速失败不打服务端",
+    "why": "熔断打开后请求必须不触网",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "f1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "f2": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "f3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r4": {
+            "ok": false,
+            "error": "breaker_open"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "f1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "f2": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "f3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r4": {
+            "ok": false,
+            "error": "breaker_open"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "breaker.half-open-recovers",
+    "title": "open_ms 后半开探测成功则恢复",
+    "why": "熔断不能永久：冷却后放探测请求，成功即关闭",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "blocked",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "wait": 1300
+          },
+          {
+            "request": {
+              "id": "probe",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "after",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "blocked": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "probe": {
+            "ok": true
+          },
+          "after": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 5
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.half-open-fail-reopens",
+    "title": "半开探测失败重新熔断",
+    "why": "探测失败要立刻再开，而不是放行流量",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "wait": 1300
+          },
+          {
+            "request": {
+              "id": "probe",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "blocked",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "wait": 1300
+          },
+          {
+            "request": {
+              "id": "ok1",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "probe": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "blocked": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "ok1": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 5
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.success-resets-count",
+    "title": "成功会重置连续失败计数",
+    "why": "只统计连续失败，交替成败不应熔断",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s1",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f4",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "s2",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "f1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "s1": {
+            "ok": true
+          },
+          "f4": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "s2": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 6
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.bucket-isolation",
+    "title": "熔断按接口隔离",
+    "why": "A 接口熔断不影响 B 接口",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/public/other"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 3
+            },
+            "/t/public/other": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.per-request-skip",
+    "title": "请求级 breaker:false 跳过熔断",
+    "why": "关键请求可以绕过熔断",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "blocked",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "bypass",
+              "path": "/t/public/bk",
+              "options": {
+                "breaker": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "blocked": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "bypass": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.timeouts-count",
+    "title": "超时计入失败",
+    "why": "超时/网络错误也算连续失败",
+    "requires": [
+      "breaker",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "t1",
+              "path": "/t/public/bk",
+              "query": {
+                "fault": "hang"
+              },
+              "options": {
+                "timeout_ms": 300
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "t2",
+              "path": "/t/public/bk",
+              "query": {
+                "fault": "hang"
+              },
+              "options": {
+                "timeout_ms": 300
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "t3",
+              "path": "/t/public/bk",
+              "query": {
+                "fault": "hang"
+              },
+              "options": {
+                "timeout_ms": 300
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "t1": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "t2": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "t3": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r4": {
+            "ok": false,
+            "error": "breaker_open"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.4xx-not-counted",
+    "title": "普通 4xx 不触发熔断",
+    "why": "客户端错误不是服务故障",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "c0",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 404
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 404
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 404
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 404
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c4",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 404
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "ok1",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "c0": {
+            "ok": false,
+            "error": "status:404"
+          },
+          "c4": {
+            "ok": false,
+            "error": "status:404"
+          },
+          "ok1": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 6
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.network-errors-trip",
+    "title": "网络错误累计后熔断",
+    "why": "断网下三次 network 之后第四次直接 breaker_open",
+    "requires": [
+      "breaker"
+    ],
+    "networks": [
+      "offline",
+      "dns"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "n1",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "n2",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "n3",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "offline": {
+        "results": {
+          "n1": {
+            "ok": false,
+            "error": "network"
+          },
+          "n2": {
+            "ok": false,
+            "error": "network"
+          },
+          "n3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "breaker_open"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "n1": {
+            "ok": false,
+            "error": "network"
+          },
+          "n2": {
+            "ok": false,
+            "error": "network"
+          },
+          "n3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "breaker_open"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.retry-halts-on-trip",
+    "title": "重试在熔断后立刻停止",
+    "why": "重试循环中途熔断，不能继续打服务端",
+    "requires": [
+      "breaker",
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "retry": {
+          "max": 5,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/public/bk",
+          "query": {
+            "status": 500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": [
+              "breaker_open",
+              "status:500"
+            ]
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.parallel-trip",
+    "title": "并发失败触发熔断",
+    "why": "并发失败累计后后续请求被拒",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "f0",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f4",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f5",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          }
+        ]
+      },
+      {
+        "request": {
+          "id": "r7",
+          "path": "/t/public/bk"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r7": {
+            "ok": false,
+            "error": "breaker_open"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 6
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "breaker.open-fast-fail",
+    "title": "熔断状态下失败几乎零耗时",
+    "why": "熔断拒绝不依赖网络：弱网下也不应等待",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "c",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "b": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "c": {
+            "ok": false,
+            "error": "breaker_open"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "b": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "c": {
+            "ok": false,
+            "error": "breaker_open"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  }
+]

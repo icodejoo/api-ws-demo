@@ -21,8 +21,11 @@ async fn stomp_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> i
         .on_upgrade(move |socket| handle_stomp_socket(socket, state.broker.clone(), jwt_secret))
 }
 
+/// 用共享状态构建路由；TEST_MODE=1 跳过限流与 CPU 熔断。
+/// 参数为应用状态，返回可交给 `axum::serve(listener, build_router(state))` 的路由。
 pub fn build_router(state: AppState) -> Router {
-    Router::new()
+    let app = Router::new()
+        .merge(crate::testkit::router())
         .route("/", get(rest::index))
         .route("/health", get(rest::health))
         .route("/api/info", get(rest::info))
@@ -32,9 +35,18 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/compressed", get(compressed_http::json_gzip))
         .route("/api/compressed-zstd", get(compressed_http::json_zstd))
         .route("/api/compressed-mp", get(compressed_http::msgpack_plain))
-        .route("/api/compressed-mp-gzip", get(compressed_http::msgpack_gzip))
-        .route("/api/compressed-mp-zstd", get(compressed_http::msgpack_zstd))
-        .route("/api/compressed-octet", get(compressed_http::json_gzip_octet))
+        .route(
+            "/api/compressed-mp-gzip",
+            get(compressed_http::msgpack_gzip),
+        )
+        .route(
+            "/api/compressed-mp-zstd",
+            get(compressed_http::msgpack_zstd),
+        )
+        .route(
+            "/api/compressed-octet",
+            get(compressed_http::json_gzip_octet),
+        )
         .route(
             "/api/compressed-zstd-octet",
             get(compressed_http::json_zstd_octet),
@@ -58,18 +70,21 @@ pub fn build_router(state: AppState) -> Router {
         .route("/auth/logout", post(auth::handlers::logout))
         .route("/ws", get(ws::ws_handler))
         .route("/ws/secure", get(ws::ws_secure_handler))
-        .route("/stomp", get(stomp_handler))
-        // Layers apply outermost-first in REVERSE declaration order: the last
-        // .layer() call here is the outermost/first-run gate. CORS is outermost
-        // so every response — including 429s and 503s from the layers below —
-        // still carries CORS headers (otherwise a browser can't even read the
-        // rejection body). CPU breaker runs before the rate limiter (cheapest
-        // possible rejection under load).
-        .layer(CorsLayer::permissive())
-        .layer(ratelimit::build_layer())
-        .layer(axum::middleware::from_fn_with_state(
-            state.clone(),
-            cpu::cpu_breaker_mw,
-        ))
-        .with_state(state)
+        .route("/stomp", get(stomp_handler));
+    // Layers apply outermost-first in REVERSE declaration order: the last
+    // .layer() call here is the outermost/first-run gate. CORS is outermost
+    // so every response — including 429s and 503s from the layers below —
+    // still carries CORS headers (otherwise a browser can't even read the
+    // rejection body). CPU breaker runs before the rate limiter (cheapest
+    // possible rejection under load).
+    let app = if std::env::var("TEST_MODE").as_deref() == Ok("1") {
+        app
+    } else {
+        app.layer(ratelimit::build_layer())
+            .layer(axum::middleware::from_fn_with_state(
+                state.clone(),
+                cpu::cpu_breaker_mw,
+            ))
+    };
+    app.layer(CorsLayer::permissive()).with_state(state)
 }

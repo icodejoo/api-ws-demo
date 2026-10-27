@@ -1,0 +1,952 @@
+[
+  {
+    "id": "faults.hang-timeout",
+    "title": "hang 归为 timeout 并掐断连接",
+    "why": "挂起请求必须靠超时发现，且服务端看到 aborted",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "hang"
+          },
+          "options": {
+            "timeout_ms": 800
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "aborted": {
+            "min": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.close-network",
+    "title": "close 归为 network",
+    "why": "服务端直接关连接是网络错误",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "close"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.half-body",
+    "title": "half_body 归为 network 或 parse",
+    "why": "半截响应不能当成成功",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "half_body"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": [
+              "network",
+              "parse"
+            ]
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": [
+              "network",
+              "parse"
+            ]
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.bad-json",
+    "title": "bad_json 归为 parse",
+    "why": "非法 JSON 必须报解析错误而不是吞掉",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "bad_json"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "parse"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "parse"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.empty-body",
+    "title": "空 body 的 200",
+    "why": "200 + 空 body 不能让客户端崩溃，按成功空数据处理",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "empty"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.html-gateway-page",
+    "title": "网关 HTML 拦截页",
+    "why": "200 的 HTML 页不能当成功数据，也不能崩溃",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "html"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "parse"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "parse"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.html-502",
+    "title": "502 的 HTML 页归为 status:502",
+    "why": "HTTP 状态优先，不尝试把 HTML 解析成 JSON",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "styles": [
+      "http"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 502,
+            "content_type": "html"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:502"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:502"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.slow-body-succeeds",
+    "title": "slow_body 慢但成功",
+    "why": "慢吐 body 在不超时时应完整收下",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "slow_body",
+            "size": 3000,
+            "chunk_bytes": 1024,
+            "chunk_ms": 100
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.large-size",
+    "title": "大响应",
+    "why": "500KB 响应完整接收",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "size": 500000
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "faults.no-envelope",
+    "title": "裸 JSON 响应",
+    "why": "无信封响应原样透传",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "no_envelope"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.close-parallel",
+    "title": "并发 close 全部落定",
+    "why": "一批连接被关闭，每个请求都要落定且无残留",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "fault": "close",
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fault": "close",
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fault": "close",
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fault": "close",
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "fault": "close",
+                "key": "k4"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "faults.hang-parallel-timeouts",
+    "title": "并发 hang 同时超时",
+    "why": "超时是并行计时，不是串行叠加",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "fault": "hang",
+                "key": "k0"
+              },
+              "options": {
+                "timeout_ms": 600
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fault": "hang",
+                "key": "k1"
+              },
+              "options": {
+                "timeout_ms": 600
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fault": "hang",
+                "key": "k2"
+              },
+              "options": {
+                "timeout_ms": 600
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fault": "hang",
+                "key": "k3"
+              },
+              "options": {
+                "timeout_ms": 600
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r2": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r3": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "duration_ms": {
+          "max": 3000
+        },
+        "server": {
+          "aborted": {
+            "min": 4
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "faults.recovery-after-bad",
+    "title": "坏响应之后客户端仍正常",
+    "why": "一次 bad_json/close 之后下一个请求必须成功",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "fault": "bad_json",
+                "key": "a"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "fault": "close",
+                "key": "b"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c",
+              "path": "/t/echo",
+              "query": {
+                "key": "c"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "parse"
+          },
+          "b": {
+            "ok": false,
+            "error": "network"
+          },
+          "c": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "parse"
+          },
+          "b": {
+            "ok": false,
+            "error": "network"
+          },
+          "c": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "faults.post-close-no-double-send",
+    "title": "POST 遇 close 不重复发送",
+    "why": "默认配置下非幂等请求不应被自动重发",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "close"
+          },
+          "method": "POST",
+          "body": {
+            "a": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "faults.status-with-business",
+    "title": "非 2xx 且带业务码",
+    "why": "HTTP 状态决定分类，业务码不篡改",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 503,
+            "code": 9
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:503"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:503"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:9"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak@business": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:9"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    }
+  }
+]

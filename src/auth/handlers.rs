@@ -85,9 +85,7 @@ pub async fn register(
     );
     drop(users);
 
-    Ok(Json(ApiResponse::ok(
-        json!({ "username": creds.username }),
-    )))
+    Ok(Json(ApiResponse::ok(json!({ "username": creds.username }))))
 }
 
 pub async fn login(
@@ -152,7 +150,5 @@ pub async fn logout(
 }
 
 pub async fn me(auth: AuthUser) -> ApiResult<serde_json::Value> {
-    Ok(Json(ApiResponse::ok(
-        json!({ "username": auth.username }),
-    )))
+    Ok(Json(ApiResponse::ok(json!({ "username": auth.username }))))
 }

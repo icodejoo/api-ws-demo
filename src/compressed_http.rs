@@ -11,10 +11,7 @@ fn asset_response(asset: StaticAsset) -> impl IntoResponse {
         HeaderValue::from_static(asset.content_type),
     );
     if let Some(encoding) = asset.content_encoding {
-        headers.insert(
-            header::CONTENT_ENCODING,
-            HeaderValue::from_static(encoding),
-        );
+        headers.insert(header::CONTENT_ENCODING, HeaderValue::from_static(encoding));
     }
     (headers, Bytes::from_static(asset.bytes))
 }

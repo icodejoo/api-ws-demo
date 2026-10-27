@@ -1,0 +1,1613 @@
+[
+  {
+    "id": "loading.single-pair",
+    "title": "单个请求一对 show/hide",
+    "why": "基础契约",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": [
+            true,
+            false
+          ]
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": [
+            true,
+            false
+          ]
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": [
+            true,
+            false
+          ]
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "loading.concurrent-single-pair",
+    "title": "并发多个请求只有一对",
+    "why": "计数式 loading：0→1 显示，1→0 隐藏",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300,
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300,
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300,
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300,
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300,
+                "key": "k4"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": [
+            true,
+            false
+          ]
+        }
+      },
+      "dns": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": [
+            true,
+            false
+          ]
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r2": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r3": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r4": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": [
+            true,
+            false
+          ]
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "loading.big-parallel-20",
+    "title": "20 并发依旧一对",
+    "why": "规模放大不应抖动",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k4"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k5"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r6",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k6"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r7",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k7"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r8",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k8"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r9",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k9"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r10",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k10"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r11",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k11"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r12",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k12"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r13",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k13"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r14",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k14"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r15",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k15"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r16",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k16"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r17",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k17"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r18",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k18"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r19",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "k19"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          },
+          "r6": {
+            "ok": true
+          },
+          "r7": {
+            "ok": true
+          },
+          "r8": {
+            "ok": true
+          },
+          "r9": {
+            "ok": true
+          },
+          "r10": {
+            "ok": true
+          },
+          "r11": {
+            "ok": true
+          },
+          "r12": {
+            "ok": true
+          },
+          "r13": {
+            "ok": true
+          },
+          "r14": {
+            "ok": true
+          },
+          "r15": {
+            "ok": true
+          },
+          "r16": {
+            "ok": true
+          },
+          "r17": {
+            "ok": true
+          },
+          "r18": {
+            "ok": true
+          },
+          "r19": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "loading.sequential-pairs",
+    "title": "串行两个请求两对",
+    "why": "每个独立请求各自一对（无 delayClose 时）",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo"
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false,
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "loading.failure-closes",
+    "title": "失败也要关闭 loading",
+    "why": "失败路径漏掉 hide 会让界面永久转圈",
+    "requires": [
+      "loading",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "loading.timeout-closes",
+    "title": "超时关闭 loading",
+    "why": "超时路径同样要 hide",
+    "requires": [
+      "loading",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "hang"
+          },
+          "options": {
+            "timeout_ms": 500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "loading.cancel-closes",
+    "title": "取消关闭 loading",
+    "why": "取消路径同样要 hide",
+    "requires": [
+      "loading",
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {},
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 5000
+          },
+          "cancel_after_ms": 1000
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "loading.retry-no-flicker",
+    "title": "重试期间 loading 不闪",
+    "why": "一次逻辑请求只一对，重试过程中保持显示",
+    "requires": [
+      "loading",
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {},
+        "retry": {
+          "max": 3,
+          "delay_ms": 200
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 2
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "loading.retry-exhausted-closes",
+    "title": "重试耗尽后关闭",
+    "why": "最终失败才 hide，且仅一次",
+    "requires": [
+      "loading",
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {},
+        "retry": {
+          "max": 2,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 10
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "loading.flap-recovers-single-pair",
+    "title": "断网恢复期间 loading 保持一对",
+    "why": "重试跨越断网窗口，loading 不能闪",
+    "requires": [
+      "loading",
+      "retry"
+    ],
+    "networks": [
+      "flap",
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {},
+        "retry": {
+          "max": 6,
+          "delay_ms": 500
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "flap": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "loading.delay-fast-never-shows",
+    "title": "delay 内完成不显示",
+    "why": "快请求不闪烁：延迟 500ms 才显示，之前完成则一次也不显示",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {
+          "delay_ms": 500
+        }
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": []
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": []
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": [
+            true,
+            false
+          ]
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "loading.delay-slow-shows",
+    "title": "超过 delay 才显示",
+    "why": "慢请求在 delay 之后显示并最终关闭",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {
+          "delay_ms": 300
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 1500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "loading.delay-close-merges",
+    "title": "delayClose 合并相邻请求",
+    "why": "间隔小于 delayClose 的连续请求不应闪一下",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {
+          "delay_close_ms": 400
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo"
+            }
+          },
+          {
+            "wait": 100
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "loading.per-request-off",
+    "title": "请求级 loading:false 不触发",
+    "why": "静默请求不能出现全局转圈",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal",
+      "offline"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "loading": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "loading": []
+        }
+      }
+    }
+  },
+  {
+    "id": "loading.mixed-silent-and-normal",
+    "title": "静默与普通请求混合",
+    "why": "只有普通请求计入 loading",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "q",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 600,
+                "key": "q"
+              },
+              "options": {
+                "loading": false
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "n",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 200,
+                "key": "n"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "q": {
+            "ok": true
+          },
+          "n": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "loading.parallel-partial-fail",
+    "title": "并发中部分失败仍一对",
+    "why": "失败不会提前关闭 loading",
+    "requires": [
+      "loading",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "key": "a"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 600,
+                "key": "b"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "loading.network-switch-pairs",
+    "title": "断网又恢复各自成对",
+    "why": "离线失败一对、恢复成功再一对",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "network": "offline"
+      },
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      },
+      {
+        "network": "normal"
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false,
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  }
+]

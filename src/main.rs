@@ -1,22 +1,11 @@
-mod auth;
-mod compressed_assets;
-mod compressed_http;
-mod cpu;
-mod mock;
-mod ratelimit;
-mod response;
-mod rest;
-mod routes;
-mod state;
-mod stats;
-mod stomp;
-mod ws;
+use api_ws_demo::{cpu, routes, state};
 
 use std::net::SocketAddr;
 
 use state::AppState;
 
 #[tokio::main]
+/// 从环境读取端口，启动主服务与 CPU 采样。
 async fn main() {
     let cpu_usage = cpu::spawn_sampler();
     let state = AppState::new(cpu_usage);
@@ -41,6 +30,7 @@ async fn main() {
     .expect("server error");
 }
 
+/// 收到 Ctrl+C 后触发优雅停止。
 async fn shutdown_signal() {
     let _ = tokio::signal::ctrl_c().await;
 }

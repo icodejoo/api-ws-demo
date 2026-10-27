@@ -1,0 +1,2594 @@
+[
+  {
+    "id": "combo.cache-share-retry",
+    "title": "cache + share + retry",
+    "why": "5 个并发同 key：只发一轮（含 2 次重试），成功后写缓存，后续命中",
+    "requires": [
+      "cache",
+      "share",
+      "retry",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "share": {
+          "policy": "start"
+        },
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 2,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 2,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 2,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 2,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 2,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "request": {
+          "id": "after",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 2,
+            "delay_ms": 200
+          },
+          "options": {
+            "key": true,
+            "cache": true,
+            "share": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "hit": 3
+          },
+          "r1": {
+            "ok": true,
+            "hit": 3
+          },
+          "r2": {
+            "ok": true,
+            "hit": 3
+          },
+          "r3": {
+            "ok": true,
+            "hit": 3
+          },
+          "r4": {
+            "ok": true,
+            "hit": 3
+          },
+          "after": {
+            "ok": true,
+            "hit": 3,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "hit": 3
+          },
+          "r1": {
+            "ok": true,
+            "hit": 3
+          },
+          "r2": {
+            "ok": true,
+            "hit": 3
+          },
+          "r3": {
+            "ok": true,
+            "hit": 3
+          },
+          "r4": {
+            "ok": true,
+            "hit": 3
+          },
+          "after": {
+            "ok": true,
+            "hit": 3,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "after": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "combo.share-failure-not-cached",
+    "title": "share 失败不入缓存",
+    "why": "并发失败后同 key 的新请求必须重新发",
+    "requires": [
+      "cache",
+      "share",
+      "retry",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "share": {
+          "policy": "start"
+        },
+        "retry": {
+          "max": 1,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 3,
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 3,
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 3,
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 3,
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "request": {
+          "id": "later",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 3
+          },
+          "options": {
+            "key": true,
+            "cache": true,
+            "share": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "later": {
+            "ok": true,
+            "hit": 4,
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.auth-retry-loading-notify-recovers",
+    "title": "auth + retry + loading + notify：一次逻辑请求",
+    "why": "过期 token + 首发 500：刷新一次、重试成功；loading 一对，notify 0，refresh 1",
+    "requires": [
+      "auth",
+      "retry",
+      "loading",
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "loading": {},
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1"
+        }
+      },
+      {
+        "expire_local": {}
+      },
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/private/me",
+          "query": {
+            "fail_times": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/auth/refresh": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "expired": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/auth/refresh": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "expired": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "expired": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "combo.auth-retry-loading-notify-fails",
+    "title": "auth + retry + loading + notify：最终失败",
+    "why": "刷新成功但持续 500：notify 至多一次，loading 一对，refresh 一次",
+    "requires": [
+      "auth",
+      "retry",
+      "loading",
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "retry": {
+          "max": 2,
+          "delay_ms": 100
+        },
+        "loading": {},
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1"
+        }
+      },
+      {
+        "expire_local": {}
+      },
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/private/me",
+          "query": {
+            "fail_times": 99
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/auth/refresh": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 1
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "expired": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.auth-concurrent-loading-notify",
+    "title": "auth + loading + notify 并发刷新",
+    "why": "6 个并发 401：loading 一对、notify 0、refresh 1",
+    "requires": [
+      "auth",
+      "loading",
+      "notify"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "loading": {},
+        "notify": {}
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1"
+        }
+      },
+      {
+        "expire_local": {}
+      },
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k4"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k5"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/auth/refresh": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/auth/refresh": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "combo.auth-expired-loading-notify",
+    "title": "auth 会话过期时的 loading/notify",
+    "why": "刷新失败：全部 expired，loading 一对，notify 至多 3",
+    "requires": [
+      "auth",
+      "loading",
+      "notify"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "loading": {},
+        "notify": {}
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1",
+          "access_ttl_ms": 400,
+          "refresh_ttl_ms": 400
+        }
+      },
+      {
+        "wait": 800
+      },
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/private/me",
+              "query": {
+                "key": "k2"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "expired"
+          },
+          "r1": {
+            "ok": false,
+            "error": "expired"
+          },
+          "r2": {
+            "ok": false,
+            "error": "expired"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/auth/refresh": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "min": 0,
+            "max": 3
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "expired": {
+            "eq": 1
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.auth-cache-refresh",
+    "title": "auth + cache：刷新后缓存仍可用",
+    "why": "过期刷新重放成功后写缓存，再请求命中",
+    "requires": [
+      "auth",
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1"
+        }
+      },
+      {
+        "expire_local": {}
+      },
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/private/me",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/private/me",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/auth/refresh": {
+              "eq": 1
+            },
+            "/t/private/me": {
+              "min": 1,
+              "max": 2
+            }
+          }
+        },
+        "client": {
+          "refresh": {
+            "eq": 1
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.cancel-share-follower",
+    "title": "cancel + share：跟随者取消",
+    "why": "一个 caller 取消不影响其他人，HTTP 不被掐",
+    "requires": [
+      "cancel",
+      "share",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        },
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 2500
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 2500
+              },
+              "options": {
+                "key": true,
+                "share": true
+              },
+              "cancel_after_ms": 800
+            }
+          },
+          {
+            "request": {
+              "id": "c",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 2500
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "c": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          },
+          "aborted": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.cancel-all-share",
+    "title": "cancel_all + share",
+    "why": "全部取消后连接被掐断，无残留",
+    "requires": [
+      "cancel",
+      "share",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        },
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "fire": {
+          "request": {
+            "id": "r0",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000
+            },
+            "options": {
+              "key": true,
+              "share": true
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r1",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000
+            },
+            "options": {
+              "key": true,
+              "share": true
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r2",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000
+            },
+            "options": {
+              "key": true,
+              "share": true
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "r3",
+            "path": "/t/echo",
+            "query": {
+              "delay_ms": 5000
+            },
+            "options": {
+              "key": true,
+              "share": true
+            }
+          }
+        }
+      },
+      {
+        "cancel_all": {
+          "after_ms": 1200
+        }
+      },
+      {
+        "wait": 600
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r2": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r3": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "aborted": {
+            "min": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.retry-cancel-loading-notify",
+    "title": "retry + cancel + loading + notify",
+    "why": "退避中取消：canceled，loading 一对，notify 0，仅首发打到服务端",
+    "requires": [
+      "retry",
+      "cancel",
+      "loading",
+      "notify",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 2000
+        },
+        "cancel": {},
+        "loading": {},
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 5
+          },
+          "cancel_after_ms": 600
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.share-retry-loading-notify",
+    "title": "share + retry + loading + notify",
+    "why": "5 个同 key：一次失败、重试成功；loading 一对，notify 0",
+    "requires": [
+      "share",
+      "retry",
+      "loading",
+      "notify",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        },
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "loading": {},
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "hit": 2
+          },
+          "r1": {
+            "ok": true,
+            "hit": 2
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          },
+          "r3": {
+            "ok": true,
+            "hit": 2
+          },
+          "r4": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "hit": 2
+          },
+          "r1": {
+            "ok": true,
+            "hit": 2
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          },
+          "r3": {
+            "ok": true,
+            "hit": 2
+          },
+          "r4": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "combo.share-fail-notify",
+    "title": "share + notify：并发失败的提示",
+    "why": "4 个同 key 失败：每个 caller 都得到 status:500，loading 一对，notify 在 1~4 之间",
+    "requires": [
+      "share",
+      "retry",
+      "loading",
+      "notify",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        },
+        "loading": {},
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "status": 500,
+                "delay_ms": 200
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "min": 1,
+            "max": 4
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.loading-cache-hit-delay",
+    "title": "loading + cache：命中不闪 loading",
+    "why": "缓存命中即时返回，delay 内不显示：整个场景只有首个请求触发一对",
+    "requires": [
+      "loading",
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "loading": {
+          "delay_ms": 200
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 600
+          },
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 600
+          },
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.normalize-business-retry-notify-cache",
+    "title": "业务失败 + retry + notify + cache",
+    "why": "业务失败：不重试、不缓存、通知各一次",
+    "requires": [
+      "normalize",
+      "retry",
+      "notify",
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "notify": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "code": 5001
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "code": 5001
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:5001"
+          },
+          "r2": {
+            "ok": false,
+            "error": "business:5001"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "notify": {
+            "eq": 2
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.lossy-everything",
+    "title": "丢包下全插件组合",
+    "why": "retry + share + loading + cache：最终成功、loading 一对、无残留",
+    "requires": [
+      "retry",
+      "share",
+      "loading",
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "lossy",
+      "weak",
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "share": {
+          "policy": "start"
+        },
+        "retry": {
+          "max": 8,
+          "delay_ms": 100
+        },
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 100
+              },
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "lossy": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "combo.flap-share-cache-loading",
+    "title": "flap 下 share + cache + loading + retry",
+    "why": "断网窗口内的并发请求：重试恢复后全部成功，缓存可用",
+    "requires": [
+      "retry",
+      "share",
+      "cache",
+      "loading",
+      "key"
+    ],
+    "networks": [
+      "flap"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "share": {
+          "policy": "start"
+        },
+        "retry": {
+          "max": 6,
+          "delay_ms": 500
+        },
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "request": {
+          "id": "later",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "share": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "flap": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "later": {
+            "ok": true,
+            "from_cache": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false,
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "combo.offline-share-notify",
+    "title": "离线 + share + notify",
+    "why": "无网下合并请求都以 network 失败，通知不超过 5 次",
+    "requires": [
+      "share",
+      "notify",
+      "key"
+    ],
+    "networks": [
+      "offline",
+      "dns"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        },
+        "notify": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "offline": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "notify": {
+            "min": 1,
+            "max": 5
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "notify": {
+            "min": 1,
+            "max": 5
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "combo.full-stack-happy",
+    "title": "全家桶 happy path",
+    "why": "auth + key + cache + share + retry + loading + notify + normalize + cancel 一起工作",
+    "requires": [
+      "auth",
+      "key",
+      "cache",
+      "share",
+      "retry",
+      "loading",
+      "notify",
+      "normalize",
+      "cancel"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "key": {
+          "scope": "user"
+        },
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "share": {
+          "policy": "start"
+        },
+        "retry": {
+          "max": 2,
+          "delay_ms": 100
+        },
+        "loading": {},
+        "notify": {},
+        "normalize": {},
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1"
+        }
+      },
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/private/me",
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/private/me",
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/private/me",
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/private/me",
+              "options": {
+                "key": true,
+                "cache": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "request": {
+          "id": "again",
+          "path": "/t/private/me",
+          "options": {
+            "key": true,
+            "cache": true,
+            "share": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "pub",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"ok\":1}"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "again": {
+            "ok": true,
+            "from_cache": true
+          },
+          "pub": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "ok": 1
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/private/me": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "notify": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "r1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "r3": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "again": {
+            "ok": true,
+            "from_cache": true
+          },
+          "pub": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "ok": 1
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/private/me": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "notify": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  }
+]

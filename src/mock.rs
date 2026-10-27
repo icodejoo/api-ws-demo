@@ -64,7 +64,8 @@ async fn build_mock_response(
 
     let status_code = status.unwrap_or(200);
     let Ok(status) = axum::http::StatusCode::from_u16(status_code) else {
-        return AppError::bad_request(format!("invalid status code: {status_code}")).into_response();
+        return AppError::bad_request(format!("invalid status code: {status_code}"))
+            .into_response();
     };
 
     let body = ApiResponse {

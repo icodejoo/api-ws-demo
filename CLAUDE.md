@@ -26,6 +26,10 @@ step on Render's side). Live at `https://api-ws-demo-latest.onrender.com`.
 
 ## Architecture
 
+- testkit 改动/排查先读 testkit/AGENTS.md（资源地图 + 接入/扩展/排查三分支）
+- `src/testkit/` — run-isolated `/t/*` acceptance endpoints, bounded controls/faults, millisecond test sessions, ordered barriers and cancellation-aware statistics.
+- `src/bin/netem.rs` + `src/netem/` — standalone local TCP network simulator with HTTP control, live profiles and schedules; excluded from the Docker image.
+
 - `src/main.rs` — binds `0.0.0.0:$PORT` (Render injects `PORT`), spawns the CPU sampler, builds
   the router.
 - `src/routes.rs` — all route registration + layer ordering (CORS outermost, then rate limiter,
@@ -54,10 +58,14 @@ step on Render's side). Live at `https://api-ws-demo-latest.onrender.com`.
 
 ## Testing
 
+`cargo test` also runs `tests/testkit.rs` and `tests/netem.rs`: real HTTP/TCP servers on random
+ports exercise auth rotation/reuse, ordered barriers, broken responses, cancellation and network
+mode changes. Their HTTP/1.1 client uses existing Tokio rather than a new client dependency.
+
 `cargo test` covers pure-logic pieces (STOMP frame round-trips, heartbeat negotiation, CPU delta
 math, JWT sign/verify, usage-percent rounding) — this project follows a pattern of factoring
 timing/protocol math into small standalone functions specifically so they're unit-testable without
-a real socket/filesystem. There's no integration test suite; end-to-end behavior (auth flow,
+a real socket/filesystem. The legacy endpoints' end-to-end behavior (auth flow,
 STOMP heartbeat/ACK/TTL/auto-push, rate limiting, CPU breaker) is verified manually per-change with
 throwaway Node `.mjs` scripts against a locally-running `cargo run` instance, then deleted — see
 recent commit messages for the kinds of checks that matter before considering a STOMP/auth change

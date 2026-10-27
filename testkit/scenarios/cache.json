@@ -1,0 +1,2066 @@
+[
+  {
+    "id": "cache.hit-no-server",
+    "title": "命中缓存不到服务器",
+    "why": "缓存命中必须在客户端短路，服务端只看到一次",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r2": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "cache.ttl-expiry",
+    "title": "TTL 过期后重新请求",
+    "why": "过期缓存不能继续返回旧数据",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 800
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "wait": 1200
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2,
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2,
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "cache.http-error-not-cached",
+    "title": "HTTP 错误不入缓存",
+    "why": "失败响应被缓存会让用户一直看到错误",
+    "requires": [
+      "cache",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "status": 500
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "status": 500
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.business-failure-not-cached",
+    "title": "业务失败不入缓存",
+    "why": "HTTP 200 但业务码非 0 同样不能缓存",
+    "requires": [
+      "cache",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "code": 5001
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "code": 5001
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:5001"
+          },
+          "r2": {
+            "ok": false,
+            "error": "business:5001"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.failure-then-success-cached",
+    "title": "先失败后成功，成功后才缓存",
+    "why": "失败不占位，成功后第三次命中缓存",
+    "requires": [
+      "cache",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          },
+          "r3": {
+            "ok": true,
+            "hit": 2,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.diff-query-no-mixup",
+    "title": "不同查询不串缓存",
+    "why": "key 必须包含查询参数",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "a1",
+              "path": "/t/echo",
+              "query": {
+                "q": "a"
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b1",
+              "path": "/t/echo",
+              "query": {
+                "q": "b"
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "a2",
+              "path": "/t/echo",
+              "query": {
+                "q": "a"
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b2",
+              "path": "/t/echo",
+              "query": {
+                "q": "b"
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "a"
+                }
+              }
+            }
+          },
+          "b1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "b"
+                }
+              }
+            }
+          },
+          "a2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "a"
+                }
+              }
+            },
+            "from_cache": true
+          },
+          "b2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "b"
+                }
+              }
+            },
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "a1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "a"
+                }
+              }
+            }
+          },
+          "b1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "b"
+                }
+              }
+            }
+          },
+          "a2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "a"
+                }
+              }
+            },
+            "from_cache": true
+          },
+          "b2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "b"
+                }
+              }
+            },
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "cache.diff-body-no-mixup",
+    "title": "不同请求体不串 key",
+    "why": "key:deep 把 body 纳入哈希，否则不同 body 会互相命中",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000,
+          "methods": [
+            "GET",
+            "PUT"
+          ]
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "method": "PUT",
+              "body": {
+                "v": 1
+              },
+              "options": {
+                "key": "deep",
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "method": "PUT",
+              "body": {
+                "v": 2
+              },
+              "options": {
+                "key": "deep",
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true,
+            "data": {
+              "request": {
+                "body": {
+                  "json": {
+                    "v": 1
+                  }
+                }
+              }
+            }
+          },
+          "b": {
+            "ok": true,
+            "data": {
+              "request": {
+                "body": {
+                  "json": {
+                    "v": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.post-not-cached-by-default",
+    "title": "POST 默认不缓存",
+    "why": "非幂等写操作被缓存会吞掉第二次提交",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "method": "POST",
+              "body": {
+                "a": 1
+              },
+              "options": {
+                "key": "deep",
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "method": "POST",
+              "body": {
+                "a": 1
+              },
+              "options": {
+                "key": "deep",
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2,
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.clear",
+    "title": "clear_cache 后重新请求",
+    "why": "手动清缓存必须生效",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "clear_cache": {}
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.per-request-disable",
+    "title": "请求级 cache:false 不读不写",
+    "why": "单次请求能绕过缓存",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "cache": false
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "cache": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.per-request-ttl",
+    "title": "请求级 ttl 覆盖插件默认",
+    "why": "短 TTL 的请求过期后应重新请求",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 60000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": {
+              "ttl_ms": 300
+            }
+          }
+        }
+      },
+      {
+        "wait": 600
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": {
+              "ttl_ms": 300
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.custom-key-shared",
+    "title": "自定义缓存 key 让不同查询共享",
+    "why": "显式 key 的约定：同 key 即同缓存",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "v": 1
+              },
+              "options": {
+                "key": true,
+                "cache": {
+                  "ttl_ms": 5000,
+                  "key": "fixed"
+                }
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "v": 2
+              },
+              "options": {
+                "key": true,
+                "cache": {
+                  "ttl_ms": 5000,
+                  "key": "fixed"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.user-scope-no-leak",
+    "title": "切换用户不串缓存",
+    "why": "缓存 key 并入用户标识：u2 不能读到 u1 的缓存",
+    "requires": [
+      "cache",
+      "key",
+      "auth"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "key": {
+          "scope": "user"
+        },
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1"
+        }
+      },
+      {
+        "request": {
+          "id": "a1",
+          "path": "/t/private/me",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "a2",
+          "path": "/t/private/me",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "logout": {}
+      },
+      {
+        "login": {
+          "user": "u2"
+        }
+      },
+      {
+        "request": {
+          "id": "b1",
+          "path": "/t/private/me",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "a2": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            },
+            "from_cache": true
+          },
+          "b1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u2"
+              }
+            },
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/private/me": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "a1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          },
+          "a2": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            },
+            "from_cache": true
+          },
+          "b1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u2"
+              }
+            },
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/private/me": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "cache.user-scope-same-user-hits",
+    "title": "同一用户仍能命中缓存",
+    "why": "scope 不能把缓存弄得永远不命中",
+    "requires": [
+      "cache",
+      "key",
+      "auth"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "key": {
+          "scope": "user"
+        },
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1"
+        }
+      },
+      {
+        "request": {
+          "id": "a1",
+          "path": "/t/private/me",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "a2",
+          "path": "/t/private/me",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a1": {
+            "ok": true,
+            "hit": 1
+          },
+          "a2": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/private/me": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.offline-serves-cache",
+    "title": "断网时命中缓存仍可用",
+    "why": "缓存在网络层之前短路，断网后读缓存要成功",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "network": "offline"
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.offline-miss-then-recover",
+    "title": "断网未命中失败，恢复后正常",
+    "why": "失败不能毒化缓存或留下占位",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "network": "offline"
+      },
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "network": "normal"
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "r3",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1
+          },
+          "r3": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.cancel-not-cached",
+    "title": "被取消的请求不入缓存",
+    "why": "取消后的残缺结果不能占住缓存位",
+    "requires": [
+      "cache",
+      "key",
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "delay_ms": 3000,
+            "v": 1
+          },
+          "options": {
+            "key": true,
+            "cache": {
+              "ttl_ms": 5000,
+              "key": "ck"
+            }
+          },
+          "cancel_after_ms": 1200
+        }
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "query": {
+            "v": 2
+          },
+          "options": {
+            "key": true,
+            "cache": {
+              "ttl_ms": 5000,
+              "key": "ck"
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "v": "2"
+                }
+              }
+            },
+            "from_cache": false
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.large-response",
+    "title": "大响应缓存",
+    "why": "100KB 响应缓存后第二次不走网络",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "size": 100000
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "size": 100000
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.max-entries-evicts",
+    "title": "容量上限淘汰最旧条目",
+    "why": "max=2 时第三个条目挤掉最旧的",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 60000,
+          "max": 2
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "a1",
+          "path": "/t/echo",
+          "query": {
+            "key": "a"
+          },
+          "options": {
+            "key": "ka",
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "b1",
+          "path": "/t/echo",
+          "query": {
+            "key": "b"
+          },
+          "options": {
+            "key": "kb",
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "c1",
+          "path": "/t/echo",
+          "query": {
+            "key": "c"
+          },
+          "options": {
+            "key": "kc",
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "a2",
+          "path": "/t/echo",
+          "query": {
+            "key": "a"
+          },
+          "options": {
+            "key": "ka",
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a1": {
+            "ok": true
+          },
+          "b1": {
+            "ok": true
+          },
+          "c1": {
+            "ok": true
+          },
+          "a2": {
+            "ok": true,
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_key": {
+            "a": {
+              "eq": 2
+            },
+            "b": {
+              "eq": 1
+            },
+            "c": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.timeout-not-cached",
+    "title": "超时不入缓存",
+    "why": "超时失败后同 key 的下一次请求必须真发",
+    "requires": [
+      "cache",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 0,
+            "delay_ms": 2000,
+            "v": 1
+          },
+          "options": {
+            "key": true,
+            "cache": {
+              "ttl_ms": 5000,
+              "key": "tk"
+            },
+            "timeout_ms": 400
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "query": {
+            "v": 2
+          },
+          "options": {
+            "key": true,
+            "cache": {
+              "ttl_ms": 5000,
+              "key": "tk"
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "v": "2"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.concurrent-no-share-all-miss",
+    "title": "无 share 时并发同 key 各自请求",
+    "why": "缓存不负责并发合并（对照 share）",
+    "requires": [
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "min": 1,
+              "max": 3
+            }
+          },
+          "peak_inflight": {
+            "min": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  }
+]

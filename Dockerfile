@@ -20,7 +20,7 @@ COPY assets ./assets
 # since cache mount contents never become part of the resulting image layer.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    cargo build --release --locked && \
+    cargo build --release --locked --bin api-ws-demo && \
     cp target/release/api-ws-demo /api-ws-demo-bin
 
 # ---- Runtime ----

@@ -1,0 +1,2757 @@
+[
+  {
+    "id": "retry.500-then-ok",
+    "title": "前两次 500 后恢复",
+    "why": "最基本的重试成功路径",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 2
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 3
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 3
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.exhausted",
+    "title": "重试耗尽后返回最后一次错误",
+    "why": "重试不能无限进行，错误类别要保留",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 10
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.4xx-no-retry",
+    "title": "4xx 不重试",
+    "why": "客户端错误重试没有意义，只会放大流量",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "status": 400,
+                "key": "a"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "status": 404,
+                "key": "b"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c",
+              "path": "/t/echo",
+              "query": {
+                "status": 422,
+                "key": "c"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "status:400"
+          },
+          "b": {
+            "ok": false,
+            "error": "status:404"
+          },
+          "c": {
+            "ok": false,
+            "error": "status:422"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "status:400"
+          },
+          "b": {
+            "ok": false,
+            "error": "status:404"
+          },
+          "c": {
+            "ok": false,
+            "error": "status:422"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.429-retried",
+    "title": "429 属于可重试状态",
+    "why": "限流后应退避重试",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "fail_status": 429
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.503-retry-after",
+    "title": "遵守 Retry-After",
+    "why": "Retry-After 优先于自身退避，防止过早重打服务端",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100,
+          "respect_retry_after": true
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "fail_status": 503,
+            "retry_after": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "duration_ms": {
+          "min": 900
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.post-default-no-retry",
+    "title": "POST 默认不重试",
+    "why": "非幂等请求默认重试会造成重复提交",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "offline"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1
+          },
+          "method": "POST",
+          "body": {
+            "a": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.post-opt-in-body-intact",
+    "title": "POST 显式允许重试且请求体一致",
+    "why": "重试发出的请求体必须与首发完全一致（末次成功回显验证）",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100,
+          "methods": [
+            "GET",
+            "POST"
+          ]
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 2
+          },
+          "method": "POST",
+          "body": {
+            "id": 7,
+            "tags": [
+              "a",
+              "b"
+            ],
+            "note": "你好"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 3,
+            "data": {
+              "request": {
+                "method": "POST",
+                "body": {
+                  "json": {
+                    "id": 7,
+                    "tags": [
+                      "a",
+                      "b"
+                    ],
+                    "note": "你好"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 3,
+            "data": {
+              "request": {
+                "method": "POST",
+                "body": {
+                  "json": {
+                    "id": 7,
+                    "tags": [
+                      "a",
+                      "b"
+                    ],
+                    "note": "你好"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "POST",
+                "body": {
+                  "json": {
+                    "id": 7,
+                    "tags": [
+                      "a",
+                      "b"
+                    ],
+                    "note": "你好"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.put-delete-retried",
+    "title": "PUT/DELETE 属于幂等方法，默认重试",
+    "why": "幂等方法默认可重试",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "p",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "key": "p"
+          },
+          "method": "PUT",
+          "body": {
+            "a": 1
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "d",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "key": "d"
+          },
+          "method": "DELETE"
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "p": {
+            "ok": true,
+            "hit": 2
+          },
+          "d": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.per-request-max",
+    "title": "请求级 max 覆盖插件默认",
+    "why": "请求能自己收紧重试次数",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 5
+          },
+          "options": {
+            "retry": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.per-request-disable",
+    "title": "请求级 retry:false 关闭重试",
+    "why": "最高优先级的否决",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 5
+          },
+          "options": {
+            "retry": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.business-code-not-retried",
+    "title": "HTTP 200 业务失败默认不重试",
+    "why": "业务错误重试没用，且可能重复副作用",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "code": 5001
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:5001"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.fail-every-all-recover",
+    "title": "周期故障每次都能被重试掩盖",
+    "why": "fail_every=2：偶数次命中失败，重试后全部成功",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_every": 2
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_every": 2
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_every": 2
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "fail_every": 2
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 3
+          },
+          "r3": {
+            "ok": true,
+            "hit": 5
+          },
+          "r4": {
+            "ok": true,
+            "hit": 7
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 7
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.fail-every-no-retry",
+    "title": "无重试时周期故障原样暴露",
+    "why": "对照组：max=0 时 r2/r4 失败",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 0,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_every": 2
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_every": 2
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_every": 2
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "fail_every": 2
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.disabled-by-default",
+    "title": "max=0 即不重试",
+    "why": "默认配置不应偷偷重试",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 0,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.delay-respected",
+    "title": "重试间隔被遵守",
+    "why": "防重试风暴：两次退避至少各 400ms",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 400
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 2
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "duration_ms": {
+          "min": 750
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.cancel-during-wait",
+    "title": "退避等待中取消立即生效",
+    "why": "取消必须打断等待，且不再发出后续请求",
+    "requires": [
+      "retry",
+      "cancel",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 2000
+        },
+        "cancel": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 5
+          },
+          "cancel_after_ms": 500
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "duration_ms": {
+          "max": 1500
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.cancel-all-during-wait",
+    "title": "退避等待中 cancel_all",
+    "why": "同上，走 cancel_all 路径",
+    "requires": [
+      "retry",
+      "cancel",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 2000
+        },
+        "cancel": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "fire": {
+          "request": {
+            "id": "r1",
+            "path": "/t/echo",
+            "query": {
+              "fail_times": 5
+            }
+          }
+        }
+      },
+      {
+        "cancel_all": {
+          "after_ms": 400
+        }
+      },
+      {
+        "wait": 800
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.custom-status-list",
+    "title": "自定义可重试状态",
+    "why": "statuses 只含 418：418 重试，500 不重试",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100,
+          "statuses": [
+            418
+          ]
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "t",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "fail_status": 418,
+            "key": "t"
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "f",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "fail_status": 500,
+            "key": "f"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "t": {
+            "ok": true,
+            "hit": 2
+          },
+          "f": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.parallel-independent",
+    "title": "并行请求各自独立重试",
+    "why": "一个请求的重试计数不能影响另一个",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 1,
+                "key": "k4"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "hit": 2
+          },
+          "r1": {
+            "ok": true,
+            "hit": 2
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          },
+          "r3": {
+            "ok": true,
+            "hit": 2
+          },
+          "r4": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 10
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "hit": 2
+          },
+          "r1": {
+            "ok": true,
+            "hit": 2
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          },
+          "r3": {
+            "ok": true,
+            "hit": 2
+          },
+          "r4": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 10
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.parse-error-not-retried",
+    "title": "解析错误不重试",
+    "why": "HTTP 200 的坏 JSON 重试没意义",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "bad_json"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "parse"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.network-error-retried",
+    "title": "close 型网络错误可重试",
+    "why": "连接被服务端直接关闭属于瞬时网络错误",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 2,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "close"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.post-network-no-retry",
+    "title": "POST 遇网络错误同样不重试",
+    "why": "非幂等方法即使网络错误也不默认重试",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "close"
+          },
+          "method": "POST",
+          "body": {
+            "a": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.hang-timeout-retried",
+    "title": "超时可重试且每次都真正发出",
+    "why": "hang 超时后重试，服务端能看到被掐断的多次请求",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 1,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fault": "hang"
+          },
+          "options": {
+            "timeout_ms": 500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          },
+          "aborted": {
+            "min": 1
+          }
+        },
+        "duration_ms": {
+          "min": 900
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.offline-exhausts",
+    "title": "断网时重试耗尽以 network 失败",
+    "why": "断网重试不能卡死，最终报 network，pending 归零",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "offline",
+      "dns"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 2,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.blackhole-timeout",
+    "title": "黑洞下重试耗尽以 timeout 失败",
+    "why": "黑洞靠超时发现，重试一次共两个超时窗口",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "blackhole"
+    ],
+    "client": {
+      "base_timeout_ms": 1000,
+      "plugins": {
+        "retry": {
+          "max": 1,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.flap-recovers",
+    "title": "断网恢复后重试成功",
+    "why": "flap 前 1.5s 断网，重试应在恢复后成功",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "flap",
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 6,
+          "delay_ms": 500
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "flap": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "min": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "min": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.flap-no-retry-then-ok",
+    "title": "无重试时断网期间失败、恢复后成功",
+    "why": "对照组：不重试则首个请求以 network 失败，恢复后的请求成功",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "flap"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 0,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "flap": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.lossy-converges",
+    "title": "丢包网络下重试最终收敛",
+    "why": "随机 RST/卡顿下只断言最终结果与资源释放",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "lossy",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 8,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "key": "k4"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "key": "k5"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "lossy": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.attempt-is-new-connection-friendly",
+    "title": "大量重试后无在途残留",
+    "why": "多轮失败重试之后服务端 inflight 为 0",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 3,
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 3,
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 3,
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_times": 3,
+                "key": "k3"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "hit": 4
+          },
+          "r1": {
+            "ok": true,
+            "hit": 4
+          },
+          "r2": {
+            "ok": true,
+            "hit": 4
+          },
+          "r3": {
+            "ok": true,
+            "hit": 4
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 16
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.respects-retry-after-over-delay",
+    "title": "Retry-After 优于较小的自身退避",
+    "why": "delay=50ms 但 Retry-After=1s，实际至少等 ~1s",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 50
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 2,
+            "fail_status": 429,
+            "retry_after": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 3
+          }
+        },
+        "duration_ms": {
+          "min": 1800
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.401-goes-refresh-first",
+    "title": "重试途中遇 401 走刷新而不是继续重试",
+    "why": "首发 500，退避期间 token 过期，重试收到 401 应刷新重放（axp 刚修）",
+    "requires": [
+      "retry",
+      "auth",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "retry": {
+          "max": 3,
+          "delay_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "u1",
+          "access_ttl_ms": 700
+        }
+      },
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/private/me",
+          "query": {
+            "fail_times": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "meta": {
+                "auth": "u1"
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/auth/refresh": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "expired": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.style-switch",
+    "title": "运行中切换风格后重试仍生效",
+    "why": "retry 按逻辑状态判定：http 风格与 business 风格各有一次失败后恢复",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "styles": [
+      "http"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "a",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "key": "a"
+          }
+        }
+      },
+      {
+        "style": "business"
+      },
+      {
+        "request": {
+          "id": "b",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "key": "b"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true,
+            "hit": 2
+          },
+          "b": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.fail-on-noncontiguous-retried",
+    "title": "fail_on 非连续失败被重试掩盖",
+    "why": "fail_on=1,3：r1 命中 1 失败、重试命中 2 成功；r2 命中 3 失败、重试命中 4 成功",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "lossy"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": "1,3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": "1,3"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 2
+          },
+          "r2": {
+            "ok": true,
+            "hit": 4
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 2
+          },
+          "r2": {
+            "ok": true,
+            "hit": 4
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "results": {
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.fail-on-noncontiguous-no-retry",
+    "title": "fail_on 非连续失败无重试原样暴露",
+    "why": "对照组：max=0 时第 1、3 次失败，第 2、4 次成功",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 0,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": "1,3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": "1,3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": "1,3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": "1,3"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          },
+          "r3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "r4": {
+            "ok": true,
+            "hit": 4
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 4
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.fail-on-union-fail-times",
+    "title": "fail_on 与 fail_times 取并集",
+    "why": "fail_times=1 且 fail_on=2：前两次都失败，需要两次重试才成功",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_times": 1,
+            "fail_on": "2"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 3
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 3
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.fail-on-gap-exhausts",
+    "title": "fail_on 连续失败超过重试次数",
+    "why": "fail_on=1,2,3 而 max=1：重试一次后仍失败",
+    "requires": [
+      "retry",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 1,
+          "delay_ms": 100
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "fail_on": "1,2,3"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  }
+]

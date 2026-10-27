@@ -1,0 +1,1389 @@
+[
+  {
+    "id": "network.offline-immediate",
+    "title": "断网立即以 network 失败",
+    "why": "拒绝连接要快速失败，loading 关闭，服务端 0 请求",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "offline",
+      "dns"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "duration_ms": {
+          "max": 5000
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "duration_ms": {
+          "max": 5000
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "network.offline-all-methods",
+    "title": "断网下各方法一致失败",
+    "why": "不同方法的失败分类一致",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "offline",
+      "dns"
+    ],
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "g",
+              "path": "/t/echo",
+              "method": "GET"
+            }
+          },
+          {
+            "request": {
+              "id": "po",
+              "path": "/t/echo",
+              "method": "POST",
+              "body": {
+                "a": 1
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "pu",
+              "path": "/t/echo",
+              "method": "PUT",
+              "body": {
+                "a": 1
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "d",
+              "path": "/t/echo",
+              "method": "DELETE"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "offline": {
+        "results": {
+          "g": {
+            "ok": false,
+            "error": "network"
+          },
+          "po": {
+            "ok": false,
+            "error": "network"
+          },
+          "pu": {
+            "ok": false,
+            "error": "network"
+          },
+          "d": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "g": {
+            "ok": false,
+            "error": "network"
+          },
+          "po": {
+            "ok": false,
+            "error": "network"
+          },
+          "pu": {
+            "ok": false,
+            "error": "network"
+          },
+          "d": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "network.blackhole-timeout",
+    "title": "黑洞靠超时发现",
+    "why": "连得上但不回包，只能靠超时；不应无限等待",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "blackhole"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "timeout_ms": 1500
+          }
+        }
+      }
+    ],
+    "expect": {
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "duration_ms": {
+          "min": 1300,
+          "max": 8000
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "base_timeout_ms": 4000
+    }
+  },
+  {
+    "id": "network.blackhole-parallel-timeouts",
+    "title": "黑洞下并发同时超时",
+    "why": "并发超时并行计时",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "blackhole"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "key": "k0"
+              },
+              "options": {
+                "timeout_ms": 1500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "key": "k1"
+              },
+              "options": {
+                "timeout_ms": 1500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "key": "k2"
+              },
+              "options": {
+                "timeout_ms": 1500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "key": "k3"
+              },
+              "options": {
+                "timeout_ms": 1500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "key": "k4"
+              },
+              "options": {
+                "timeout_ms": 1500
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "blackhole": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r2": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r3": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "r4": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "duration_ms": {
+          "max": 8000
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "base_timeout_ms": 4000
+    }
+  },
+  {
+    "id": "network.blackhole-cancel-all",
+    "title": "黑洞下 cancel_all 立即生效",
+    "why": "用户取消不必等超时",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "fire": {
+          "request": {
+            "id": "a",
+            "path": "/t/echo",
+            "query": {
+              "key": "a"
+            }
+          }
+        }
+      },
+      {
+        "fire": {
+          "request": {
+            "id": "b",
+            "path": "/t/echo",
+            "query": {
+              "key": "b"
+            }
+          }
+        }
+      },
+      {
+        "cancel_all": {
+          "after_ms": 600
+        }
+      },
+      {
+        "wait": 300
+      }
+    ],
+    "expect": {
+      "blackhole": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "b": {
+            "ok": false,
+            "error": "canceled"
+          }
+        },
+        "duration_ms": {
+          "max": 3000
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "network.flap-no-retry",
+    "title": "断网窗口内失败、恢复后成功",
+    "why": "前 1.5s 断网：首个请求 network，2s 后的请求成功",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "flap"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "flap": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "network.flap-retry-recovers",
+    "title": "flap + retry 恢复",
+    "why": "断网窗口内的请求靠重试在恢复后成功，loading 一对、无通知",
+    "requires": [
+      "retry",
+      "loading",
+      "notify"
+    ],
+    "networks": [
+      "flap",
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 6,
+          "delay_ms": 500
+        },
+        "loading": {},
+        "notify": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "flap": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "notify": {
+            "eq": 0
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "network.flap-parallel-retry",
+    "title": "flap 下并发请求全部恢复",
+    "why": "多个请求同时遇到断网窗口，重试后全部成功",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "flap"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 6,
+          "delay_ms": 500
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "key": "k4"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "key": "k5"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "flap": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "network.switch-offline-online",
+    "title": "运行中断网再恢复",
+    "why": "切换网络后客户端不残留坏状态",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "a",
+          "path": "/t/echo"
+        }
+      },
+      {
+        "network": "offline"
+      },
+      {
+        "request": {
+          "id": "b",
+          "path": "/t/echo",
+          "query": {
+            "key": "b"
+          }
+        }
+      },
+      {
+        "network": "normal"
+      },
+      {
+        "request": {
+          "id": "c",
+          "path": "/t/echo",
+          "query": {
+            "key": "c"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": false,
+            "error": "network"
+          },
+          "c": {
+            "ok": true
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false,
+            true,
+            false,
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "network.lossy-parallel-retry",
+    "title": "丢包网络下并发重试收敛",
+    "why": "RST/卡顿下最终全成功、资源释放",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "lossy",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 8,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "key": "k4"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "key": "k5"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r6",
+              "path": "/t/echo",
+              "query": {
+                "key": "k6"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r7",
+              "path": "/t/echo",
+              "query": {
+                "key": "k7"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "lossy": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          },
+          "r6": {
+            "ok": true
+          },
+          "r7": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          },
+          "r6": {
+            "ok": true
+          },
+          "r7": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "network.weak-parallel",
+    "title": "弱网并发成功",
+    "why": "弱网下并发请求最终都成功，无残留",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "key": "k0"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "key": "k1"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "key": "k2"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "key": "k3"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "query": {
+                "key": "k4"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r5",
+              "path": "/t/echo",
+              "query": {
+                "key": "k5"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r6",
+              "path": "/t/echo",
+              "query": {
+                "key": "k6"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r7",
+              "path": "/t/echo",
+              "query": {
+                "key": "k7"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r8",
+              "path": "/t/echo",
+              "query": {
+                "key": "k8"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r9",
+              "path": "/t/echo",
+              "query": {
+                "key": "k9"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          },
+          "r6": {
+            "ok": true
+          },
+          "r7": {
+            "ok": true
+          },
+          "r8": {
+            "ok": true
+          },
+          "r9": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r0": {
+            "ok": true
+          },
+          "r1": {
+            "ok": true
+          },
+          "r2": {
+            "ok": true
+          },
+          "r3": {
+            "ok": true
+          },
+          "r4": {
+            "ok": true
+          },
+          "r5": {
+            "ok": true
+          },
+          "r6": {
+            "ok": true
+          },
+          "r7": {
+            "ok": true
+          },
+          "r8": {
+            "ok": true
+          },
+          "r9": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "network.offline-share-loading",
+    "title": "断网下 share + loading",
+    "why": "合并的请求全部以 network 失败，loading 一对",
+    "requires": [
+      "share",
+      "key",
+      "loading"
+    ],
+    "networks": [
+      "offline",
+      "dns"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        },
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r4",
+              "path": "/t/echo",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "offline": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r0": {
+            "ok": false,
+            "error": "network"
+          },
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": false,
+            "error": "network"
+          },
+          "r3": {
+            "ok": false,
+            "error": "network"
+          },
+          "r4": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "loading": [
+            true,
+            false
+          ],
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "network.recovery-state-clean",
+    "title": "断网失败后同 key 恢复正常",
+    "why": "share/cache 不能被失败毒化",
+    "requires": [
+      "share",
+      "cache",
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        },
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "network": "offline"
+      },
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "share": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "network": "normal"
+      },
+      {
+        "request": {
+          "id": "r2",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "share": true,
+            "cache": true
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "r3",
+          "path": "/t/echo",
+          "options": {
+            "key": true,
+            "share": true,
+            "cache": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1
+          },
+          "r3": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "network.dns-failure",
+    "title": "DNS 失败归为 network",
+    "why": "域名解析失败也是 network，不是 timeout",
+    "requires": [
+      "log"
+    ],
+    "networks": [
+      "dns"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo"
+        }
+      }
+    ],
+    "expect": {
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  }
+]

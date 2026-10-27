@@ -269,8 +269,7 @@ mod tests {
 
     #[test]
     fn header_escaping_round_trip() {
-        let frame = StompFrame::new(StompCommand::Send)
-            .header("destination", "/topic/a:b\nc\\d");
+        let frame = StompFrame::new(StompCommand::Send).header("destination", "/topic/a:b\nc\\d");
         let bytes = frame.serialize();
         let parsed = StompFrame::parse(&bytes[..bytes.len() - 1]).unwrap();
         assert_eq!(parsed.get("destination"), Some("/topic/a:b\nc\\d"));

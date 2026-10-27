@@ -122,9 +122,17 @@ fn read_meminfo() -> Option<Memory> {
     let mut available = None;
     for line in content.lines() {
         if let Some(rest) = line.strip_prefix("MemTotal:") {
-            total = rest.trim().split_whitespace().next().and_then(|v| v.parse::<u64>().ok());
+            total = rest
+                .trim()
+                .split_whitespace()
+                .next()
+                .and_then(|v| v.parse::<u64>().ok());
         } else if let Some(rest) = line.strip_prefix("MemAvailable:") {
-            available = rest.trim().split_whitespace().next().and_then(|v| v.parse::<u64>().ok());
+            available = rest
+                .trim()
+                .split_whitespace()
+                .next()
+                .and_then(|v| v.parse::<u64>().ok());
         }
     }
     let total_kb = total?;
@@ -142,7 +150,11 @@ fn read_process_rss_kb() -> Option<u64> {
     let content = std::fs::read_to_string("/proc/self/status").ok()?;
     for line in content.lines() {
         if let Some(rest) = line.strip_prefix("VmRSS:") {
-            return rest.trim().split_whitespace().next().and_then(|v| v.parse().ok());
+            return rest
+                .trim()
+                .split_whitespace()
+                .next()
+                .and_then(|v| v.parse().ok());
         }
     }
     None

@@ -40,7 +40,8 @@ pub fn encode(claims: &Claims, secret: &[u8]) -> String {
 
 pub fn decode(token: &str, secret: &[u8]) -> Result<Claims, JwtError> {
     let mut parts = token.split('.');
-    let (Some(h), Some(p), Some(s), None) = (parts.next(), parts.next(), parts.next(), parts.next())
+    let (Some(h), Some(p), Some(s), None) =
+        (parts.next(), parts.next(), parts.next(), parts.next())
     else {
         return Err(JwtError::Malformed);
     };

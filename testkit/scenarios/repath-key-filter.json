@@ -1,0 +1,1166 @@
+[
+  {
+    "id": "repath.basic",
+    "title": "路径变量替换",
+    "why": "{id} 要被替换成参数值",
+    "requires": [
+      "repath"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "repath": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/public/pet/{id}",
+          "query": {
+            "id": 5
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/5"
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/5"
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "repath.multi-vars",
+    "title": "多个路径变量",
+    "why": "多个占位符各自替换",
+    "requires": [
+      "repath"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "repath": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/public/{a}/x/{b}",
+          "query": {
+            "a": "p",
+            "b": "q"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/p/x/q"
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "repath.from-body",
+    "title": "变量取自请求体",
+    "why": "POST 的 id 在 body 中也要能替换",
+    "requires": [
+      "repath"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "repath": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/public/pet/{id}",
+          "method": "POST",
+          "body": {
+            "id": 9,
+            "name": "n"
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/9",
+                "method": "POST"
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "repath.zero-value",
+    "title": "值为 0 也要替换",
+    "why": "0 是合法 id，不能被当成空值",
+    "requires": [
+      "repath"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "repath": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/public/pet/{id}",
+          "query": {
+            "id": 0
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/0"
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "repath.same-var-twice",
+    "title": "同名变量出现两次",
+    "why": "两处占位符都要替换",
+    "requires": [
+      "repath"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "repath": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/public/{id}/sub/{id}",
+          "query": {
+            "id": 3
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/3/sub/3"
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "key.share-diff-query-not-merged",
+    "title": "查询不同不合并",
+    "why": "key 包含查询参数",
+    "requires": [
+      "key",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "q": 1,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "q": 2,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "key.query-order-insensitive",
+    "title": "查询参数顺序不影响 key",
+    "why": "{a,b} 与 {b,a} 是同一个请求",
+    "requires": [
+      "key",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "a": 1,
+                "b": 2,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "b": 2,
+                "a": 1,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "key.body-diff-not-merged",
+    "title": "请求体不同不合并",
+    "why": "key:deep 把 body 纳入",
+    "requires": [
+      "key",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "method": "PUT",
+              "body": {
+                "v": 1
+              },
+              "options": {
+                "key": "deep",
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "method": "PUT",
+              "body": {
+                "v": 2
+              },
+              "options": {
+                "key": "deep",
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true,
+            "data": {
+              "request": {
+                "body": {
+                  "json": {
+                    "v": 1
+                  }
+                }
+              }
+            }
+          },
+          "b": {
+            "ok": true,
+            "data": {
+              "request": {
+                "body": {
+                  "json": {
+                    "v": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "key.method-diff-not-merged",
+    "title": "方法不同不合并",
+    "why": "GET 与 DELETE 同路径同参数也是两个请求",
+    "requires": [
+      "key",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "g",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "method": "GET",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "d",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "method": "DELETE",
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "g": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "GET"
+              }
+            }
+          },
+          "d": {
+            "ok": true,
+            "data": {
+              "request": {
+                "method": "DELETE"
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "key.explicit-string-merges",
+    "title": "显式字符串 key 强制合并",
+    "why": "用户指定同 key 的请求视为同一请求",
+    "requires": [
+      "key",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "v": 1,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": "fixed",
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "v": 2,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": "fixed",
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "key.filter-before-key",
+    "title": "filter 先于 key：空值不影响 key",
+    "why": "剔除空字段后 {q:x,page:\"\"} 与 {q:x} 是同一请求（顺序装反的典型 bug）",
+    "requires": [
+      "key",
+      "share",
+      "filter"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "filter": {},
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "q": "x",
+                "page": "",
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "q": "x",
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "filter.keeps-zero-false",
+    "title": "filter 不误删 0 和 false",
+    "why": "0/false 是有效值",
+    "requires": [
+      "filter"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "filter": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "n": 0,
+            "f": false,
+            "c": "x",
+            "e": ""
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "n": "0",
+                  "f": "false",
+                  "c": "x"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "n": "0",
+                  "f": "false",
+                  "c": "x"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "key.share-without-key-not-merged",
+    "title": "share 缺 key 不合并",
+    "why": "没生成 key 就不能误合并（对照）",
+    "requires": [
+      "key",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "options": {
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "options": {
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true
+          },
+          "b": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "repath.key-after-repath",
+    "title": "repath 先于 key",
+    "why": "用替换后的路径算 key：id=5 与 id=6 不能共享",
+    "requires": [
+      "repath",
+      "key",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "repath": {},
+        "key": {},
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/public/pet/{id}",
+              "query": {
+                "id": 5,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/public/pet/{id}",
+              "query": {
+                "id": 6,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/5"
+              }
+            }
+          },
+          "b": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/6"
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/pet/5": {
+              "eq": 1
+            },
+            "/t/public/pet/6": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "repath.key-cache-no-mixup",
+    "title": "repath + key + cache 不串",
+    "why": "id=5 缓存命中；id=6 必须是新请求",
+    "requires": [
+      "repath",
+      "key",
+      "cache"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "repath": {},
+        "key": {},
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "a1",
+              "path": "/t/public/pet/{id}",
+              "query": {
+                "id": 5
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "a2",
+              "path": "/t/public/pet/{id}",
+              "query": {
+                "id": 5
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b1",
+              "path": "/t/public/pet/{id}",
+              "query": {
+                "id": 6
+              },
+              "options": {
+                "key": true,
+                "cache": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/5"
+              }
+            }
+          },
+          "a2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/5"
+              }
+            },
+            "from_cache": true
+          },
+          "b1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/6"
+              }
+            },
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/pet/5": {
+              "eq": 1
+            },
+            "/t/public/pet/6": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "a1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/5"
+              }
+            }
+          },
+          "a2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/5"
+              }
+            },
+            "from_cache": true
+          },
+          "b1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "path": "/t/public/pet/6"
+              }
+            },
+            "from_cache": false
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/pet/5": {
+              "eq": 1
+            },
+            "/t/public/pet/6": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  }
+]

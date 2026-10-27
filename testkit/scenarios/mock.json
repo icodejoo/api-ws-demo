@@ -1,0 +1,481 @@
+[
+  {
+    "id": "mock.routes-to-mock-server",
+    "title": "请求被路由到 /t/mock",
+    "why": "开了 mock 的请求必须走 mock 服务（data.mock=true），真实接口一次都不能打",
+    "requires": [
+      "mock"
+    ],
+    "networks": [
+      "normal",
+      "weak",
+      "offline",
+      "dns",
+      "blackhole"
+    ],
+    "client": {
+      "plugins": {
+        "mock": {}
+      },
+      "base_timeout_ms": 4000
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/pet/1",
+          "options": {
+            "mock": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "mock": true
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/pet/1": {
+              "eq": 0
+            },
+            "/t/mock/pet/1": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "mock": true
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/pet/1": {
+              "eq": 0
+            },
+            "/t/mock/pet/1": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "offline": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "dns": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "mock.per-request-off-goes-real",
+    "title": "请求级 mock:false 走真实接口",
+    "why": "同一客户端里单个请求可以绕过 mock",
+    "requires": [
+      "mock"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "mock": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            },
+            "/t/mock/t/echo": {
+              "eq": 0
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            },
+            "/t/mock/t/echo": {
+              "eq": 0
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "mock.mixed-parallel",
+    "title": "mock 与真实请求并行不串",
+    "why": "mock 路由只影响开了 mock 的请求",
+    "requires": [
+      "mock"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "mock": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "m",
+              "path": "/pet/2",
+              "query": {
+                "key": "m"
+              },
+              "options": {
+                "mock": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "real",
+              "path": "/t/echo",
+              "query": {
+                "key": "r"
+              },
+              "options": {
+                "mock": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "m": {
+            "ok": true,
+            "data": {
+              "mock": true
+            }
+          },
+          "real": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/mock/pet/2": {
+              "eq": 1
+            },
+            "/t/echo": {
+              "eq": 1
+            },
+            "/pet/2": {
+              "eq": 0
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "mock.query-and-body-forwarded",
+    "title": "mock 请求保留查询和请求体",
+    "why": "路由到 mock 时不能丢参数",
+    "requires": [
+      "mock"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "mock": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/pet/3",
+          "query": {
+            "a": "1"
+          },
+          "method": "POST",
+          "body": {
+            "x": 1
+          },
+          "options": {
+            "mock": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "mock": true,
+              "request": {
+                "method": "POST",
+                "query": {
+                  "a": "1"
+                },
+                "body": {
+                  "json": {
+                    "x": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/pet/3": {
+              "eq": 0
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "mock.fallback-to-real-on-404",
+    "title": "mock 返回 404 时回落到真实接口且只回落一次",
+    "why": "mock 未命中（404）应改走真实接口，不能死循环；真实接口同样 404 则最终以 status:404 失败",
+    "requires": [
+      "mock"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "mock": {}
+      }
+    },
+    "styles": [
+      "http"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 404
+          },
+          "options": {
+            "mock": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:404"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/mock/t/echo": {
+              "eq": 1
+            },
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "mock.mock-then-retry-untouched",
+    "title": "mock 请求成功时 retry 不介入",
+    "why": "mock 命中成功后只发一次，且不重复触发其他插件",
+    "requires": [
+      "mock",
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "mock": {},
+        "retry": {
+          "max": 2,
+          "delay_ms": 100
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/pet/4",
+          "options": {
+            "mock": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "mock": true
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/mock/pet/4": {
+              "eq": 1
+            },
+            "/pet/4": {
+              "eq": 0
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  }
+]
