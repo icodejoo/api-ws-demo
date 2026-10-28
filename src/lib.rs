@@ -2,6 +2,7 @@
 mod auth;
 mod compressed_assets;
 mod compressed_http;
+pub mod connection;
 pub mod cpu;
 mod mock;
 pub mod netem;

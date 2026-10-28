@@ -867,7 +867,7 @@
   {
     "id": "faults.status-with-business",
     "title": "非 2xx 且带业务码",
-    "why": "HTTP 状态决定分类，业务码不篡改",
+    "why": "HTTP 状态决定分类，业务码不篡改：http 风格下 HTTP 503 加 code 9 归 status:503；business 风格下 HTTP 200 加 code 9 归 business:9（附录 B.1）",
     "requires": [
       "log",
       "normalize"
@@ -901,32 +901,44 @@
             "error": "status:503"
           }
         },
-        "client": {
-          "pending_after": {
-            "eq": 0
-          }
-        },
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "weak": {
-        "results": {
-          "r1": {
-            "ok": false,
-            "error": "status:503"
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
           }
         },
         "client": {
           "pending_after": {
             "eq": 0
           }
-        },
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        }
       },
       "normal@business": {
         "results": {
           "r1": {
             "ok": false,
             "error": "business:9"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:503"
           }
         },
         "client": {
@@ -949,26 +961,72 @@
         }
       },
       "lossy": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "skip": "lossy 对每条连接以 15% 概率注入 RST，单发无重试请求可能以 network 失败，无法确定性断言状态码分类；分类由 normal、weak 覆盖"
       },
       "offline": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "blackhole": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "flap": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "skip": "本场景没有重试，请求落在 flap 前 1500ms 的离线窗口内，只会得到 network，与状态码分类无关"
       },
       "dns": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       }
     },
     "timeout_ms": 40000,
     "client": {
       "plugins": {
         "normalize": {}
-      }
+      },
+      "base_timeout_ms": 4000
     }
   },
   {

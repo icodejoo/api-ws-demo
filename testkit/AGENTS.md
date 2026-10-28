@@ -15,7 +15,7 @@ testkit 是跨语言的 HTTP 客户端黑盒验收工具，分三层：**场景*
 | 覆盖哪些维度、每种网络下断言什么 | `MATRIX.md` |
 | 为什么这样设计、谁拍的板 | `DECISIONS.md`（D 编号，只追加不修改） |
 | 场景格式 | `scenario.schema.json` |
-| dioman 测试分类与迁移映射 | `E:\workspaces\dart-labs\dioman\test\README.md`；本地 `dart test`，真实服务 `dart test -t real --configuration=dart_test.real.yaml --fail-fast` |
+| dioman 文档入口 | `E:\workspaces\dart-labs\dioman\docs\README.md`（测试分层见 `docs/guides/test-layers.md`，三档与总账方案见 `docs/design/test-matrix-plan.md`）；本地 `dart test`，真实服务 `dart test -t real --configuration=dart_test.real.yaml --fail-fast` |
 | 场景本身 | `scenarios/<领域>.json`；按 id 查找：`grep -rn '"id": "<id>"' scenarios/` |
 | 场景索引与覆盖统计 | `scenarios/README.md`，由 `tools/gen-index.mjs` 生成 |
 | axp API 反查与组合缺口 | `COVERAGE.md`；清单 `coverage/axp-api.json`，生成/检查：`node tools/gen-coverage.mjs [--check]` |
@@ -24,8 +24,10 @@ testkit 是跨语言的 HTTP 客户端黑盒验收工具，分三层：**场景*
 | netem 的实现 | `../src/netem/`，入口在 `../src/bin/netem.rs` |
 | 服务端集成测试 | `../tests/testkit.rs`、`../tests/netem.rs` |
 | 已接入的客户端执行器 | axp：`E:\workspaces\codejoo\apps\axp\accept\`（执行 `npm run accept`） |
-| dioman Dart io 执行器 | `E:\workspaces\dart-labs\dioman\accept\`（`dart run accept/bin/cli.dart`；映射见 `accept/docs/mapping.md`，新证据见 `coverage/accept/`，历史结果保留在 `accept/results/`） |
-| dioman 最终验收证据 | `dioman/accept/results/audit.json`、`api-coverage.json`、`api-evidence.json`、`powerset-summary.json`；代理归属见 `proxies.ndjson`，逐项失败原始记录见 `failure-review-initial.json` |
+| dioman Dart io 执行器 | `E:\workspaces\dart-labs\dioman\test\accept\`（2026-10-28 从 `accept/` 迁入；`dart run test/accept/bin/cli.dart`；映射见 `docs/reference/testkit-mapping.md`，本地新证据在 `coverage/accept/`，入库证据汇总在 `test/accept/evidence/`） |
+| dioman 验收证据与总账 | 入库汇总 `dioman/test/accept/evidence/<日期>-summary.json`；能力总账 `dioman/test/accept/lib/matrix.json`（每行挂 testkit 场景 id）；假设清单 `dioman/test/ASSUMPTIONS.md`；历史原始结果只在本地 `dioman/test/accept/results/`（不入库） |
+| dioman 的历史专属记录 | 2026-10-27 的 dioman 覆盖分析（原 `COVERAGE-dioman.md`、`coverage/dioman-api.json`）与五方法复核笔记（原本文件末尾两节）已迁回 dioman：`E:\workspaces\dart-labs\dioman\docs\archive\2026-10-27-testkit-*` |
+| 提议 | `proposals/`（待拍板的放这里；落地后改成"已落地"并写明去向）。当前无待拍板项；`proposals/2026-10-28-dioman-gaps.md` 已落地（决策 D20–D23），仅 connect 超时（netem 丢 SYN 不可行）和 HTTP 日期形式的 Retry-After 未落地，原因见该文件顶部 |
 
 ---
 
@@ -49,7 +51,7 @@ testkit 是跨语言的 HTTP 客户端黑盒验收工具，分三层：**场景*
 
 1. 判断这次变化落在哪一层：
    - **新的服务端行为**（新接口、新控制参数、新故障）：改 `CONTRACT.md`，同时补附录 A 的响应体。
-   - **新的场景表达能力**（新 step、新断言字段、新错误类别）：改 `scenario.schema.json` 和 CONTRACT §7。
+   - **新的场景表达能力**（新 step、新断言字段、新错误类别、新能力名）：改 `scenario.schema.json` 和 CONTRACT §7；新能力名要同时加进 schema 的 `$defs/capability` 和 CONTRACT §7 的细分能力表，`tools/validate.mjs` 会检查场景用到 multipart、share retry、send_ms 时是否声明了对应能力。
    - **只是新增场景**：直接进入第 3 步。
 2. 契约改动要同步实现：服务端在 `../src/testkit/` 或 netem，并补上 `../tests/` 下的测试；所有执行器都支持新的 step 或字段。
    **完成标准**：`cargo test` 通过；契约里每一条新增内容都能在实现中找到对应代码。
@@ -112,20 +114,3 @@ cargo run --release --bin netem
 - **`scenarios/README.md` 不要手改**，要改就改 `tools/gen-index.mjs`。
 - **`/t/*` 在线上也挂载着**，但线上只适合做冒烟测试。冷启动、限流、共享计数器都会让精确断言失效（D6）。本地运行时要加 `TEST_MODE=1`。
 - **netem 不进 Docker 镜像**。Dockerfile 只构建 `--bin api-ws-demo`，新增可执行文件时要保持这一点（D4）。
-
-
-## 2026-10-27 · dioman 五方法复核（部分完成）
-
-本轮入口：dioman/accept/bin/build_plugin_matrix.dart 生成 scenarios/plugins.json；
-dioman/accept/bin/run_plugin_matrix.dart 执行方法清单；中文逐格矩阵在 dioman/accept/docs/MATRIX-plugins.md。
-完整汇总为 dioman/accept/results/review-summary.json，收尾检查为 verification-review.json；
-D16 的 audit.json 保留为历史证据，不代表本轮补齐全部缺声明组合。
-新增79个方法场景和2个安全状态子场景后共409场景；校验命令保持 gen-index / validate --check-index。
-历史跳过3547格复核后，70格在全部网络显式说明禁止主动注入429/503，其中56格原来缺声明；
-其余3477格仍未补齐预期和真实执行。单体全部选项、全部原生边界及全部实现不变量尚未穷尽。
-share重放准备异常导致跟随者悬挂的修复，真实双风格证据在 share-prepare-real.json。
-不得仅因方法清单160格通过，就将整项复核报告为完成。
-
-## 2026-10-27 · 测试整理资源定位
-
-单体与边界场景已归入对应领域文件，plugins.json 保留配对和全量场景；五方法清单在 dioman/accept/lib/plugin_matrix_plan.json。两组等价零值边界已合并，旧 id 映射见 dioman/test/README.md。现有 18 个文件共 407 场景。原 results 证据不重写，新执行证据在 dioman/coverage/accept/。

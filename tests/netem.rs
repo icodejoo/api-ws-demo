@@ -210,6 +210,42 @@ async fn shaping_and_threshold_reset() {
     assert!(got.len() <= 100);
 }
 
+/// blackhole 在用户态阻塞读写，TCP 握手仍能完成，只能验证接收超时。
+#[tokio::test]
+async fn blackhole_completes_connect_then_times_out_read() {
+    let up = upstream().await;
+    let control = start(api_ws_demo::netem::control_router()).await;
+    let (id, addr) = proxy(&control, up.addr, json!("blackhole")).await;
+    let mut stream = tokio::time::timeout(Duration::from_secs(2), TcpStream::connect(addr))
+        .await
+        .expect("blackhole must complete TCP handshake")
+        .unwrap();
+    stream.write_all(b"request").await.unwrap();
+    let mut byte = [0];
+    assert!(tokio::time::timeout(SHORT, stream.read(&mut byte))
+        .await
+        .is_err());
+    let (_, stats) = json(
+        control.addr,
+        "GET",
+        &format!("{PROXIES}/{id}/stats"),
+        "",
+        Value::Null,
+    )
+    .await;
+    assert_eq!(stats["connections"], 1);
+    assert_eq!(stats["bytes_up"], 0);
+    assert_eq!(stats["bytes_down"], 0);
+    json(
+        control.addr,
+        "DELETE",
+        &format!("{PROXIES}/{id}"),
+        "",
+        Value::Null,
+    )
+    .await;
+}
+
 /// flap 内置时间表及自定义调度，切换 PUT 会取消旧时间表。
 #[tokio::test]
 async fn flap_and_schedule() {

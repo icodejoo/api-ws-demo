@@ -6,7 +6,7 @@
 与语言无关的客户端验收场景，格式见 `../scenario.schema.json`，契约见 `../CONTRACT.md`。axp（TS/axios）与 dioman（Dart/dio）共用同一份。
 校验：`node tools/validate.mjs`（合法 JSON、schema 关键规则、id 唯一、expect 覆盖 networks 与 styles、results 引用的 id 存在）。
 
-共 **438** 个场景，19 个文件，每个文件顶层是场景数组；按（网络 × 风格）展开共 **1336** 次运行。
+共 **443** 个场景，19 个文件，每个文件顶层是场景数组；按（网络 × 风格）展开共 **1346** 次运行。
 
 ## 约定（执行器必读）
 
@@ -28,31 +28,32 @@
 - **`data` 子集匹配**：客户端最终拿到的是信封里的 `data`（CONTRACT 附录 A.1，`data.request.body.json` 为解析后的请求体）。
 - **并发 32/64 的场景假设执行器没有每主机连接数限制**（浏览器环境下要放宽或跳过）。
 - 中立插件选项扩展：`auth.refresh_query`、`key.scope='user'`、`retry.methods`、`cache.methods`/`cache.max`（见 schema pluginOptions）。映射不了必须显式报错。
+- **细分能力与新字段**（CONTRACT §7）：`multipart`（`body.multipart`，文件内容按 seed 的 LCG 算法生成）、`keep-alive`、`share-retry`、`timeout-send`（`timeout.send_ms`）、`mock-in-chain`；缺这些能力的执行器按"缺能力"跳过。结果项 `same_as` 要求两个成功请求 data 的同一字段相等（如 `meta.conn`）。
 
 ## 覆盖矩阵（场景数：领域 × 网络预设）
 
 | 领域 | 合计 | normal | weak | lossy | offline | blackhole | flap | dns |
 |---|---|---|---|---|---|---|---|---|
-| 基础（basic.json） | 21 | 21 | 14 | 1 | 8 | 5 | 1 | 7 |
-| 鉴权（auth.json） | 72 | 71 | 27 | 0 | 10 | 10 | 0 | 9 |
+| 基础（basic.json） | 22 | 22 | 14 | 1 | 8 | 5 | 1 | 7 |
+| 鉴权（auth.json） | 73 | 72 | 27 | 0 | 10 | 10 | 0 | 9 |
 | 重试（retry.json） | 49 | 45 | 10 | 8 | 5 | 4 | 5 | 4 |
 | 缓存（cache.json） | 32 | 32 | 4 | 0 | 1 | 1 | 0 | 1 |
-| 请求合并（share.json） | 20 | 19 | 4 | 0 | 2 | 2 | 0 | 2 |
+| 请求合并（share.json） | 21 | 20 | 4 | 0 | 2 | 2 | 0 | 2 |
 | 并发（concurrency.json） | 16 | 16 | 9 | 0 | 1 | 1 | 0 | 1 |
 | 取消（cancel.json） | 13 | 12 | 2 | 0 | 1 | 2 | 0 | 1 |
 | 加载状态（loading.json） | 21 | 21 | 6 | 1 | 4 | 3 | 1 | 3 |
 | 通知与信封（notify-normalize.json） | 22 | 22 | 6 | 1 | 3 | 1 | 0 | 2 |
 | 故障响应（faults.json） | 16 | 16 | 12 | 1 | 1 | 1 | 1 | 1 |
 | 网络条件（network.json） | 14 | 4 | 2 | 1 | 3 | 3 | 3 | 4 |
-| 超时（dioman）（timeout.json） | 19 | 18 | 1 | 0 | 0 | 1 | 0 | 0 |
-| 熔断（dioman）（breaker.json） | 18 | 17 | 2 | 0 | 1 | 0 | 0 | 1 |
+| 超时（dioman）（timeout.json） | 20 | 19 | 1 | 0 | 0 | 1 | 0 | 0 |
+| 熔断（dioman）（breaker.json） | 19 | 18 | 2 | 0 | 1 | 0 | 0 | 1 |
 | 离线（dioman）（offline.json） | 9 | 3 | 1 | 0 | 4 | 2 | 1 | 1 |
 | 路径/键/过滤（repath-key-filter.json） | 18 | 18 | 3 | 0 | 0 | 0 | 0 | 0 |
 | 组合交互（combos.json） | 33 | 31 | 6 | 4 | 1 | 0 | 1 | 1 |
 | 模拟（mock.json） | 8 | 8 | 2 | 0 | 1 | 1 | 0 | 1 |
 | filter（filter.json） | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | plugins（plugins.json） | 34 | 33 | 1 | 0 | 0 | 0 | 1 | 0 |
-| **合计** | 438 | 410 | 115 | 17 | 46 | 37 | 14 | 39 |
+| **合计** | 443 | 415 | 115 | 17 | 46 | 37 | 14 | 39 |
 
 （一个场景可声明多个网络，所以每行网络列之和大于合计。）
 
@@ -60,32 +61,32 @@
 
 | 领域 | 两种风格都跑 | 仅 http | 仅 business | 含 `@business` 专属预期 |
 |---|---|---|---|---|
-| 基础 | 21 | 0 | 0 | 2 |
-| 鉴权 | 69 | 3 | 0 | 1 |
+| 基础 | 22 | 0 | 0 | 2 |
+| 鉴权 | 70 | 3 | 0 | 1 |
 | 重试 | 42 | 7 | 0 | 1 |
 | 缓存 | 32 | 0 | 0 | 1 |
-| 请求合并 | 20 | 0 | 0 | 1 |
+| 请求合并 | 21 | 0 | 0 | 1 |
 | 并发 | 16 | 0 | 0 | 0 |
 | 取消 | 13 | 0 | 0 | 1 |
 | 加载状态 | 21 | 0 | 0 | 1 |
 | 通知与信封 | 20 | 2 | 0 | 3 |
 | 故障响应 | 15 | 1 | 0 | 2 |
 | 网络条件 | 14 | 0 | 0 | 0 |
-| 超时（dioman） | 19 | 0 | 0 | 1 |
-| 熔断（dioman） | 18 | 0 | 0 | 1 |
+| 超时（dioman） | 20 | 0 | 0 | 1 |
+| 熔断（dioman） | 19 | 0 | 0 | 1 |
 | 离线（dioman） | 9 | 0 | 0 | 1 |
 | 路径/键/过滤 | 18 | 0 | 0 | 3 |
 | 组合交互 | 30 | 3 | 0 | 0 |
 | 模拟 | 6 | 2 | 0 | 1 |
 | filter | 3 | 0 | 0 | 0 |
 | plugins | 34 | 0 | 0 | 0 |
-| **合计** | 420 | 18 | 0 | 20 |
+| **合计** | 425 | 18 | 0 | 20 |
 
 ## 场景索引
 
 方括号内依次是网络预设，竖线后是收窄的风格（缺省表示两种都跑）。
 
-### 基础（basic.json，21 个）
+### 基础（basic.json，22 个）
 
 - `basic.get-ok` [normal,weak,offline,dns,blackhole] 最简 GET 成功
 - `basic.post-json-body` [normal,weak,offline,dns,blackhole] POST JSON 请求体原样到达
@@ -105,11 +106,12 @@
 - `basic.parallel-independent` [normal,weak,offline,dns] 并行请求各自独立
 - `basic.head-request` [normal] HEAD 请求
 - `basic.status-201-empty-data` [normal] 2xx 非 200 也算成功
-- `basic.safe-status-matrix` [normal,weak] 停机约束下的安全状态码子矩阵
+- `basic.safe-status-matrix` [normal,weak] 不含 429/503 的状态码子矩阵
 - `plugins.single-envs` [normal] envs 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `plugins.single-log` [normal] log 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `basic.keep-alive-recovery-isolated` [normal] 连接复用下，401 恢复失败与 500 重试耗尽之后，同一连接上的下一个响应完整无污染
 
-### 鉴权（auth.json，72 个）
+### 鉴权（auth.json，73 个）
 
 - `auth.anon-and-private-mix` [normal,weak,offline,dns,blackhole] 匿名与鉴权接口混合
 - `auth.logout-then-private-fails` [normal,weak] 登出后访问受保护接口失败
@@ -183,6 +185,7 @@
 - `auth.style-switch-expired` [normal | http] 切换风格后刷新失败仍判 expired
 - `plugins.single-auth` [normal] auth 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `auth.refresh-window-blocked-expired` [normal] 刷新失败窗口内被阻断的请求同样判 expired
+- `auth.expired-multipart-replay` [normal] access 过期 401 后刷新并重放 multipart 上传，文件字节与首发一致
 
 ### 重试（retry.json，49 个）
 
@@ -271,7 +274,7 @@
 - `cache.single-explicit-key-expires` [normal] cache 单独：请求级显式 key 共享缓存，请求级 ttl 到期失效
 - `cache.single-clear-cache` [normal] cache 单独：clear_cache 后同 key 重新回源
 
-### 请求合并（share.json，20 个）
+### 请求合并（share.json，21 个）
 
 - `share.start-single-flight` [normal,weak,offline,dns,blackhole] 同 key 并发只发一次
 - `share.start-32` [normal] 32 个并发同 key 只发一次
@@ -293,6 +296,7 @@
 - `share.single-start-explicit-key` [normal] share 单独：显式 key 下 start 策略只发一次
 - `share.single-req-policy-race` [normal] share 单独：请求级 policy=race 覆盖插件默认 start
 - `share.single-all-timeout-aborts-server` [normal] share 单独：所有订阅者都超时后掐断底层请求
+- `share.retry-recovers-single-result` [normal] share(retry)：首发失败后内部重试，3 个调用方只看到最终的成功结果
 
 ### 并发（concurrency.json，16 个）
 
@@ -414,13 +418,13 @@
 - `network.recovery-state-clean` [normal] 断网失败后同 key 恢复正常
 - `network.dns-failure` [dns] DNS 失败归为 network
 
-### 超时（dioman）（timeout.json，19 个）
+### 超时（dioman）（timeout.json，20 个）
 
 - `timeout.total-hang` [normal] 总超时：hang 到点即超时
 - `timeout.receive-slow-body` [normal] 接收超时：块间隔过大
 - `timeout.receive-ok-fast-chunks` [normal] 接收超时不误伤正常流
 - `timeout.total-over-slow-chunks` [normal] 总超时覆盖慢吐 body
-- `timeout.connect-blackhole` [blackhole] 黑洞已连接后由接收超时终止
+- `timeout.connect-blackhole` [blackhole] 黑洞下由接收超时终止（已连接，不是连接超时）
 - `timeout.request-override-shorter` [normal] 请求级超时更短
 - `timeout.request-override-longer` [normal] 请求级超时更长
 - `timeout.within-budget` [normal] 预算内的慢响应成功
@@ -435,8 +439,9 @@
 - `plugins.boundary-timeout-connect-ms-1` [normal] timeout.connect_ms = 2147483647
 - `plugins.boundary-timeout-receive-ms-0` [normal] timeout.receive_ms = 1
 - `plugins.boundary-timeout-receive-ms-1` [normal] timeout.receive_ms = 2147483647
+- `timeout.send-slow-reader` [normal] 发送超时：对端迟迟不读请求体，send_ms 必须在发送阶段生效
 
-### 熔断（dioman）（breaker.json，18 个）
+### 熔断（dioman）（breaker.json，19 个）
 
 - `breaker.open-after-threshold` [normal,weak] 连续失败后熔断，快速失败不打服务端
 - `breaker.half-open-recovers` [normal] open_ms 后半开探测成功则恢复
@@ -456,6 +461,7 @@
 - `plugins.boundary-breaker-open-ms-0` [normal] breaker.open_ms = 0
 - `plugins.boundary-breaker-open-ms-1` [normal] breaker.open_ms = 1
 - `plugins.boundary-breaker-open-ms-2` [normal] breaker.open_ms = 2147483647
+- `breaker.half-open-probe-cancel` [normal] 半开探测在途被取消：名额归还，不计成败，下一个探测照常放行
 
 ### 离线（dioman）（offline.json，9 个）
 

@@ -8,6 +8,8 @@ use std::{collections::HashMap, str::FromStr};
 
 /// 最大等待毫秒数。
 pub(super) const MAX_DELAY: u64 = 10_000;
+/// 读取请求体前最长等待毫秒数。
+pub(super) const MAX_READ_DELAY: u64 = 30_000;
 /// 最大填充与请求体字节数。
 pub(super) const MAX_SIZE: usize = 1024 * 1024;
 /// 最长故障挂起毫秒数。
@@ -26,6 +28,8 @@ pub(super) struct Control {
     pub headers: HeaderMap,
     /// 延迟毫秒数。
     pub delay: u64,
+    /// 在首次轮询请求体之前等待。
+    pub read_delay: u64,
     /// 正常 HTTP 状态。
     pub status: u16,
     /// 正常业务码。
@@ -76,6 +80,7 @@ impl Control {
             }
         }
         c.delay = c.number("delay_ms", 0)?.min(MAX_DELAY);
+        c.read_delay = c.number("read_delay_ms", 0)?.min(MAX_READ_DELAY);
         c.status = c.http_status("status", 200)?;
         c.code = c.number(
             "code",
@@ -198,9 +203,14 @@ mod tests {
             [500, 200, 500, 200]
         );
         assert_eq!(c.chunk_bytes, 512);
+        let c = Control::parse(&"/t/echo?read_delay_ms=99999".parse().unwrap()).unwrap();
+        assert_eq!(c.read_delay, MAX_READ_DELAY);
         for query in [
             "status=999",
             "delay_ms=-1",
+            "read_delay_ms=-1",
+            "read_delay_ms=abc",
+            "read_delay_ms=1.5",
             "fault=unknown",
             "data=broken",
             "header=content-length:4",

@@ -312,7 +312,8 @@
           ]
         },
         "normalize": {}
-      }
+      },
+      "base_timeout_ms": 4000
     },
     "steps": [
       {
@@ -345,33 +346,96 @@
           "pending_after": {
             "eq": 0
           }
-        },
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        }
       },
       "weak": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "lossy": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "offline": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "blackhole": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "flap": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "dns": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "flap": {
+        "skip": "本场景重试预算（3 次、每次 100ms 退避）短于 flap 前 1500ms 的离线窗口，首发请求落在窗口内会以 network 耗尽重试，不是重试能恢复的有效对照；flap 下的重试恢复由 retry.flap-recovers 覆盖"
       }
-    }
+    },
+    "timeout_ms": 40000
   },
   {
     "id": "retry.503-retry-after",
     "title": "遵守 Retry-After",
-    "why": "Retry-After 优先于自身退避，防止过早重打服务端",
+    "why": "Retry-After 优先于自身退避，防止过早重打服务端；服务端的 retry_after 参数只输出整数秒（delta-seconds）形式，HTTP 日期形式无法由服务端产生，见 CONTRACT §3",
     "requires": [
       "retry",
       "normalize"
@@ -393,7 +457,8 @@
           "respect_retry_after": true
         },
         "normalize": {}
-      }
+      },
+      "base_timeout_ms": 4000
     },
     "steps": [
       {
@@ -430,28 +495,91 @@
           "pending_after": {
             "eq": 0
           }
-        },
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        }
       },
       "weak": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "lossy": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "offline": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "blackhole": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "flap": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "dns": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "flap": {
+        "skip": "本场景重试预算（3 次、每次 100ms 退避）短于 flap 前 1500ms 的离线窗口，首发请求落在窗口内会以 network 耗尽重试，不是重试能恢复的有效对照；flap 下的重试恢复由 retry.flap-recovers 覆盖"
       }
-    }
+    },
+    "timeout_ms": 40000
   },
   {
     "id": "retry.post-default-no-retry",
@@ -2329,7 +2457,8 @@
           ]
         },
         "normalize": {}
-      }
+      },
+      "base_timeout_ms": 4000
     },
     "steps": [
       {
@@ -2359,28 +2488,82 @@
           "pending_after": {
             "eq": 0
           }
-        },
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        }
       },
       "weak": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": true
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "lossy": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "skip": "lossy 的随机 RST 会额外消耗重试次数，而本场景只比必需的 3 次多 1 次预算，最终是否成功取决于随机决策，无法确定性断言"
       },
       "offline": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "blackhole": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "flap": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "dns": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "blackhole": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "flap": {
+        "skip": "本场景重试预算（3 次、每次 100ms 退避）短于 flap 前 1500ms 的离线窗口，首发请求落在窗口内会以 network 耗尽重试，不是重试能恢复的有效对照；flap 下的重试恢复由 retry.flap-recovers 覆盖"
       }
-    }
+    },
+    "timeout_ms": 40000
   },
   {
     "id": "retry.401-goes-refresh-first",
@@ -3479,7 +3662,7 @@
   {
     "id": "retry.single-retry-after-honored",
     "title": "retry 单独：respect_retry_after=true 时按 Retry-After 等待",
-    "why": "delay=50ms 但服务端要求 Retry-After 2s，必须等够；用 413 注入，避开主动注入 429/503 的限制",
+    "why": "delay=50ms 但服务端要求 Retry-After 2s，必须等够；用 413 作为可重试状态，retry.503-retry-after 单独覆盖 503 路径",
     "requires": [
       "retry"
     ],

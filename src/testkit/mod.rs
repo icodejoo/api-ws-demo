@@ -45,10 +45,18 @@ pub(crate) fn router() -> Router<AppState> {
 }
 
 /// 无效请求的统一错误信封。
-fn error(style: Style, status: u16, message: impl Into<String>, c: Option<&Control>) -> Response {
+fn error(
+    style: Style,
+    status: u16,
+    message: impl Into<String>,
+    c: Option<&Control>,
+    meta: &Value,
+) -> Response {
     let mut response = (
         StatusCode::from_u16(style.status(status)).unwrap(),
-        Json(json!({"code":status,"data":{"reason":INJECTED},"message":message.into()})),
+        Json(
+            json!({"code":status,"data":{"reason":INJECTED,"meta":meta},"message":message.into()}),
+        ),
     )
         .into_response();
     if let Some(value) = c.and_then(|c| c.get(RETRY_AFTER_PARAM)) {
@@ -60,8 +68,8 @@ fn error(style: Style, status: u16, message: impl Into<String>, c: Option<&Contr
 }
 
 /// 构造所有 `/t/*` 响应共用的 `meta` 字段（CONTRACT §2）。
-fn meta_of(run: &str, key: &str, hit: u64, path: &str, method: &str) -> Value {
-    json!({"run":run,"key":key,"hit":hit,"path":path,"method":method,"auth":null,"ts":now_ms()})
+fn meta_of(run: &str, key: &str, hit: u64, path: &str, method: &str, conn: u64) -> Value {
+    json!({"run":run,"key":key,"hit":hit,"path":path,"method":method,"auth":null,"ts":now_ms(),"conn":conn})
 }
 
 /// 把请求记为注入失败并返回对应风格的错误响应，响应体经守卫包裹以正确记录结束。
@@ -71,11 +79,12 @@ fn reject(
     status: u16,
     message: impl Into<String>,
     c: &Control,
+    meta: &Value,
 ) -> Response {
     guard.entry.status = style.status(status);
     guard.entry.code = i64::from(status);
     guard.entry.reason = Some(INJECTED);
-    let (parts, body) = error(style, status, message, Some(c)).into_parts();
+    let (parts, body) = error(style, status, message, Some(c), meta).into_parts();
     Response::from_parts(parts, guard.body(body))
 }
 
@@ -101,10 +110,28 @@ fn path_id(value: &str) -> Result<String, String> {
 /// 解析控制、跟踪整个 future 并执行具体业务。
 async fn handle(State(state): State<AppState>, request: Request) -> Response {
     let (parts, body) = request.into_parts();
+    let conn = parts
+        .extensions
+        .get::<axum::extract::ConnectInfo<crate::connection::ConnectionInfo>>()
+        .expect("serve testkit with ConnectionInfo")
+        .0
+        .id;
+    let fallback_meta = meta_of(
+        parts
+            .headers
+            .get("x-test-run")
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("default"),
+        &format!("{} {}", parts.method, parts.uri.path()),
+        0,
+        parts.uri.path(),
+        parts.method.as_str(),
+        conn,
+    );
     let style = Style::resolve(&parts.uri, &parts.headers);
     let c = match Control::parse(&parts.uri) {
         Ok(c) => c,
-        Err(e) => return error(style, 400, e, None),
+        Err(e) => return error(style, 400, e, None, &fallback_meta),
     };
     let path = parts.uri.path();
     let run_id = parts
@@ -118,19 +145,19 @@ async fn handle(State(state): State<AppState>, request: Request) -> Response {
         .get("key")
         .map(str::to_owned)
         .unwrap_or_else(|| format!("{} {path}", parts.method));
+    let mut meta = meta_of(run_id, &key, 0, path, parts.method.as_str(), conn);
     // 观测与探针不计入业务统计，避免读取统计本身改变并发与总数。
     if let Some(target) = path.strip_prefix("/t/runs/") {
+        meta["hit"] = json!(run.lock().unwrap().hit(&key));
         let target = match path_id(target) {
             Ok(value) => value,
-            Err(e) => return error(style, 400, e, Some(&c)),
+            Err(e) => return error(style, 400, e, Some(&c), &meta),
         };
-        let hit = run.lock().unwrap().hit(&key);
         if parts.method == "DELETE" {
             state.testkit.delete(&target);
         } else if parts.method != "GET" {
-            return error(style, 405, "method not allowed", Some(&c));
+            return error(style, 405, "method not allowed", Some(&c), &meta);
         }
-        let meta = meta_of(run_id, &key, hit, path, parts.method.as_str());
         let mut data = if parts.method == "DELETE" {
             json!({"deleted":true})
         } else {
@@ -144,7 +171,7 @@ async fn handle(State(state): State<AppState>, request: Request) -> Response {
         return Json(json!({"code":0,"data":data,"message":OK})).into_response();
     }
     if path == "/t/ping" && parts.method == "GET" {
-        return Json(json!({"code":0})).into_response();
+        return Json(json!({"code":0,"data":{"meta":meta},"message":OK})).into_response();
     }
     let (mut guard, hit) = stats::Guard::start(
         run.clone(),
@@ -153,10 +180,13 @@ async fn handle(State(state): State<AppState>, request: Request) -> Response {
         key.clone(),
     );
     guard.entry.style = style;
+    meta["hit"] = json!(hit);
+    // 不创建 body 读取 future：等待期间不轮询请求体，背压才能阻塞客户端发送。
+    tokio::time::sleep(Duration::from_millis(c.read_delay)).await;
     let bytes = match to_bytes(body, MAX_SIZE).await {
         Ok(bytes) => bytes,
         Err(e) => {
-            return reject(guard, style, 413, e.to_string(), &c);
+            return reject(guard, style, 413, e.to_string(), &c, &meta);
         }
     };
     let (mut status, mut code) = c.outcome(hit);
@@ -166,7 +196,6 @@ async fn handle(State(state): State<AppState>, request: Request) -> Response {
     if injected {
         message = c.get("message").unwrap_or(INJECTED_FAILURE).into();
     }
-    let mut meta = meta_of(run_id, &key, hit, path, parts.method.as_str());
     let mut data = json!({});
     let mut ack = None;
     // 所有通用延迟在副作用之前，失败刷新不会消耗 refresh token。
@@ -210,7 +239,7 @@ async fn handle(State(state): State<AppState>, request: Request) -> Response {
             let group = match path_id(group) {
                 Ok(value) => value,
                 Err(e) => {
-                    return reject(guard, style, 400, e, &c);
+                    return reject(guard, style, 400, e, &c, &meta);
                 }
             };
             match barrier::arrive(run.clone(), group, &c).await {
@@ -239,7 +268,10 @@ async fn handle(State(state): State<AppState>, request: Request) -> Response {
             status = 404;
             code = 404;
         } else {
-            data = echo::request(&parts, &bytes);
+            data = match echo::request(&parts, &bytes).await {
+                Ok(data) => data,
+                Err(e) => return reject(guard, style, 400, e, &c, &meta),
+            };
             if path.starts_with(MOCK) {
                 data["mock"] = json!(true);
             }
@@ -271,4 +303,45 @@ async fn handle(State(state): State<AppState>, request: Request) -> Response {
     guard.release_ack = ack;
     let (parts, body) = response.into_parts();
     Response::from_parts(parts, guard.body(body))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{
+        atomic::{AtomicU8, AtomicUsize, Ordering},
+        Arc,
+    };
+
+    /// 不依赖 TCP 缓冲大小，直接确认延迟期没有轮询 body。
+    #[tokio::test]
+    async fn read_delay_does_not_poll_body() {
+        let polls = Arc::new(AtomicUsize::new(0));
+        let count = polls.clone();
+        let body = axum::body::Body::from_stream(futures_util::stream::once(async move {
+            count.fetch_add(1, Ordering::SeqCst);
+            Ok::<_, std::io::Error>(axum::body::Bytes::from_static(b"abc"))
+        }));
+        let mut request = Request::builder()
+            .uri("/t/echo?read_delay_ms=100")
+            .body(body)
+            .unwrap();
+        request.extensions_mut().insert(axum::extract::ConnectInfo(
+            crate::connection::ConnectionInfo {
+                id: 1,
+                peer_addr: "127.0.0.1:12345".parse().unwrap(),
+            },
+        ));
+        let state = AppState::new(Arc::new(AtomicU8::new(0)));
+        let response = handle(State(state), request);
+        tokio::pin!(response);
+        assert!(
+            tokio::time::timeout(Duration::from_millis(30), &mut response)
+                .await
+                .is_err()
+        );
+        assert_eq!(polls.load(Ordering::SeqCst), 0);
+        assert_eq!(response.await.status(), StatusCode::OK);
+        assert_eq!(polls.load(Ordering::SeqCst), 1);
+    }
 }

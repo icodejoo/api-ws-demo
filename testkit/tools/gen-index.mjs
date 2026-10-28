@@ -37,7 +37,8 @@ const CONVENTIONS = `## 约定（执行器必读）
 - **repeat 的内部 id** 为 \`<id>#<i>\`，i 从 0 开始。
 - **\`data\` 子集匹配**：客户端最终拿到的是信封里的 \`data\`（CONTRACT 附录 A.1，\`data.request.body.json\` 为解析后的请求体）。
 - **并发 32/64 的场景假设执行器没有每主机连接数限制**（浏览器环境下要放宽或跳过）。
-- 中立插件选项扩展：\`auth.refresh_query\`、\`key.scope='user'\`、\`retry.methods\`、\`cache.methods\`/\`cache.max\`（见 schema pluginOptions）。映射不了必须显式报错。`;
+- 中立插件选项扩展：\`auth.refresh_query\`、\`key.scope='user'\`、\`retry.methods\`、\`cache.methods\`/\`cache.max\`（见 schema pluginOptions）。映射不了必须显式报错。
+- **细分能力与新字段**（CONTRACT §7）：\`multipart\`（\`body.multipart\`，文件内容按 seed 的 LCG 算法生成）、\`keep-alive\`、\`share-retry\`、\`timeout-send\`（\`timeout.send_ms\`）、\`mock-in-chain\`；缺这些能力的执行器按"缺能力"跳过。结果项 \`same_as\` 要求两个成功请求 data 的同一字段相等（如 \`meta.conn\`）。`;
 
 /**
  * 读取目录下全部场景并生成 README 文本。

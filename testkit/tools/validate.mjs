@@ -51,6 +51,31 @@ function checkRange(where, r) {
   if (r.min != null && r.max != null && r.min > r.max) err(where, 'min 大于 max');
 }
 
+/** 校验 multipart 请求体（schema $defs/multipartBody） */
+function checkMultipart(where, body) {
+  const extra = Object.keys(body).filter((k) => k !== 'multipart');
+  if (extra.length) err(where, `multipart 请求体只能含 multipart 一个键，多出 ${extra.join(',')}`);
+  const m = body.multipart;
+  if (!isObj(m)) return err(where, 'multipart 必须是对象');
+  for (const k of Object.keys(m)) if (!['fields', 'files'].includes(k)) err(where, `multipart 未知字段 ${k}`);
+  if (m.fields != null) {
+    if (!isObj(m.fields)) err(where, 'multipart.fields 必须是对象');
+    else for (const [k, v] of Object.entries(m.fields)) if (typeof v !== 'string') err(where, `multipart.fields.${k} 必须是字符串`);
+  }
+  if (m.files != null) {
+    if (!Array.isArray(m.files)) return err(where, 'multipart.files 必须是数组');
+    m.files.forEach((f, i) => {
+      const w = `${where}.multipart.files[${i}]`;
+      if (!isObj(f)) return err(w, '文件必须是对象');
+      for (const k of Object.keys(f)) if (!['name', 'filename', 'size', 'seed'].includes(k)) err(w, `未知字段 ${k}`);
+      if (typeof f.name !== 'string' || !f.name) err(w, 'name 必须是非空字符串');
+      if (typeof f.filename !== 'string') err(w, 'filename 必须是字符串');
+      if (!Number.isInteger(f.size) || f.size < 0) err(w, 'size 必须是非负整数');
+      if (!Number.isInteger(f.seed) || f.seed < 0 || f.seed > 4294967295) err(w, 'seed 必须是 0..4294967295 的整数');
+    });
+  }
+}
+
 /** 收集 step 中的请求 id；同时校验 step 结构 */
 function walkStep(where, step, ids) {
   if (!isObj(step)) return err(where, 'step 必须是对象');
@@ -72,6 +97,7 @@ function walkStep(where, step, ids) {
         else for (const ok of Object.keys(v.options)) if (!OPT_KEYS.has(ok)) err(where, `options 未知字段 ${ok}`);
       }
       if (v.cancel_after_ms != null && !Number.isInteger(v.cancel_after_ms)) err(where, 'cancel_after_ms 必须是整数');
+      if (isObj(v.body) && 'multipart' in v.body) checkMultipart(`${where}.body`, v.body);
       if (ids.has(v.id)) err(where, `请求 id 重复 ${v.id}`);
       ids.add(v.id);
       break;
@@ -127,7 +153,7 @@ function walkStep(where, step, ids) {
 }
 
 /** 校验单条 result */
-function checkResult(where, r, ids) {
+function checkResult(where, r, ids, selfId) {
   if (!isObj(r)) return err(where, 'result 必须是对象');
   for (const k of Object.keys(r)) if (!RESULT_KEYS.has(k)) err(where, `result 未知字段 ${k}`);
   if (r.ok != null && typeof r.ok !== 'boolean') err(where, 'ok 必须是布尔');
@@ -139,6 +165,16 @@ function checkResult(where, r, ids) {
   }
   if (r.hit != null && !Number.isInteger(r.hit)) err(where, 'hit 必须是整数');
   if (r.from_cache != null && typeof r.from_cache !== 'boolean') err(where, 'from_cache 必须是布尔');
+  if (r.same_as != null) {
+    const s = r.same_as;
+    if (!isObj(s) || typeof s.id !== 'string' || typeof s.field !== 'string' || !s.field) err(where, 'same_as 需要 {id, field}');
+    else {
+      for (const k of Object.keys(s)) if (!['id', 'field'].includes(k)) err(where, `same_as 未知字段 ${k}`);
+      if (!ids.has(s.id)) err(where, `same_as 引用了不存在的请求 id: ${s.id}`);
+      if (s.id === selfId) err(where, 'same_as 不能引用自己');
+      if (r.ok !== true) err(where, 'same_as 只能用于 ok=true 的结果');
+    }
+  }
 }
 
 /** 校验一个 expectation */
@@ -150,7 +186,7 @@ function checkExpectation(where, e, ids) {
     if (!isObj(e.results)) err(where, 'results 必须是对象');
     else for (const [id, r] of Object.entries(e.results)) {
       if (!ids.has(id)) err(where, `results 引用了不存在的请求 id: ${id}`);
-      checkResult(`${where}.results.${id}`, r, ids);
+      checkResult(`${where}.results.${id}`, r, ids, id);
     }
   }
   if (e.order) {
@@ -207,6 +243,18 @@ function checkScenario(file, sc, idx) {
   const ids = new Set();
   if (!Array.isArray(sc.steps) || sc.steps.length === 0) err(where, 'steps 不能为空');
   else sc.steps.forEach((s, i) => walkStep(`${where}.steps[${i}]`, s, ids));
+
+  // 新能力名的一致性：用到对应特性就必须在 requires 里声明，否则缺能力的执行器不会跳过
+  if (Array.isArray(sc.requires)) {
+    const usesJson = JSON.stringify(sc.steps ?? []);
+    const plugins = sc.client?.plugins ?? {};
+    const need = [
+      ['multipart', /"multipart":s*{/.test(usesJson)],
+      ['share-retry', plugins.share?.policy === 'retry' || /"share":s*"retry"/.test(usesJson)],
+      ['timeout-send', plugins.timeout?.send_ms != null],
+    ];
+    for (const [cap, used] of need) if (used && !sc.requires.includes(cap)) err(where, `用到了 ${cap} 相关特性但 requires 未声明 ${cap}`);
+  }
 
   if (!isObj(sc.expect)) return err(where, 'expect 必须是对象');
   for (const [key, e] of Object.entries(sc.expect)) {

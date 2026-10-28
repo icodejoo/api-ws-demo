@@ -1589,5 +1589,138 @@
       }
     },
     "timeout_ms": 40000
+  },
+  {
+    "id": "breaker.half-open-probe-cancel",
+    "title": "半开探测在途被取消：名额归还，不计成败，下一个探测照常放行",
+    "why": "取消不反映依赖健康；不能占住半开名额，也不能把熔断器关上或重新打开",
+    "requires": [
+      "breaker",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 3,
+          "open_ms": 1000
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "f1",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f2",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "f3",
+              "path": "/t/public/bk",
+              "query": {
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "blocked",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "wait": 1300
+          },
+          {
+            "request": {
+              "id": "probe",
+              "path": "/t/public/bk",
+              "query": {
+                "delay_ms": 3000
+              },
+              "cancel_after_ms": 300
+            }
+          },
+          {
+            "request": {
+              "id": "probe2",
+              "path": "/t/public/bk"
+            }
+          },
+          {
+            "request": {
+              "id": "after",
+              "path": "/t/public/bk"
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "f1": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "f2": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "f3": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "blocked": {
+            "ok": false,
+            "error": "breaker_open"
+          },
+          "probe": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "probe2": {
+            "ok": true
+          },
+          "after": {
+            "ok": true
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/public/bk": {
+              "eq": 6
+            }
+          },
+          "aborted": {
+            "min": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
   }
 ]

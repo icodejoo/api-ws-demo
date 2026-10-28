@@ -123,7 +123,12 @@
         "breaker",
         "offline",
         "timeout",
-        "log"
+        "log",
+        "multipart",
+        "keep-alive",
+        "share-retry",
+        "timeout-send",
+        "mock-in-chain"
       ]
     },
     "network": {
@@ -174,7 +179,7 @@
           "description": "查询参数（包括 CONTRACT §3 的控制参数）"
         },
         "body": {
-          "description": "请求体，任意 JSON"
+          "description": "请求体，任意 JSON；只含单个键 multipart 的对象按 multipart/form-data 发送（$defs/multipartBody，需 requires 含 multipart），其余按 JSON 发送"
         },
         "headers": {
           "type": "object",
@@ -204,7 +209,8 @@
                 "start",
                 "end",
                 "race",
-                "none"
+                "none",
+                "retry"
               ]
             },
             "loading": {
@@ -423,6 +429,25 @@
         "from_cache": {
           "type": "boolean",
           "description": "true 表示该请求不应到达服务器（由 server log 推断）"
+        },
+        "same_as": {
+          "type": "object",
+          "required": [
+            "id",
+            "field"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "被比较的另一个请求 id，必须与本请求不同"
+            },
+            "field": {
+              "type": "string",
+              "description": "相对最终 data 的点分路径，如 meta.conn"
+            }
+          },
+          "description": "本请求 data 的 field 值必须与请求 id 的 data 的同一 field 值相等（两个请求都要成功且有该字段）。用于 meta.conn 这类只能\"相互比较\"的值（CONTRACT §7）"
         }
       }
     },
@@ -536,7 +561,7 @@
           "description": "{ max, delay_ms, statuses?: [500,502,503,504], methods?: [...], respect_retry_after? }"
         },
         "share": {
-          "description": "{ policy: 'start'|'end'|'race' }"
+          "description": "{ policy: 'start'|'end'|'race'|'retry' }：retry 需要 share-retry 能力，语义见 CONTRACT §7"
         },
         "loading": {
           "description": "{ delay_ms?, delay_close_ms? }"
@@ -551,7 +576,7 @@
           "description": "{ scope?: 'user' }：scope=user 时 key 并入当前登录用户标识，切换用户不串缓存/共享；请求级 options.key=true 才生成 key"
         },
         "timeout": {
-          "description": "{ connect_ms?, receive_ms?, total_ms? }"
+          "description": "{ connect_ms?, send_ms?, receive_ms?, total_ms? }：send_ms 只在写请求体阶段计时，需要 timeout-send 能力（CONTRACT §7）"
         },
         "breaker": {
           "description": "{ threshold, open_ms }"
@@ -561,6 +586,62 @@
         },
         "mock": {
           "description": "{ fallback_on_404?: boolean }：mock 基址由执行器固定为 <baseURL>/t/mock（CONTRACT §4.1），场景不写基址"
+        }
+      }
+    },
+    "multipartBody": {
+      "type": "object",
+      "description": "multipart/form-data 请求体。先按对象顺序写 fields（UTF-8 文本），再按数组顺序写 files；文件内容由 seed 与 size 按 CONTRACT §7 的 LCG 算法确定性生成，各执行器自行构造，不得读本地文件",
+      "required": [
+        "multipart"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "multipart": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fields": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "文本字段，名到值"
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "filename",
+                  "size",
+                  "seed"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "表单字段名"
+                  },
+                  "filename": {
+                    "type": "string"
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "文件字节数"
+                  },
+                  "seed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4294967295,
+                    "description": "LCG 的 32 位无符号种子"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

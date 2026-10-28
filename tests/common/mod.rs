@@ -36,7 +36,7 @@ pub async fn start(router: Router) -> Server {
     let task = tokio::spawn(async move {
         axum::serve(
             listener,
-            router.into_make_service_with_connect_info::<SocketAddr>(),
+            router.into_make_service_with_connect_info::<api_ws_demo::connection::ConnectionInfo>(),
         )
         .await
         .unwrap();

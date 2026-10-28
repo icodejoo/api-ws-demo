@@ -22,7 +22,7 @@ async fn stomp_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> i
 }
 
 /// 用共享状态构建路由；TEST_MODE=1 跳过限流与 CPU 熔断。
-/// 参数为应用状态，返回可交给 `axum::serve(listener, build_router(state))` 的路由。
+/// 参数为应用状态；启动时使用 `into_make_service_with_connect_info::<crate::connection::ConnectionInfo>()`。
 pub fn build_router(state: AppState) -> Router {
     let app = Router::new()
         .merge(crate::testkit::router())
@@ -86,5 +86,7 @@ pub fn build_router(state: AppState) -> Router {
                 cpu::cpu_breaker_mw,
             ))
     };
-    app.layer(CorsLayer::permissive()).with_state(state)
+    app.layer(CorsLayer::permissive())
+        .layer(axum::middleware::from_fn(crate::connection::peer_info))
+        .with_state(state)
 }

@@ -23,7 +23,7 @@ async fn main() {
 
     axum::serve(
         listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
+        app.into_make_service_with_connect_info::<api_ws_demo::connection::ConnectionInfo>(),
     )
     .with_graceful_shutdown(shutdown_signal())
     .await

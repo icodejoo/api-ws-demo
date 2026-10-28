@@ -7,7 +7,10 @@ use std::{
     sync::{atomic::AtomicU8, Arc},
     time::{Duration, Instant},
 };
-use tokio::{io::AsyncReadExt, net::TcpStream};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
+};
 
 /// 创建启用 TEST_MODE 的完整主服务器。
 async fn server() -> Server {
@@ -642,9 +645,277 @@ async fn auth_lifecycle() {
     assert_eq!(
         json(s.addr, GET, "/t/ping", EMPTY_TEXT, Value::Null)
             .await
-            .1,
-        json!({(CODE):0})
+            .1[CODE],
+        0
     );
+}
+
+/// 读取一个完整响应且不消费下一个响应的字节，供真实 keep-alive 验证。
+async fn one_response(stream: &mut TcpStream) -> (u16, Value) {
+    tokio::time::timeout(Duration::from_secs(8), async {
+        let mut bytes = Vec::new();
+        loop {
+            bytes.push(stream.read_u8().await.expect("complete HTTP response"));
+            if bytes.ends_with(b"\r\n\r\n") {
+                break;
+            }
+        }
+        let headers = String::from_utf8(bytes.clone())
+            .unwrap()
+            .to_ascii_lowercase();
+        if headers.contains("transfer-encoding: chunked") {
+            loop {
+                bytes.push(stream.read_u8().await.unwrap());
+                if bytes.ends_with(b"\r\n0\r\n\r\n") {
+                    break;
+                }
+            }
+        } else {
+            let len: usize = headers
+                .lines()
+                .find_map(|l| l.strip_prefix("content-length:"))
+                .unwrap()
+                .trim()
+                .parse()
+                .unwrap();
+            let offset = bytes.len();
+            bytes.resize(offset + len, 0);
+            stream.read_exact(&mut bytes[offset..]).await.unwrap();
+        }
+        let (status, body) = decode(&bytes);
+        (status, serde_json::from_slice(&body).unwrap())
+    })
+    .await
+    .unwrap()
+}
+
+/// 同一 TCP 上的错误、业务失败、探针与成功连接号一致，新连接递增。
+#[tokio::test]
+async fn connection_ids_follow_tcp_keep_alive() {
+    let s = server().await;
+    let mut stream = TcpStream::connect(s.addr).await.unwrap();
+    let mut conn = None;
+    for (path, status, code) in [
+        ("/t/private/a", 401, 401),
+        ("/t/echo?status=500&style=business", 200, 500),
+        ("/t/echo?read_delay_ms=bad", 400, 400),
+        ("/t/ping", 200, 0),
+        (STATS, 200, 0),
+        (ECHO, 200, 0),
+    ] {
+        stream
+            .write_all(
+                format!("GET {path} HTTP/1.1\r\nHost: localhost\r\n{RUN_HEADER}\r\n").as_bytes(),
+            )
+            .await
+            .unwrap();
+        let (actual_status, value) = one_response(&mut stream).await;
+        assert_eq!(
+            (actual_status, value[CODE].as_i64().unwrap()),
+            (status, code)
+        );
+        let id = value[DATA]["meta"]["conn"].as_u64().unwrap();
+        assert!(id > 0);
+        assert_eq!(*conn.get_or_insert(id), id);
+    }
+    let (_, next) = json(s.addr, GET, ECHO, RUN_HEADER, EMPTY).await;
+    assert!(next[DATA]["meta"]["conn"].as_u64().unwrap() > conn.unwrap());
+    let another_server = server().await;
+    let (_, next) = json(another_server.addr, GET, ECHO, RUN_HEADER, EMPTY).await;
+    assert!(next[DATA]["meta"]["conn"].as_u64().unwrap() > conn.unwrap());
+    let (_, ordinary) = json(s.addr, GET, "/health", "", EMPTY).await;
+    assert!(ordinary[DATA].get("meta").is_none());
+}
+
+/// 大流在延迟期写不完且无提前 413；小请求正常回显仍等待读延迟。
+#[tokio::test]
+async fn read_delay_blocks_upload_before_body_limit() {
+    let s = server().await;
+    let at = Instant::now();
+    let (_, value) = json(
+        s.addr,
+        POST,
+        "/t/echo?read_delay_ms=150",
+        RUN_HEADER,
+        json!({"a":1}),
+    )
+    .await;
+    assert!(at.elapsed() >= Duration::from_millis(150));
+    assert_eq!(value[DATA]["request"]["body"]["json"], json!({"a":1}));
+    let socket = tokio::net::TcpSocket::new_v4().unwrap();
+    socket.set_send_buffer_size(4096).unwrap();
+    let mut stream = socket.connect(s.addr).await.unwrap();
+    let body = [b'x'; 16 * 1024];
+    stream.write_all(format!("POST /t/echo?read_delay_ms=1200 HTTP/1.1\r\nHost: localhost\r\nContent-Length: {}\r\n{RUN_HEADER}\r\n", 64 * 1024 * 1024).as_bytes()).await.unwrap();
+    let at = Instant::now();
+    let write = tokio::time::timeout(Duration::from_millis(250), async {
+        for _ in 0..4096 {
+            stream.write_all(&body).await?;
+        }
+        Ok::<_, std::io::Error>(())
+    })
+    .await;
+    assert!(
+        write.is_err(),
+        "upload should block before body is read, got {write:?}"
+    );
+    let mut byte = [0];
+    assert!(
+        tokio::time::timeout(Duration::from_millis(250), stream.read(&mut byte))
+            .await
+            .is_err(),
+        "server read and rejected body before read delay elapsed"
+    );
+    // 取消的 write_all 可能只写入了少量字节，继续发送以跨过 1MiB 上限。
+    let (mut reader, mut writer) = stream.split();
+    let (read, _) = tokio::time::timeout(Duration::from_secs(8), async {
+        tokio::join!(
+            async {
+                let mut bytes = Vec::new();
+                loop {
+                    let byte = reader.read_u8().await?;
+                    bytes.push(byte);
+                    if bytes.ends_with(b"\r\n\r\n") {
+                        break;
+                    }
+                }
+                Ok::<_, std::io::Error>(bytes)
+            },
+            async {
+                for _ in 0..4096 {
+                    if writer.write_all(&body).await.is_err() {
+                        break;
+                    }
+                }
+            }
+        )
+    })
+    .await
+    .unwrap();
+    assert!(at.elapsed() >= Duration::from_millis(1200));
+    match read {
+        Ok(bytes) => assert!(String::from_utf8(bytes)
+            .unwrap()
+            .starts_with("HTTP/1.1 413")),
+        // 未读完巨型请求即返回 413 时，Windows/Linux 可能先报告套接字中止。
+        Err(error) => assert!(
+            matches!(
+                error.kind(),
+                std::io::ErrorKind::ConnectionAborted | std::io::ErrorKind::ConnectionReset
+            ),
+            "{error}"
+        ),
+    }
+    let (_, stats) = json(s.addr, GET, STATS, RUN_HEADER, EMPTY).await;
+    assert!(stats[DATA]["log"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|entry| entry["status"] == 413));
+    for query in ["read_delay_ms=-1", "read_delay_ms=abc", "read_delay_ms=1.5"] {
+        let (_, value) = json(
+            s.addr,
+            POST,
+            &format!("/t/echo?{query}&style=business"),
+            RUN_HEADER,
+            EMPTY,
+        )
+        .await;
+        assert_eq!(value[CODE], 400);
+        assert!(value[DATA]["meta"]["conn"].as_u64().is_some());
+    }
+}
+
+/// 直接发送二进制 multipart，避免 JSON 客户端帮忙改变请求字节。
+async fn multipart_request(
+    s: &Server,
+    path: &str,
+    content_type: &str,
+    body: &[u8],
+    extra: &str,
+) -> (u16, Value) {
+    let mut stream = TcpStream::connect(s.addr).await.unwrap();
+    stream.write_all(format!("POST {path} HTTP/1.1\r\nHost: localhost\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\n{RUN_HEADER}{extra}\r\n", body.len()).as_bytes()).await.unwrap();
+    stream.write_all(body).await.unwrap();
+    one_response(&mut stream).await
+}
+
+/// 文本、重复字段、二进制、空文件和所有 echo 路径共享解析行为。
+#[tokio::test]
+async fn multipart_echo_fields_files_and_digest() {
+    let s = server().await;
+    let token = login(&s, json!({"username":"uploader"})).await;
+    let mut body = concat!(
+        "--test-boundary\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nold\r\n",
+        "--test-boundary\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\n示例\r\n",
+        "--test-boundary\r\nContent-Disposition: form-data; name=\"upload\"; filename=\"a.txt\"\r\n\r\nabc\r\n",
+        "--test-boundary\r\nContent-Disposition: form-data; name=\"upload\"; filename=\"binary.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+    ).as_bytes().to_vec();
+    body.extend_from_slice(&[0, 255, 128, 13, 10]);
+    body.extend_from_slice(b"\r\n--test-boundary\r\nContent-Disposition: form-data; name=\"empty\"; filename=\"\"\r\n\r\n\r\n--test-boundary--\r\n");
+    for path in [ECHO, "/t/public/upload", "/t/mock/upload", PRIVATE] {
+        let (status, value) = multipart_request(
+            &s,
+            path,
+            "multipart/form-data; boundary=\"test-boundary\"",
+            &body,
+            &format!(
+                "Authorization: Bearer {}\r\n",
+                token[ACCESS_TOKEN].as_str().unwrap()
+            ),
+        )
+        .await;
+        assert_eq!(status, 200);
+        assert_eq!(
+            value[DATA]["multipart"],
+            json!({
+                "fields":{"title":"示例"},
+                "files":[
+                    {"name":"upload","filename":"a.txt","size":3,"sha256":"ba7816bf8f01cfea"},
+                    {"name":"upload","filename":"binary.bin","size":5,"sha256":"6171db06a1c89b1f"},
+                    {"name":"empty","filename":"","size":0,"sha256":"e3b0c44298fc1c14"}
+                ]
+            })
+        );
+    }
+    let (_, value) = json(s.addr, POST, ECHO, RUN_HEADER, json!({"normal":true})).await;
+    assert!(value[DATA].get("multipart").is_none());
+}
+
+/// 损坏的 multipart 遵循两种风格，不把部分解析结果当成成功。
+#[tokio::test]
+async fn malformed_multipart_respects_response_style() {
+    let s = server().await;
+    for (style, expected) in [(HTTP, 400), (BUSINESS, 200)] {
+        for (content_type, body) in [
+            ("multipart/form-data", b"bad".as_slice()),
+            (
+                "multipart/form-data; boundary=b",
+                b"--b\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\ntruncated".as_slice(),
+            ),
+            (
+                "multipart/form-data; boundary=b",
+                b"--b\r\nContent-Disposition: form-data\r\n\r\nx\r\n--b--\r\n".as_slice(),
+            ),
+            (
+                "multipart/form-data; boundary=b",
+                b"--b\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\n\xff\r\n--b--\r\n"
+                    .as_slice(),
+            ),
+        ] {
+            let (status, value) = multipart_request(
+                &s,
+                &format!("/t/echo?style={style}"),
+                content_type,
+                body,
+                "",
+            )
+            .await;
+            assert_eq!(status, expected, "{value}");
+            assert_eq!(value[CODE], 400);
+            assert!(value[DATA]["meta"]["conn"].as_u64().is_some());
+        }
+    }
 }
 
 /// 执行三请求 barrier，返回按响应落定的 idx、rank、业务码。

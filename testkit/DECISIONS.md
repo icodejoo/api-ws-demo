@@ -227,3 +227,46 @@
 - **结论**：选 A。CONTRACT §7 定义 `filter` 的中立语义（请求级开启，剔除 query/JSON 对象 body 顶层的 null/undefined/NaN/空白字符串，保留 0/false，不递归）；`ignoreKeys`/`ignoreValues`/自定义 predicate 不在中立表达范围。新增 `scenarios/filter.json`，旧的两个 filter 场景补 `options.filter: true`。
 - **理由**：B 不解决问题，只是把假通过换成不运行；A 让能力和断言对得上，不认识该选项的执行器仍可按"缺能力/映射不了"处理。断言落在 echo 的 `body.raw`（精确串，可证明缺席）上；query 因 echo 的 query 是对象子集匹配，缺席只能靠 `key.filter-before-key` 的共享计数佐证。plugins.json、combos.json 里仅装配 filter 的场景保持不变，它们验证"装配不破坏其它能力"。
 - **拍板**：用户（jelon），2026-10-28。
+
+
+## D20 · 2026-10-28 · 撤销"遇 429/503 即停"的临时 skip，按真实预期执行
+
+- **背景**：D17 那一轮因"遇 429/503 立即停止"的临时约束，把 `retry.429-retried`、`retry.503-retry-after`、`retry.respects-retry-after-over-delay`、`basic.status-matrix`、`faults.status-with-business` 在全部 7 个网络上都写成 skip。约束只属于那一轮，却留在了共享场景里，所有执行器都被迫跳过这 5 个场景。
+- **选项**：A. 保留 skip；B. 按正确行为写预期，确实无法确定性断言的网络单独写原因；C. 缩小 `networks` 去掉那些网络。
+- **结论**：选 B。normal 恢复原有的精确预期；weak/lossy 只断言最终结果与资源释放；offline/dns 断言 `network` 且服务端 total=0，blackhole 断言 `timeout`（场景补 `base_timeout_ms=4000`、`timeout_ms=40000`）。仍写 skip 的只有：lossy（15% 随机 RST 与被测行为无关，`status-matrix`、`status-with-business`、`respects-retry-after-over-delay`），flap（离线窗口 1500ms 长于重试预算，或单发请求只会得到 network）。skip 原因都写在场景里，不再用"本轮用户要求"。`status-with-business` 的 `normal`/`weak` 现在断言 http 风格 `status:503`，`@business` 断言 `business:9`（附录 B.1）。
+- **Retry-After 格式**：读服务端实现（`src/testkit/faults.rs`、`mod.rs`）确认，`retry_after` 参数按 u64 解析并原样写入头，只能产生整数秒（delta-seconds），**无法产生 HTTP 日期形式**；CONTRACT §3 已写明。日期形式的验收只能靠客户端单测，要在黑盒验证需要服务端新增能力（本次不改 Rust，作为缺口汇报）。
+- **理由**：D17 自己写明这 5 个场景是临时约束的产物，70 格 skip 不能算验收。"遇 429/503 即停"的目的是防真实线上限流，而这几个场景的 429/503 是服务端注入的（`data.reason == "injected"`，附录 B.6 记录了这条区分方法），执行器可据此放行，不必整体跳过。
+- **拍板**：用户（jelon）授权，主会话代拍，2026-10-28。
+
+
+## D21 · 2026-10-28 · plugins.single-auth 在 business 风格下的预期：ok:true
+
+- **背景**：`plugins.single-auth` 只装 auth、不装 normalize，发一个 `status=500&code=500` 的请求。D18 把单体场景并入领域文件时它进了 `auth.json`，`normal@business` 的预期是 `ok: true`（git 里最早出现在 9820bdb，此前没有）。但 dioman 的 `test/accept/bin/build_plugin_matrix.dart` 对 `normalize` 和 `auth` 都生成"business 下 500 识别为失败"（`ok:false, status:500`），与已提交的场景不一致；dioman 的 auth 在装配时还会启用信封转换器，所以 business 下 500 被识别为 `DiomanException(code: 500)`，这一格对 dioman 失败。
+- **选项**：A. 保持 `ok: true`（只装 auth 时不识别一般业务失败）；B. 改成 `ok:false, status:500`（auth 也负责识别所有业务失败）。
+- **结论**：选 A，场景预期不变，只在 `why` 里写清楚。
+- **理由**：AGENTS 的约定是"business 风格下判定失败依赖 normalize 类插件"；CONTRACT §4.2 与 schema 的 `pluginOptions.auth` 只要求 auth 在两种风格下识别 **401/403**（刷新、越权），没有要求识别 500。一个 500 信封是 HTTP 200 + code 500，对不装 normalize 的客户端就是"成功的 HTTP 响应"，其余单体场景（cache、retry、share 等）在 `normal@business` 也都是 `ok: true`，只有 `plugins.single-normalize` 是 `ok:false`。axp 执行器同样如此（未装 normalize 时 auth 只在过期/越权后把失败响应原样 resolve）。
+- **需要 dioman 侧跟进（不在 testkit 改动范围）**：把 `build_plugin_matrix.dart` 里 `name == tkNormalize || name == tkAuth` 改为只对 normalize 生成 `status:500`，否则重新生成会回退预期；dioman 执行器在只装 auth 时不应启用对 500 信封的失败识别（auth 仍要识别 401/403）。
+- **拍板**：用户（jelon）授权，主会话代拍，2026-10-28。
+
+
+## D22 · 2026-10-28 · 发送超时落地，连接超时暂不实现
+
+- **背景**：dioman 的 H5 假设（插件改写的超时配置真的在对应阶段生效）需要真实核对。现有 `timeout.connect-blackhole` 测的其实是接收超时：netem 的 blackhole 在用户态完成 TCP 握手后才不转发，连接已建立，`connect_ms` 没有机会触发。
+- **发送超时（落地）**：schema 的 `client.plugins.timeout` 增加 `send_ms`，新增能力 `timeout-send`（CONTRACT §7），场景 `timeout.send-slow-reader`：POST 一个由 seed 生成的 multipart 大文件，`read_delay_ms=5000`、`send_ms=500`，断言 `timeout` 且 `duration_ms` ≤ 2000。大请求体复用 multipart 的 seed 机制，不另开新的 body 类型，所以同时需要 `multipart` 能力。**请求体取 16MiB 而不是提议里的约 8MB**：在本机（Windows 回环 + netem 一跳）实测，Node 流式写入约 5.6MB 后才阻塞（直连约 2.8MB），8MB 只比阈值多 40%，换个平台或缓冲调优就可能被吞掉；16MiB 约 3 倍裕量，生成耗时约 0.2s。另外，一次性把整块请求体交给内核的 HTTP 栈（Node 对 256MB 的 write 也在 100ms 内返回）发送阶段永远不阻塞，没有可观察的发送超时，不具备 `timeout-send`。
+- **连接超时（暂不实现）**：服务端上一步汇报：netem 丢 SYN 不可行。代理只能 accept 内核已完成握手的连接，停止 accept 也挡不住握手；跨平台无法可靠控制；新增测试证明 blackhole 是握手完成后才读超时。选项：A. netem 用防火墙或原始 socket 丢 SYN（需要管理员权限和平台专用依赖）；B. 单独开不响应的端口（不 listen 会得到 RST，listen 不 accept 内核仍会完成握手，只有 backlog 满了才丢 SYN，依赖平台）；C. 客户端单测用 pending 连接器覆盖。结论：黑盒不测 connect 超时，由 C 覆盖；不加 `timeout.connect-nosyn`。`timeout.connect-blackhole` 保留 id，改标题和 why，写明它测的是已连接后的接收超时，`connect_ms=200` 小于 `receive_ms` 是为了证明连接预算不会误伤已建立的连接。重新评估的条件：能接受需要管理员权限的包过滤，或有稳定的不可路由地址。
+- **拍板**：用户（jelon）授权，主会话代拍，2026-10-28。
+
+
+## D23 · 2026-10-28 · 落地 dioman 缺口提议：新场景与细分能力
+
+- **背景**：dioman 的"② 单测 + 真实核对"找不到 testkit 场景核对的能力，提议见 `proposals/2026-10-28-dioman-gaps.md`（已按本条落地，文件改为"已落地"状态）。这些能力对所有执行器都有意义，不是 dioman 特有。
+- **结论与各节去向**：
+  - **熔断半开探测被取消**：只新增场景 `breaker.half-open-probe-cancel`，无契约改动；补了 f1–f3 的失败预期，服务端 6 次（3 次失败 + 被取消的探测 1 次 + 探测 2 + after）、`aborted ≥ 1`。
+  - **multipart**：`request.body` 支持 `{"multipart": {fields, files[{name, filename, size, seed}]}}`，新能力 `multipart`，场景 `auth.expired-multipart-replay`（用 `expire_local` 触发 401，重放后断言 echo 回报的每个文件 size 与 sha256，服务端 `/t/private/upload` 恰好 2 次、刷新 1 次）。**seed 生成算法选 32 位线性同余**（`state = state*1664525 + 1013904223 mod 2^32`，取高 8 位），CONTRACT §7 给出自检向量。选项对比：sha256(seed‖i) 拼接要求每个执行器引入哈希库（dio 默认没有）且更慢；LCG 各语言 5 行、无依赖、16MiB 约 0.2s。期望的 sha256 在场景里写死，执行器无需再算一遍对比。
+  - **连接复用**：服务端已给 `meta.conn`。场景 `basic.keep-alive-recovery-isolated`，新能力 `keep-alive`。失败响应在执行器里拿不到 `data`，不能直接比较失败请求的连接，所以改成"成功 warm → 401 恢复失败 → 500 重试耗尽 → 成功 final"，要求 warm 与 final 的 `meta.conn` 相同。schema 最小扩展：结果项 `same_as: {id, field}`（比较两个成功请求 data 的同一字段）；不选"服务端 `runs` 日志带 conn"，因为要改 Rust，可作为以后的增强。`tools/validate.mjs` 校验 `same_as` 引用的 id 存在、不自引用、只用于 ok:true。
+  - **share retry 策略**：CONTRACT §7 增加 `share.policy: retry`（共享同一结果、失败时内部重试、调用方只见最终一次；取消不重试；次数和间隔由执行器映射到客户端默认，契约只要求默认至少重试 1 次；请求体必须可重放，无法重放就不重试、不得发空体）；schema 的 policy 与 `options.share` 加 `retry`；新能力 `share-retry`；场景 `share.retry-recovers-single-result`（3 并发、`fail_on=1`，都成功、服务端恰好 2 次）。
+  - **mock 组合语义**：CONTRACT §7 写明硬要求（mock 响应不写缓存、不污染同 key 的真实请求，`combo.cache-mock-no-key-collision` 所有 mock 执行器都跑）与可选语义（新能力 `mock-in-chain`：mock 探测在插件链内、不走 cache/share，只有回落后的真实请求才走）。`combo.cache-mock-fallback-cached-once`、`combo.mock-share-fallback-single-flight` 的 requires 加 `mock-in-chain`，三个场景的 why 改成中立表述，去掉对 axp 源码文件的引用。mock 在传输层实现的执行器（如 dioman 的 DiomanMockAdapter）按缺能力统一跳过，不用各自特判。
+  - **发送/连接超时**：见 D22。**429/503 skip 与 single-auth**：见 D20、D21。
+- **新增能力名**：`multipart`、`keep-alive`、`share-retry`、`timeout-send`、`mock-in-chain`（schema `$defs/capability` 与 CONTRACT §7 同步）。`tools/validate.mjs` 增加一致性检查：场景用了 multipart 请求体、`share.policy: retry`（含请求级 `share: "retry"`）或 `timeout.send_ms` 却没在 `requires` 声明对应能力时报错，避免缺能力的执行器漏跳过。
+- **未落地**：netem 丢 SYN 的 connect 超时（D22）；HTTP 日期形式的 Retry-After（D20，服务端无此能力）。
+- **拍板**：用户（jelon）授权，主会话代拍，2026-10-28。

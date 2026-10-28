@@ -2715,5 +2715,107 @@
         }
       }
     }
+  },
+  {
+    "id": "share.retry-recovers-single-result",
+    "title": "share(retry)：首发失败后内部重试，3 个调用方只看到最终的成功结果",
+    "why": "retry 策略是共享一个结果加失败时内部重试：调用方既不能各自重发（服务端会收到 3 次以上请求），也不能把首发的失败直接分发给所有人；fail_on=1 让首发失败、重试成功，服务端恰好 2 次，三个调用方都拿到同一次成功的结果",
+    "requires": [
+      "share",
+      "share-retry",
+      "key",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {},
+        "share": {
+          "policy": "retry"
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "r0",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": 1,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": 1,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "fail_on": 1,
+                "delay_ms": 300
+              },
+              "options": {
+                "key": true,
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r0": {
+            "ok": true,
+            "hit": 2
+          },
+          "r1": {
+            "ok": true,
+            "hit": 2
+          },
+          "r2": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
   }
 ]

@@ -29,16 +29,18 @@ barrier 分组、测试用户、token 都按 runId 隔离，不同轮次、不�
 
 ## 2. 统一响应
 
-和全站一致，用信封 `{code, data, message}`；`code = 0` 表示成功。所有 `/t/*` 成功响应的 `data`
+和全站一致，用信封 `{code, data, message}`；`code = 0` 表示成功。所有 `/t/*` 信封响应的 `data`
 都带一段公共字段 `meta`：
 
 ```json
 { "meta": { "run": "r1", "key": "k", "hit": 3, "path": "/t/echo", "method": "GET",
-            "auth": "u1" , "ts": 1730000000000 } }
+            "auth": "u1" , "ts": 1730000000000, "conn": 1 } }
 ```
 
 - `hit` 是同一 (run, key) 下的第几次命中，从 1 开始。key 默认取 method + path，可以用 `key=` 参数覆盖。
+  探针和控制参数解析失败不增加命中，`meta.hit` 为 0。
 - `auth` 是鉴权通过的用户名；匿名请求为 `null`。
+- `conn` 是入站 TCP 连接的序号，从 1 开始，在进程内按接受连接的顺序单调递增且唯一；同一 keep-alive 连接上的请求相同，新连接更大。与 runId 无关，重启进程后重新计数。所有带信封的 `/t/*` 响应（包括失败、探针和观测）都带 `data.meta.conn`；HEAD、204、304 和特殊 fault 仍遵循无体或非信封规则。
 
 ### 2.1 响应风格（两种都要支持）
 
@@ -66,6 +68,7 @@ barrier 分组、测试用户、token 都按 runId 隔离，不同轮次、不�
 |---|---|---|
 | `key` | method+path | 命中计数和 flaky 状态的分组键 |
 | `delay_ms` | 0 | 响应前先等待这么久，上限 10000 |
+| `read_delay_ms` | 0 | 开始读取请求体前等待这么久，上限 30000；超限截断，负数和非整数返回 400。等待期间不轮询 body；之后仍执行 1MiB 请求体上限，超限返回 413。适用于业务接口，探针和观测不等待 |
 | `status` | 200 | 逻辑状态码。http 风格下作为 HTTP 状态码输出；business 风格下 HTTP 为 200，这个值写进 `code` |
 | `code` | 同 status，status 为 200 时取 0 | 显式指定业务码，优先级高于 status 推导出的值；HTTP 200 + 非 0 code 用来模拟纯业务失败，比如 `code=1001` 表示库存不足 |
 | `style` | 由 `X-Test-Style` 决定 | 本次请求的响应风格：`http` 或 `business`，见 §2.1 |
@@ -76,7 +79,7 @@ barrier 分组、测试用户、token 都按 runId 隔离，不同轮次、不�
 | `fail_code` | 同 fail_status | 失败时的业务码 |
 | `fail_every` | 0 | 每 N 次命中失败一次，用来模拟周期性故障 |
 | `fail_on` | – | 按命中序号指定哪几次失败，如 `fail_on=1,3`（第 1、3 次失败，其余成功）；与 `fail_times`/`fail_every` 同时出现时取并集 |
-| `retry_after` | – | 失败时附带的 `Retry-After` 头（秒） |
+| `retry_after` | – | 失败时附带的 `Retry-After` 头，值为非负整数秒（delta-seconds），原样输出；非整数返回 400。服务端**不能**产生 HTTP 日期形式 |
 | `size` | 0 | 在 `data.pad` 填充这么多字节，模拟大响应 |
 | `fault` | – | 应用层坏响应，见下表 |
 | `chunk_ms` | 50 | `fault=slow_body` 时每块的间隔 |
@@ -107,6 +110,9 @@ barrier 分组、测试用户、token 都按 runId 隔离，不同轮次、不�
 - **`ANY /t/echo`**、**`ANY /t/public/{*rest}`**：匿名访问，按控制参数响应。`data` 里除了 `meta`，还有
   `request: {method, path, query, headers, body}`。headers 只回显 `authorization`、`content-type`、`x-*`；
   body 同时给原始字符串和解析后的 JSON（解析失败则为 null）。
+  `multipart/form-data` 额外返回 `data.multipart: {fields, files}`：`fields` 是字段名到 UTF-8 文本的映射（重复名取最后一个），`files` 按上传顺序回报 `{name, filename, size, sha256}`，其中 `size` 为文件字节数，`sha256` 为 SHA-256 的前 16 个小写十六进制字符。存在 filename（含空字符串）的部分视为文件，空文件也回报；缺少 name、非法 UTF-8 文本、缺失 boundary 或格式损坏返回 400，遵循 §2.1 风格。仍保留原始 request 回显，非 multipart 不增加 multipart 字段；mock 和鉴权成功的 private 路径行为相同。
+
+`read_delay_ms` 用于验证发送超时：操作系统和 HTTP 栈仍可能缓冲部分字节，客户端必须持续发送足够大的流以塞满缓冲区；小请求只会表现为响应变慢。大流可以超过请求体上限，延迟结束后服务器按 413 拒绝；请求尚未发完时也可能先观察到连接中止，不应断言上传成功。
 
 ### 4.2 鉴权
 
@@ -174,7 +180,7 @@ barrier 分组、测试用户、token 都按 runId 隔离，不同轮次、不�
   - `log` 最多保留 1000 条。`aborted: true` 表示客户端在服务器响应之前就断开了，这是验证"取消真的掐断了连接"的依据。
   - `peak_inflight` 是同时在途请求数的峰值，用来验证去重和并发数限制。
 - **`DELETE /t/runs/{run}`**：清空这一轮的全部状态。
-- **`GET /t/ping`**：一个很轻的连通性探针，返回 `{code:0}`，给 offline 插件探测网络用。
+- **`GET /t/ping`**：一个很轻的连通性探针，返回 `{code:0, data:{meta}, message:"ok"}`，给 offline 插件探测网络用。
 
 > **实现澄清（2026-10-27）**：探针、统计读取和轮次删除不计入业务 `total/by_key/by_path/inflight/log`，
 > 避免观测行为干扰断言；统计与删除仍返回 `data.meta`，`hit` 沿用请求所属轮次的同键序号。
@@ -255,7 +261,8 @@ profile 可以直接写预设名的字符串，也可以写对象：
 见 `scenario.schema.json`。要点：
 
 - **能力声明**：场景用 `requires` 声明需要哪些能力，名字与语言无关，取 `auth`、`cache`、`retry`、`share`、`cancel`、
-  `loading`、`mock`、`normalize`、`notify`、`repath`、`key`、`filter`、`envs`、`breaker`、`offline`、`timeout`、`log`。
+  `loading`、`mock`、`normalize`、`notify`、`repath`、`key`、`filter`、`envs`、`breaker`、`offline`、`timeout`、`log`，以及下面的细分能力
+  `multipart`、`keep-alive`、`share-retry`、`timeout-send`、`mock-in-chain`。
   客户端缺少某项能力时跳过该场景，并在报告里写 `skipped: missing <cap>`，不算失败。
 - **`filter` 能力的中立语义**：`client.plugins.filter` 只表示"装配了过滤能力"，**不会对任何请求自动生效**；
   请求必须显式写 `options.filter: true` 才开启。开启后，客户端在发送前剔除查询参数（`query`）和请求体（`body`，
@@ -265,6 +272,42 @@ profile 可以直接写预设名的字符串，也可以写对象：
   `ignoreKeys`、`ignoreValues`、自定义 predicate 属于各库的私有扩展，**不在中立表达范围内**，场景不得依赖。
   注意：部分 HTTP 库序列化查询串时本来就会丢掉 `null`/`undefined`，所以"剔除 null"只在请求体上才能可靠断言，
   查询参数上用空白字符串断言。
+- **细分能力**（在上面的大类之外，声明"某个具体行为"；场景用到对应特性就必须在 `requires` 里写上，`tools/validate.mjs` 会检查）：
+
+  | 能力 | 执行器要做到什么 |
+  |---|---|
+  | `multipart` | 能发 `request.body.multipart`（见下文），并且 auth 刷新重放、retry/share 内部重试时重新构造请求体，不重用已被读完的流 |
+  | `keep-alive` | 默认就复用 TCP 连接：同一个客户端实例上串行的请求，只要服务端没有关连接，就走同一条连接（`meta.conn` 不变）。每个请求都新建连接或强制 `Connection: close` 的执行器不具备此能力 |
+  | `share-retry` | `share.policy` 支持 `retry`（见下文） |
+  | `timeout-send` | `timeout` 能力支持 `send_ms`，且只在写请求体阶段计时（见下文） |
+  | `mock-in-chain` | mock 探测请求在插件链内发出：不走 cache/share，只有 404 回落后的真实请求才走（见下文"mock 的组合语义"） |
+
+- **multipart 请求体与 seed 内容**：`request.body` 是只含单个键 `multipart` 的对象时，执行器按 `multipart/form-data` 发送：
+  `{"multipart": {"fields": {"<名>": "<文本>"}, "files": [{"name", "filename", "size", "seed"}]}}`。
+  - 各部分的顺序：先按对象顺序写 `fields`（UTF-8 文本），再按数组顺序写 `files`；每个文件部分带 `name`、`filename`，`Content-Type` 取 `application/octet-stream`。`fields` 和 `files` 都可省略。
+  - **文件内容由 `seed` 和 `size` 确定性生成**（32 位线性同余，不依赖任何库，各语言结果逐字节一致）：
+    ```text
+    state = seed                          // 无符号 32 位，取值 0..4294967295
+    重复 size 次：
+        state = (state * 1664525 + 1013904223) mod 2^32
+        输出一个字节：state >> 24         // 取高 8 位
+    ```
+    JS 写法：`state = (Math.imul(state, 1664525) + 1013904223) >>> 0; byte = state >>> 24`。
+    自检向量：`seed=1` 的前 16 字节是 `3c5e81b40c5ec68e04a3406c97d63cfb`；`seed=0` 的前 8 字节是 `3c47d1aa629f57a3`；`seed=4294967295` 的前 8 字节是 `3c3022a1b7dfe9b9`；`seed=42, size=1024` 的 sha256 前 16 位是 `c74282f6503b9595`。
+  - 断言方式：echo 的 `data.multipart.files[].sha256`（§4.1）等于这段字节的 SHA-256 前 16 位小写十六进制。场景里直接写死期望值，执行器不需要自己再算一遍对比。
+  - 大请求体也用这个机制构造（如 `size: 16777216`）。服务端请求体上限是 1MiB（§5），超过的体会被 413 拒绝，所以需要成功回显的场景，文件总大小必须小于 1MiB。
+- **`share.policy: retry`**（需要 `share-retry`）：和 `start` 一样，同 key 的并发请求只由首发发出一次请求，其余跟随者等待同一个结果；区别是首发失败时**共享层自己内部重试**，调用方只看到最终的一次结果（成功，或最后一次失败）。
+  - 触发重试的失败：除"取消"外的任何失败（逻辑状态非成功、`network`、`timeout` 等）。取消不重试；跟随者取消只影响它自己。
+  - 重试次数和间隔**由执行器映射到客户端自己的默认值**，场景不得依赖具体次数和间隔；契约只要求默认至少重试 1 次，所以"首发失败 1 次后恢复"的场景必须成功。次数耗尽后，所有调用方拿到同一个最终错误。
+  - **请求体必须能重放**：每次重试发出的请求体与首发完全一致（流式或一次性的请求体要重新构造）。无法重放时不得发出空体或残缺体，应放弃重试，把原始失败交给调用方。
+  - 内部重试由 share 自己负责，不依赖也不受 retry 插件配置影响；auth 刷新、loading、notify 对一次逻辑请求仍只生效一次。
+- **`timeout.send_ms`**（需要 `timeout-send`）：发送阶段的超时，只在**写请求体**期间计时（没有请求体、或请求体很快写完时不会触发），超过则以 `timeout` 失败，并释放连接。它不同于 `receive_ms`（等响应头和响应体）和 `total_ms`。
+  - 验证方法是 `read_delay_ms`（§3）：服务端在读请求体前停顿，客户端必须持续发送足够大的流把操作系统和 HTTP 栈的缓冲塞满，发送才会真正阻塞。缓冲大小因平台而异（Windows 回环加 netem 实测约 5.6MB），所以场景用 16MiB 的 multipart 文件。
+  - 一次性把整个请求体交给内核、写完即返回的 HTTP 栈（发送阶段永远不会阻塞）没有可观察的发送超时，不具备此能力。
+- **mock 的组合语义**：
+  - **硬要求（所有声明 `mock` 的执行器）**：mock 响应不写缓存，也不污染同 key 的真实请求——关掉 mock 后，同 key 的真实请求不能拿到缓存里的 mock 数据（`combo.cache-mock-no-key-collision`）。
+  - **可选语义（`mock-in-chain`）**：mock 探测请求在插件链内：探测不走 cache、也不参与 share（并发的 N 个请求各发一次 mock 探测），只有探测 404 回落后的真实请求才走 cache/share（首次写入、再次命中；并发回落合并为一次）。把 mock 实现在传输层、位于整条拦截器链之下的执行器（例如 dioman 的 `DiomanMockAdapter`）不具备此能力：回落的真实结果被缓存后第二次不再探测，并发请求先在 share 层合并后只探测一次，与上面的计数不同，都不算错误，按"缺能力"跳过。
+- **`meta.conn` 的断言**：失败响应（如 401、500）在执行器里只产生错误类别，拿不到 `data`，所以场景不直接断言失败请求的连接；而是在失败前后各发一个成功请求，用结果项的 `same_as: {"id": "<另一个请求>", "field": "meta.conn"}` 要求两者最终 `data` 的同一字段（相对 `data` 的点分路径）相等，即失败没有让连接报废。`same_as` 只能用于 `ok: true` 的结果，被比较的两个请求都必须成功且有该字段。
 - **插件配置**：`client.plugins` 写中立配置，各执行器自己映射成本库的参数。映射不了的字段要显式报错，不能静默忽略。
 - **响应风格维度**：每个场景默认在 `http` 和 `business` 两种风格下各跑一遍（§2.1）。场景可以用 `styles` 字段收窄范围。
 - **错误分类**：预期里的错误统一用下面这些取值，各执行器负责把本库的错误归到这些类别：
@@ -292,7 +335,7 @@ profile 可以直接写预设名的字符串，也可以写对象：
 
 ## 附录 A：响应体示例
 
-所有示例都是完整的 HTTP 响应体。`meta` 字段的结构见 §2，这里不再展开。
+`meta` 字段的结构见 §2；A.1 展开公共字段，其余示例为便于阅读可能省略 `data.meta` 或其中公共字段，实际信封响应均包含完整的 meta（含 `conn`）。
 
 ### A.1 回显与匿名
 
@@ -302,7 +345,7 @@ profile 可以直接写预设名的字符串，也可以写对象：
 { "code": 0, "message": "ok",
   "data": {
     "meta": { "run": "r1", "key": "POST /t/echo", "hit": 1, "path": "/t/echo",
-              "method": "POST", "auth": null, "ts": 1730000000000 },
+              "method": "POST", "auth": null, "ts": 1730000000000, "conn": 1 },
     "request": {
       "method": "POST", "path": "/t/echo", "query": { "a": "1" },
       "headers": { "content-type": "application/json", "x-trace": "1" },
@@ -313,11 +356,19 @@ profile 可以直接写预设名的字符串，也可以写对象：
 
 - 请求带了 `data=` 参数时，`payload` 是解析后的 JSON。
 - 请求带了 `size=` 参数时，`pad` 是相应长度的填充字符串。
+- 请求带了 `read_delay_ms=500` 时，读取 body 前至少等待 500ms，正常回显结构不变。
+
+multipart 上传文本 `title=示例` 和文件 `a.txt`（内容为 `abc`）时，`data` 除上述公共字段和原始 request 回显外还带：
+
+```json
+{ "multipart": { "fields": { "title": "示例" },
+  "files": [{ "name": "upload", "filename": "a.txt", "size": 3, "sha256": "ba7816bf8f01cfea" }] } }
+```
 
 `GET /t/ping`：
 
 ```json
-{ "code": 0, "data": { "pong": true }, "message": "ok" }
+{ "code": 0, "data": { "meta": { "run": "r1", "key": "GET /t/ping", "hit": 0, "path": "/t/ping", "method": "GET", "auth": null, "ts": 1730000000000, "conn": 1 } }, "message": "ok" }
 ```
 
 ### A.2 鉴权
@@ -368,7 +419,7 @@ HTTP/1.1 200 OK
 
 ```json
 { "code": 0, "message": "ok",
-  "data": { "meta": { "run": "r1", "key": "GET /t/barrier/g1", "hit": 3, "partial": false }, "idx": 2, "rank": 0 } }
+  "data": { "meta": { "run": "r1", "key": "GET /t/barrier/g1", "hit": 3, "conn": 1, "partial": false }, "idx": 2, "rank": 0 } }
 ```
 
 `fail` 命中的 idx 按 `fail_status` / `fail_code` 返回。默认情况下，http 风格是 HTTP 500，business 风格是 HTTP 200，响应体都是
@@ -425,3 +476,5 @@ netem 的控制 API 不用信封，直接返回 JSON：
    执行器每次替换令牌时都要记下旧值。
 4. **运行中切换响应风格**：新增 step `style: "http" | "business"`，从下一个请求开始生效，用来模拟后端灰度切换风格。
 5. **barrier 失败**：按 `fail_status`/`fail_code` 输出（附录 A.3），逻辑状态默认是 500，同样受响应风格控制。
+6. **注入的 429/503 是正常测试流量**（2026-10-28，D20）：`status`/`fail_status`/`fail_times` 等控制参数产生的 429、503，响应体 `data.reason` 恒为 `injected`（附录 A.4），`retry_after` 参数附带 `Retry-After` 头（整数秒）。场景可以放心主动注入；执行器如果要防备"真实线上限流或熔断"（`/t/*` 在线上也挂载，见 §5），应据 `data.reason == "injected"` 区分，而不是对所有 429/503 一律停机或跳过。
+7. **`/t/*` 能产生的 Retry-After 形式**：只有 delta-seconds（整数秒）。HTTP 日期形式的 `Retry-After` 需要服务端新增能力，目前没有；执行器对日期形式的解析只能用客户端单测覆盖。

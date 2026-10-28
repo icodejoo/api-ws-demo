@@ -1187,8 +1187,7 @@
           "pending_after": {
             "eq": 0
           }
-        },
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        }
       },
       "weak": {
         "results": {
@@ -1229,34 +1228,167 @@
             "error": "status:503"
           }
         },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "skip": "lossy 对每条连接以 15% 概率注入 RST，9 个并发请求里总有请求以 network 失败，与状态码分类无关，无法确定性断言；状态码分类由 normal、weak 覆盖"
+      },
+      "offline": {
+        "results": {
+          "s400": {
+            "ok": false,
+            "error": "network"
+          },
+          "s403": {
+            "ok": false,
+            "error": "network"
+          },
+          "s404": {
+            "ok": false,
+            "error": "network"
+          },
+          "s409": {
+            "ok": false,
+            "error": "network"
+          },
+          "s422": {
+            "ok": false,
+            "error": "network"
+          },
+          "s429": {
+            "ok": false,
+            "error": "network"
+          },
+          "s500": {
+            "ok": false,
+            "error": "network"
+          },
+          "s502": {
+            "ok": false,
+            "error": "network"
+          },
+          "s503": {
+            "ok": false,
+            "error": "network"
+          }
+        },
         "server": {
-          "by_path": {
-            "/t/echo": {
-              "eq": 9
-            }
+          "total": {
+            "eq": 0
           }
         },
         "client": {
           "pending_after": {
             "eq": 0
           }
-        },
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "lossy": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
-      },
-      "offline": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        }
       },
       "blackhole": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "s400": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "s403": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "s404": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "s409": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "s422": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "s429": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "s500": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "s502": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "s503": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       },
       "flap": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "skip": "本场景没有重试，请求落在 flap 前 1500ms 的离线窗口内，只会得到 network，与状态码分类无关；断网恢复由 retry.flap-recovers 覆盖"
       },
       "dns": {
-        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+        "results": {
+          "s400": {
+            "ok": false,
+            "error": "network"
+          },
+          "s403": {
+            "ok": false,
+            "error": "network"
+          },
+          "s404": {
+            "ok": false,
+            "error": "network"
+          },
+          "s409": {
+            "ok": false,
+            "error": "network"
+          },
+          "s422": {
+            "ok": false,
+            "error": "network"
+          },
+          "s429": {
+            "ok": false,
+            "error": "network"
+          },
+          "s500": {
+            "ok": false,
+            "error": "network"
+          },
+          "s502": {
+            "ok": false,
+            "error": "network"
+          },
+          "s503": {
+            "ok": false,
+            "error": "network"
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 0
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
       }
     },
     "timeout_ms": 40000,
@@ -1989,8 +2121,8 @@
   },
   {
     "id": "basic.safe-status-matrix",
-    "title": "停机约束下的安全状态码子矩阵",
-    "why": "保留原矩阵的 400/403/404/409/422/500/502 真实分类断言；429/503 留在原场景显式跳过。",
+    "title": "不含 429/503 的状态码子矩阵",
+    "why": "保留原矩阵的 400/403/404/409/422/500/502 真实分类断言；429/503 由 basic.status-matrix 覆盖。",
     "requires": [
       "log",
       "normalize"
@@ -2358,6 +2490,154 @@
         "results": {
           "error": {
             "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "basic.keep-alive-recovery-isolated",
+    "title": "连接复用下，401 恢复失败与 500 重试耗尽之后，同一连接上的下一个响应完整无污染",
+    "why": "失败响应（401/500）的响应体若没读完就把连接还回池里，下一个复用这条连接的请求会读到上一次的残留字节，表现为解析错误或拿到别人的数据；只在真实连接复用下出现，假传输测不出来。warm 与 final 的 meta.conn 相同，证明中间两次失败没有让连接报废；final 的 payload 完整，证明没有被污染",
+    "requires": [
+      "auth",
+      "retry",
+      "normalize",
+      "keep-alive"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {
+          "url_pattern": "/t/private",
+          "refresh": "endpoint"
+        },
+        "retry": {
+          "max": 2,
+          "delay_ms": 50
+        },
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "login": {
+              "user": "u1"
+            }
+          },
+          {
+            "request": {
+              "id": "warm",
+              "path": "/t/private/ka-warm",
+              "query": {
+                "data": "{\"step\":\"warm\"}"
+              }
+            }
+          },
+          {
+            "set_token": {
+              "access": "garbage",
+              "refresh": "garbage"
+            }
+          },
+          {
+            "request": {
+              "id": "auth-fail",
+              "path": "/t/private/ka-401"
+            }
+          },
+          {
+            "request": {
+              "id": "retry-fail",
+              "path": "/t/public/ka-500",
+              "query": {
+                "fail_times": 10
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "final",
+              "path": "/t/public/ka-ok",
+              "query": {
+                "data": "{\"step\":\"final\",\"list\":[1,2,3],\"text\":\"完整\"}"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "warm": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "step": "warm"
+              }
+            }
+          },
+          "auth-fail": {
+            "ok": false,
+            "error": "expired"
+          },
+          "retry-fail": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "final": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "step": "final",
+                "list": [
+                  1,
+                  2,
+                  3
+                ],
+                "text": "完整"
+              }
+            },
+            "same_as": {
+              "id": "warm",
+              "field": "meta.conn"
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/private/ka-warm": {
+              "eq": 1
+            },
+            "/t/private/ka-401": {
+              "eq": 1
+            },
+            "/t/auth/refresh": {
+              "eq": 1
+            },
+            "/t/public/ka-500": {
+              "eq": 3
+            },
+            "/t/public/ka-ok": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          },
+          "refresh": {
+            "eq": 1
+          },
+          "expired": {
+            "eq": 1
           }
         }
       }
