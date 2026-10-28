@@ -435,13 +435,24 @@
   {
     "id": "network.flap-no-retry",
     "title": "断网窗口内失败、恢复后成功",
-    "why": "前 1.5s 断网：首个请求 network，2s 后的请求成功",
+    "why": "前 1.5s 断网，连接预算 500ms：首个请求在恢复前以 network 或 timeout 结束，2s 后请求成功；避免系统 TCP 重试跨过恢复窗口",
     "requires": [
-      "log"
+      "log",
+      "timeout"
     ],
     "networks": [
       "flap"
     ],
+    "client": {
+      "plugins": {
+        "log": {},
+        "timeout": {
+          "connect_ms": 500,
+          "receive_ms": 4000
+        }
+      },
+      "base_timeout_ms": 4000
+    },
     "steps": [
       {
         "request": {
@@ -464,7 +475,10 @@
         "results": {
           "r1": {
             "ok": false,
-            "error": "network"
+            "error": [
+              "network",
+              "timeout"
+            ]
           },
           "r2": {
             "ok": true

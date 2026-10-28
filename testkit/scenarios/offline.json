@@ -195,16 +195,15 @@
         "results": {
           "a": {
             "ok": false,
-            "error": "network"
+            "error": "offline"
           },
           "b": {
-            "ok": false,
-            "error": "network"
+            "ok": true
           }
         },
         "server": {
           "total": {
-            "eq": 0
+            "eq": 1
           }
         },
         "client": {
@@ -539,16 +538,15 @@
         "results": {
           "a": {
             "ok": false,
-            "error": "network"
+            "error": "offline"
           },
           "b": {
-            "ok": false,
-            "error": "network"
+            "ok": true
           }
         },
         "server": {
           "total": {
-            "eq": 0
+            "eq": 1
           }
         },
         "client": {
@@ -558,5 +556,101 @@
         }
       }
     }
+  },
+  {
+    "id": "plugins.single-offline",
+    "title": "offline 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "offline 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "offline"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "offline": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
   }
 ]

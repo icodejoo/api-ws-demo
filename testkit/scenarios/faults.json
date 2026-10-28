@@ -874,7 +874,12 @@
     ],
     "networks": [
       "normal",
-      "weak"
+      "weak",
+      "lossy",
+      "offline",
+      "blackhole",
+      "flap",
+      "dns"
     ],
     "steps": [
       {
@@ -900,13 +905,115 @@
           "pending_after": {
             "eq": 0
           }
-        }
+        },
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
       },
       "weak": {
         "results": {
           "r1": {
             "ok": false,
             "error": "status:503"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        },
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "normal@business": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:9"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak@business": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "business:9"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "lossy": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "offline": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "blackhole": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "flap": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "dns": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      }
+    },
+    "timeout_ms": 40000,
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    }
+  },
+  {
+    "id": "faults.non2xx-business-safe",
+    "title": "HTTP 500 与非零业务码的分类优先级",
+    "why": "用允许注入的 500 验证 HTTP 优先、business 风格业务码优先；不替代原 503 状态的专门验收。",
+    "requires": [
+      "log",
+      "normalize"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 500,
+            "code": 9
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
           }
         },
         "client": {

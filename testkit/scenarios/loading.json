@@ -1162,8 +1162,7 @@
         "client": {
           "pending_after": {
             "eq": 0
-          },
-          "loading": []
+          }
         }
       },
       "dns": {
@@ -1181,8 +1180,7 @@
         "client": {
           "pending_after": {
             "eq": 0
-          },
-          "loading": []
+          }
         }
       },
       "blackhole": {
@@ -1609,5 +1607,243 @@
         }
       }
     }
+  },
+  {
+    "id": "plugins.single-loading",
+    "title": "loading 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "loading 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-loading-delay-ms-0",
+    "title": "loading.delay_ms = 0、loading.delay_close_ms = 0（合并等价缺省配置）",
+    "why": "loading.delay_ms = 0、loading.delay_close_ms = 0（合并等价缺省配置）",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {
+          "delay_ms": 0,
+          "delay_close_ms": 0
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-loading-delay-ms-1",
+    "title": "loading.delay_ms = 1",
+    "why": "loading.delay_ms = 1",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {
+          "delay_ms": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-loading-delay-close-ms-1",
+    "title": "loading.delay_close_ms = 1",
+    "why": "loading.delay_close_ms = 1",
+    "requires": [
+      "loading"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {
+          "delay_close_ms": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
   }
 ]

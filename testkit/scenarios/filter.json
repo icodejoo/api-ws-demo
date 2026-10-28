@@ -1,0 +1,217 @@
+[
+  {
+    "id": "filter.drops-empty-body-keeps-zero-false",
+    "title": "filter 开启：请求体顶层剔除 null/空白字符串，保留 0/false",
+    "why": "filter 在验收里长期没有请求级开关而从未生效，断言必须落在服务端实际收到的原始请求体（echo 的 body.raw）上，才能证明空值真的没发出去，且 0/false/嵌套对象没被误删",
+    "requires": [
+      "filter"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "filter": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "method": "POST",
+          "path": "/t/echo",
+          "body": {
+            "a": null,
+            "b": "   ",
+            "c": "",
+            "n": 0,
+            "f": false,
+            "s": "x",
+            "nested": {
+              "e": ""
+            }
+          },
+          "options": {
+            "filter": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "*": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "body": {
+                  "raw": "{\"n\":0,\"f\":false,\"s\":\"x\",\"nested\":{\"e\":\"\"}}",
+                  "json": {
+                    "n": 0,
+                    "f": false,
+                    "s": "x",
+                    "nested": {
+                      "e": ""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "filter.drops-blank-query-keeps-zero-false",
+    "title": "filter 开启：查询参数里的空白字符串被剔除，0/false 保留",
+    "why": "查询参数侧的有效值（0、false）必须原样到达服务端；空白字符串是否被剔除由 key.filter-before-key 用共享计数佐证（echo 的 query 是子集匹配，无法直接断言某键缺席）",
+    "requires": [
+      "filter"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "filter": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "q": "x",
+            "page": "",
+            "blank": "   ",
+            "n": 0,
+            "f": false
+          },
+          "options": {
+            "filter": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "*": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "q": "x",
+                  "n": "0",
+                  "f": "false"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "filter.off-by-default-sends-as-is",
+    "title": "未开启 filter：已装配插件也原样发送",
+    "why": "装配 filter 只是具备能力，没有请求级开关就不能改写请求；否则会把调用方刻意发送的空字符串、null 悄悄吞掉",
+    "requires": [
+      "filter"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "filter": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "method": "POST",
+          "path": "/t/echo",
+          "query": {
+            "page": ""
+          },
+          "body": {
+            "a": null,
+            "b": "   ",
+            "c": "",
+            "n": 0,
+            "f": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "r2",
+          "method": "POST",
+          "path": "/t/echo",
+          "body": {
+            "a": null,
+            "c": "",
+            "n": 0
+          },
+          "options": {
+            "filter": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "*": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "page": ""
+                },
+                "body": {
+                  "raw": "{\"a\":null,\"b\":\"   \",\"c\":\"\",\"n\":0,\"f\":false}"
+                }
+              }
+            }
+          },
+          "r2": {
+            "ok": true,
+            "data": {
+              "request": {
+                "body": {
+                  "raw": "{\"a\":null,\"c\":\"\",\"n\":0}"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  }
+]

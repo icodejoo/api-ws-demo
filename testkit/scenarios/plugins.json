@@ -1,0 +1,2725 @@
+[
+  {
+    "id": "plugins.pair-0",
+    "title": "二元正交数组第 0 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 0 行；17 个开关（含全部关闭基线）。",
+    "requires": [],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {}
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-1",
+    "title": "二元正交数组第 1 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 1 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "cache",
+      "envs",
+      "key",
+      "log",
+      "normalize",
+      "offline",
+      "retry",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "cache": {},
+        "envs": {},
+        "key": {},
+        "log": {},
+        "normalize": {},
+        "offline": {},
+        "retry": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-2",
+    "title": "二元正交数组第 2 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 2 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "breaker",
+      "cache",
+      "filter",
+      "key",
+      "mock",
+      "normalize",
+      "repath",
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {},
+        "cache": {},
+        "filter": {},
+        "key": {},
+        "mock": {},
+        "normalize": {},
+        "repath": {},
+        "retry": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-3",
+    "title": "二元正交数组第 3 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 3 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "breaker",
+      "envs",
+      "filter",
+      "log",
+      "mock",
+      "offline",
+      "repath",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {},
+        "envs": {},
+        "filter": {},
+        "log": {},
+        "mock": {},
+        "offline": {},
+        "repath": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-4",
+    "title": "二元正交数组第 4 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 4 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "cancel",
+      "envs",
+      "filter",
+      "key",
+      "notify",
+      "offline",
+      "repath",
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {},
+        "envs": {},
+        "filter": {},
+        "key": {},
+        "notify": {},
+        "offline": {},
+        "repath": {},
+        "retry": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-5",
+    "title": "二元正交数组第 5 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 5 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "cache",
+      "cancel",
+      "filter",
+      "log",
+      "normalize",
+      "notify",
+      "repath",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "cache": {},
+        "cancel": {},
+        "filter": {},
+        "log": {},
+        "normalize": {},
+        "notify": {},
+        "repath": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-6",
+    "title": "二元正交数组第 6 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 6 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "breaker",
+      "cache",
+      "cancel",
+      "envs",
+      "mock",
+      "normalize",
+      "notify",
+      "offline"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {},
+        "cache": {},
+        "cancel": {},
+        "envs": {},
+        "mock": {},
+        "normalize": {},
+        "notify": {},
+        "offline": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-7",
+    "title": "二元正交数组第 7 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 7 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "breaker",
+      "cancel",
+      "key",
+      "log",
+      "mock",
+      "notify",
+      "retry",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {},
+        "cancel": {},
+        "key": {},
+        "log": {},
+        "mock": {},
+        "notify": {},
+        "retry": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-8",
+    "title": "二元正交数组第 8 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 8 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "loading",
+      "log",
+      "mock",
+      "normalize",
+      "notify",
+      "offline",
+      "repath",
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {},
+        "log": {},
+        "mock": {},
+        "normalize": {},
+        "notify": {},
+        "offline": {},
+        "repath": {},
+        "retry": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-9",
+    "title": "二元正交数组第 9 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 9 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "cache",
+      "envs",
+      "key",
+      "loading",
+      "mock",
+      "notify",
+      "repath",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "cache": {},
+        "envs": {},
+        "key": {},
+        "loading": {},
+        "mock": {},
+        "notify": {},
+        "repath": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-10",
+    "title": "二元正交数组第 10 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 10 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "breaker",
+      "cache",
+      "filter",
+      "key",
+      "loading",
+      "log",
+      "notify",
+      "offline"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {},
+        "cache": {},
+        "filter": {},
+        "key": {},
+        "loading": {},
+        "log": {},
+        "notify": {},
+        "offline": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-11",
+    "title": "二元正交数组第 11 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 11 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "breaker",
+      "envs",
+      "filter",
+      "loading",
+      "normalize",
+      "notify",
+      "retry",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {},
+        "envs": {},
+        "filter": {},
+        "loading": {},
+        "normalize": {},
+        "notify": {},
+        "retry": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-12",
+    "title": "二元正交数组第 12 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 12 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "cancel",
+      "envs",
+      "filter",
+      "key",
+      "loading",
+      "log",
+      "mock",
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {},
+        "envs": {},
+        "filter": {},
+        "key": {},
+        "loading": {},
+        "log": {},
+        "mock": {},
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-13",
+    "title": "二元正交数组第 13 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 13 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "cache",
+      "cancel",
+      "filter",
+      "loading",
+      "mock",
+      "offline",
+      "retry",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "cache": {},
+        "cancel": {},
+        "filter": {},
+        "loading": {},
+        "mock": {},
+        "offline": {},
+        "retry": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-14",
+    "title": "二元正交数组第 14 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 14 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "breaker",
+      "cache",
+      "cancel",
+      "envs",
+      "loading",
+      "log",
+      "repath",
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {},
+        "cache": {},
+        "cancel": {},
+        "envs": {},
+        "loading": {},
+        "log": {},
+        "repath": {},
+        "retry": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-15",
+    "title": "二元正交数组第 15 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 15 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "breaker",
+      "cancel",
+      "key",
+      "loading",
+      "normalize",
+      "offline",
+      "repath",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {},
+        "cancel": {},
+        "key": {},
+        "loading": {},
+        "normalize": {},
+        "offline": {},
+        "repath": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-16",
+    "title": "二元正交数组第 16 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 16 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-17",
+    "title": "二元正交数组第 17 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 17 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "cache",
+      "envs",
+      "key",
+      "log",
+      "normalize",
+      "offline",
+      "retry",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "cache": {},
+        "envs": {},
+        "key": {},
+        "log": {},
+        "normalize": {},
+        "offline": {},
+        "retry": {},
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-18",
+    "title": "二元正交数组第 18 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 18 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "breaker",
+      "cache",
+      "filter",
+      "key",
+      "mock",
+      "normalize",
+      "repath",
+      "retry",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {},
+        "cache": {},
+        "filter": {},
+        "key": {},
+        "mock": {},
+        "normalize": {},
+        "repath": {},
+        "retry": {},
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-19",
+    "title": "二元正交数组第 19 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 19 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "breaker",
+      "envs",
+      "filter",
+      "log",
+      "mock",
+      "offline",
+      "repath",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {},
+        "envs": {},
+        "filter": {},
+        "log": {},
+        "mock": {},
+        "offline": {},
+        "repath": {},
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-20",
+    "title": "二元正交数组第 20 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 20 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "cancel",
+      "envs",
+      "filter",
+      "key",
+      "notify",
+      "offline",
+      "repath",
+      "retry",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {},
+        "envs": {},
+        "filter": {},
+        "key": {},
+        "notify": {},
+        "offline": {},
+        "repath": {},
+        "retry": {},
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-21",
+    "title": "二元正交数组第 21 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 21 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "cache",
+      "cancel",
+      "filter",
+      "log",
+      "normalize",
+      "notify",
+      "repath",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "cache": {},
+        "cancel": {},
+        "filter": {},
+        "log": {},
+        "normalize": {},
+        "notify": {},
+        "repath": {},
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-22",
+    "title": "二元正交数组第 22 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 22 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "breaker",
+      "cache",
+      "cancel",
+      "envs",
+      "mock",
+      "normalize",
+      "notify",
+      "offline",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {},
+        "cache": {},
+        "cancel": {},
+        "envs": {},
+        "mock": {},
+        "normalize": {},
+        "notify": {},
+        "offline": {},
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-23",
+    "title": "二元正交数组第 23 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 23 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "breaker",
+      "cancel",
+      "key",
+      "log",
+      "mock",
+      "notify",
+      "retry",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {},
+        "cancel": {},
+        "key": {},
+        "log": {},
+        "mock": {},
+        "notify": {},
+        "retry": {},
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-24",
+    "title": "二元正交数组第 24 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 24 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "loading",
+      "log",
+      "mock",
+      "normalize",
+      "notify",
+      "offline",
+      "repath",
+      "retry",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "loading": {},
+        "log": {},
+        "mock": {},
+        "normalize": {},
+        "notify": {},
+        "offline": {},
+        "repath": {},
+        "retry": {},
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-25",
+    "title": "二元正交数组第 25 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 25 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "cache",
+      "envs",
+      "key",
+      "loading",
+      "mock",
+      "notify",
+      "repath",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "cache": {},
+        "envs": {},
+        "key": {},
+        "loading": {},
+        "mock": {},
+        "notify": {},
+        "repath": {},
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-26",
+    "title": "二元正交数组第 26 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 26 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "breaker",
+      "cache",
+      "filter",
+      "key",
+      "loading",
+      "log",
+      "notify",
+      "offline",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {},
+        "cache": {},
+        "filter": {},
+        "key": {},
+        "loading": {},
+        "log": {},
+        "notify": {},
+        "offline": {},
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-27",
+    "title": "二元正交数组第 27 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 27 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "breaker",
+      "envs",
+      "filter",
+      "loading",
+      "normalize",
+      "notify",
+      "retry",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {},
+        "envs": {},
+        "filter": {},
+        "loading": {},
+        "normalize": {},
+        "notify": {},
+        "retry": {},
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-28",
+    "title": "二元正交数组第 28 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 28 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "cancel",
+      "envs",
+      "filter",
+      "key",
+      "loading",
+      "log",
+      "mock",
+      "normalize",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {},
+        "envs": {},
+        "filter": {},
+        "key": {},
+        "loading": {},
+        "log": {},
+        "mock": {},
+        "normalize": {},
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-29",
+    "title": "二元正交数组第 29 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 29 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "cache",
+      "cancel",
+      "filter",
+      "loading",
+      "mock",
+      "offline",
+      "retry",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "cache": {},
+        "cancel": {},
+        "filter": {},
+        "loading": {},
+        "mock": {},
+        "offline": {},
+        "retry": {},
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-30",
+    "title": "二元正交数组第 30 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 30 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "breaker",
+      "cache",
+      "cancel",
+      "envs",
+      "loading",
+      "log",
+      "repath",
+      "retry",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {},
+        "cache": {},
+        "cancel": {},
+        "envs": {},
+        "loading": {},
+        "log": {},
+        "repath": {},
+        "retry": {},
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.pair-31",
+    "title": "二元正交数组第 31 行；17 个开关（含全部关闭基线）。",
+    "why": "二元正交数组第 31 行；17 个开关（含全部关闭基线）。",
+    "requires": [
+      "auth",
+      "breaker",
+      "cancel",
+      "key",
+      "loading",
+      "normalize",
+      "offline",
+      "repath",
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {},
+        "cancel": {},
+        "key": {},
+        "loading": {},
+        "normalize": {},
+        "offline": {},
+        "repath": {},
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "pair",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "pair": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        },
+        "server": {
+          "total": {
+            "eq": 1
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.full-workflow",
+    "title": "17 插件全开：登录→访问→刷新→重试→缓存→共享→取消→通知。",
+    "why": "17 插件全开：登录→访问→刷新→重试→缓存→共享→取消→通知。",
+    "requires": [
+      "auth",
+      "breaker",
+      "cache",
+      "cancel",
+      "envs",
+      "filter",
+      "key",
+      "loading",
+      "log",
+      "mock",
+      "normalize",
+      "notify",
+      "offline",
+      "repath",
+      "retry",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "normal",
+      "weak"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {
+          "threshold": 64
+        },
+        "cache": {},
+        "cancel": {},
+        "envs": {},
+        "filter": {},
+        "key": {},
+        "loading": {},
+        "log": {},
+        "mock": {},
+        "normalize": {},
+        "notify": {},
+        "offline": {},
+        "repath": {},
+        "retry": {
+          "max": 3,
+          "delay_ms": 50
+        },
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "login": {
+          "user": "plugin-matrix"
+        }
+      },
+      {
+        "request": {
+          "id": "access",
+          "path": "/t/private/me",
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "expire_local": {}
+      },
+      {
+        "request": {
+          "id": "refresh",
+          "path": "/t/private/me",
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "retry",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "key": "matrix-retry",
+            "fail_times": 1
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cache-first",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "key": "matrix-cache"
+          },
+          "options": {
+            "mock": false,
+            "key": "matrix-cache"
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cache-hit",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "key": "matrix-cache"
+          },
+          "options": {
+            "mock": false,
+            "key": "matrix-cache"
+          }
+        }
+      },
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "share-a",
+              "path": "/t/echo",
+              "query": {
+                "data": "{\"matrix\":true}",
+                "key": "matrix-share",
+                "delay_ms": 100
+              },
+              "options": {
+                "mock": false,
+                "key": "matrix-share",
+                "cache": false
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "share-b",
+              "path": "/t/echo",
+              "query": {
+                "data": "{\"matrix\":true}",
+                "key": "matrix-share",
+                "delay_ms": 100
+              },
+              "options": {
+                "mock": false,
+                "key": "matrix-share",
+                "cache": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "cache": false,
+            "key": false
+          },
+          "cancel_after_ms": 10
+        }
+      },
+      {
+        "request": {
+          "id": "notify",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 400,
+            "code": 400
+          },
+          "options": {
+            "mock": false,
+            "cache": false,
+            "key": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "access": {
+            "ok": true
+          },
+          "refresh": {
+            "ok": true
+          },
+          "retry": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cache-first": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cache-hit": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "share-a": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "share-b": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "notify": {
+            "ok": false,
+            "error": "status:400"
+          }
+        },
+        "server": {
+          "by_key": {
+            "matrix-cache": {
+              "eq": 1
+            },
+            "matrix-share": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "refresh": {
+            "eq": 1
+          },
+          "notify": {
+            "eq": 1
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      },
+      "weak": {
+        "results": {
+          "access": {
+            "ok": true
+          },
+          "refresh": {
+            "ok": true
+          },
+          "retry": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cache-first": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cache-hit": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "share-a": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "share-b": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "notify": {
+            "ok": false,
+            "error": "status:400"
+          }
+        },
+        "server": {
+          "by_key": {
+            "matrix-cache": {
+              "eq": 1
+            },
+            "matrix-share": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "refresh": {
+            "eq": 1
+          },
+          "notify": {
+            "eq": 1
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.full-flap-workflow",
+    "title": "17 插件全开：flap 离线失败后恢复，再执行完整业务流。",
+    "why": "17 插件全开：flap 离线失败后恢复，再执行完整业务流。",
+    "requires": [
+      "auth",
+      "breaker",
+      "cache",
+      "cancel",
+      "envs",
+      "filter",
+      "key",
+      "loading",
+      "log",
+      "mock",
+      "normalize",
+      "notify",
+      "offline",
+      "repath",
+      "retry",
+      "share",
+      "timeout"
+    ],
+    "networks": [
+      "flap"
+    ],
+    "client": {
+      "plugins": {
+        "auth": {},
+        "breaker": {
+          "threshold": 64
+        },
+        "cache": {},
+        "cancel": {},
+        "envs": {},
+        "filter": {},
+        "key": {},
+        "loading": {},
+        "log": {},
+        "mock": {},
+        "normalize": {},
+        "notify": {},
+        "offline": {},
+        "repath": {},
+        "retry": {
+          "max": 3,
+          "delay_ms": 50
+        },
+        "share": {},
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "during-flap",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "wait": 1600
+      },
+      {
+        "login": {
+          "user": "plugin-matrix"
+        }
+      },
+      {
+        "request": {
+          "id": "access",
+          "path": "/t/private/me",
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "expire_local": {}
+      },
+      {
+        "request": {
+          "id": "refresh",
+          "path": "/t/private/me",
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "retry",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "key": "matrix-retry",
+            "fail_times": 1
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cache-first",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "key": "matrix-cache"
+          },
+          "options": {
+            "mock": false,
+            "key": "matrix-cache"
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cache-hit",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "key": "matrix-cache"
+          },
+          "options": {
+            "mock": false,
+            "key": "matrix-cache"
+          }
+        }
+      },
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "share-a",
+              "path": "/t/echo",
+              "query": {
+                "data": "{\"matrix\":true}",
+                "key": "matrix-share",
+                "delay_ms": 100
+              },
+              "options": {
+                "mock": false,
+                "key": "matrix-share",
+                "cache": false
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "share-b",
+              "path": "/t/echo",
+              "query": {
+                "data": "{\"matrix\":true}",
+                "key": "matrix-share",
+                "delay_ms": 100
+              },
+              "options": {
+                "mock": false,
+                "key": "matrix-share",
+                "cache": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "cache": false,
+            "key": false
+          },
+          "cancel_after_ms": 10
+        }
+      },
+      {
+        "request": {
+          "id": "notify",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 400,
+            "code": 400
+          },
+          "options": {
+            "mock": false,
+            "cache": false,
+            "key": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "flap": {
+        "results": {
+          "access": {
+            "ok": true
+          },
+          "refresh": {
+            "ok": true
+          },
+          "retry": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cache-first": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cache-hit": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "share-a": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "share-b": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          },
+          "notify": {
+            "ok": false,
+            "error": "status:400"
+          },
+          "during-flap": {
+            "ok": false,
+            "error": "offline"
+          }
+        },
+        "server": {
+          "by_key": {
+            "matrix-cache": {
+              "eq": 1
+            },
+            "matrix-share": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "refresh": {
+            "eq": 1
+          },
+          "notify": {
+            "eq": 1
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  }
+]

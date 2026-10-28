@@ -713,7 +713,8 @@
               },
               "options": {
                 "key": true,
-                "share": true
+                "share": true,
+                "filter": true
               }
             }
           },
@@ -727,7 +728,8 @@
               },
               "options": {
                 "key": true,
-                "share": true
+                "share": true,
+                "filter": true
               }
             }
           }
@@ -785,6 +787,9 @@
             "f": false,
             "c": "x",
             "e": ""
+          },
+          "options": {
+            "filter": true
           }
         }
       }
@@ -1157,6 +1162,294 @@
         "client": {
           "pending_after": {
             "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.single-filter",
+    "title": "filter 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "filter 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "filter"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "filter": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.single-key",
+    "title": "key 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "key 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "key"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "key": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.single-repath",
+    "title": "repath 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "repath 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "repath"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "repath": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
           }
         }
       }

@@ -70,7 +70,10 @@
         "results": {
           "r1": {
             "ok": false,
-            "error": "network"
+            "error": [
+              "network",
+              "canceled"
+            ]
           }
         },
         "server": {
@@ -1317,6 +1320,102 @@
         "client": {
           "pending_after": {
             "eq": 0
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.single-cancel",
+    "title": "cancel 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "cancel 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cancel": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
           }
         }
       }

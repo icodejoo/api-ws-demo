@@ -15,14 +15,17 @@ testkit 是跨语言的 HTTP 客户端黑盒验收工具，分三层：**场景*
 | 覆盖哪些维度、每种网络下断言什么 | `MATRIX.md` |
 | 为什么这样设计、谁拍的板 | `DECISIONS.md`（D 编号，只追加不修改） |
 | 场景格式 | `scenario.schema.json` |
+| dioman 测试分类与迁移映射 | `E:\workspaces\dart-labs\dioman\test\README.md`；本地 `dart test`，真实服务 `dart test -t real --configuration=dart_test.real.yaml --fail-fast` |
 | 场景本身 | `scenarios/<领域>.json`；按 id 查找：`grep -rn '"id": "<id>"' scenarios/` |
 | 场景索引与覆盖统计 | `scenarios/README.md`，由 `tools/gen-index.mjs` 生成 |
+| axp API 反查与组合缺口 | `COVERAGE.md`；清单 `coverage/axp-api.json`，生成/检查：`node tools/gen-coverage.mjs [--check]` |
 | 校验 | `node tools/validate.mjs --check-index` |
 | `/t/*` 的服务端实现 | `../src/testkit/`，路由在 `../src/routes.rs` |
 | netem 的实现 | `../src/netem/`，入口在 `../src/bin/netem.rs` |
 | 服务端集成测试 | `../tests/testkit.rs`、`../tests/netem.rs` |
 | 已接入的客户端执行器 | axp：`E:\workspaces\codejoo\apps\axp\accept\`（执行 `npm run accept`） |
-| 计划接入的客户端 | dioman：`E:\workspaces\dart-labs\dioman` |
+| dioman Dart io 执行器 | `E:\workspaces\dart-labs\dioman\accept\`（`dart run accept/bin/cli.dart`；映射见 `accept/docs/mapping.md`，新证据见 `coverage/accept/`，历史结果保留在 `accept/results/`） |
+| dioman 最终验收证据 | `dioman/accept/results/audit.json`、`api-coverage.json`、`api-evidence.json`、`powerset-summary.json`；代理归属见 `proxies.ndjson`，逐项失败原始记录见 `failure-review-initial.json` |
 
 ---
 
@@ -77,10 +80,52 @@ testkit 是跨语言的 HTTP 客户端黑盒验收工具，分三层：**场景*
 
 ---
 
+## 本地运行与端口
+
+默认端口特意选了偏门的，避开 8080/9090/3000/5173 这类常见开发端口：
+
+| 服务 | 默认地址 | 改端口的方式 |
+|---|---|---|
+| 测试服务器 `api-ws-demo` | `127.0.0.1:47080` | 环境变量 `PORT` |
+| netem 控制面 | `127.0.0.1:47090` | 参数 `--control <addr>` |
+
+启动（先服务器、后 netem，各开一个终端）：
+
+```bash
+TEST_MODE=1 cargo run --release
+cargo run --release --bin netem
+```
+
+执行器（以 axp 为例）默认连上面两个地址；改了端口就用环境变量对齐：`TESTKIT_SERVER`、`TESTKIT_NETEM`。
+创建 netem 代理时 `upstream` 要写成测试服务器的实际地址。
+
+**端口被占时**：启动会报 `AddrInUse`，换个端口即可，不要去杀占用进程，那多半是别的项目的开发服务。
+注意 `0.0.0.0:<端口>` 和 `127.0.0.1:<端口>` 可以各被一个进程占住，后者优先，客户端连到的可能是别人的服务。
+所以启动后先 `curl http://127.0.0.1:<端口>/t/ping`，确认返回 `{"code":0}` 再跑验收。
+
 ## 踩过的坑
+
+- **环境变量 `CARGO_TARGET_DIR` 会让产物不落在仓库的 `target/`**。改完代码后 `target/release/*.exe` 可能是旧的，启动后端口还是老的。编译用 `cargo build --release --target-dir target`，并看启动日志里打印的端口确认。
 
 - **含 login 的步骤走旁路**，不经过 netem，也不经过客户端插件链（附录 B.2）。所以断网档下登录照样能成功，失败的只有被测请求。
 - **business 风格下判定失败依赖 normalize 类插件**。场景作者已经给相关场景自动加上了 normalize，客户端缺少这个能力时应该跳过，不能算失败。
 - **`scenarios/README.md` 不要手改**，要改就改 `tools/gen-index.mjs`。
 - **`/t/*` 在线上也挂载着**，但线上只适合做冒烟测试。冷启动、限流、共享计数器都会让精确断言失效（D6）。本地运行时要加 `TEST_MODE=1`。
 - **netem 不进 Docker 镜像**。Dockerfile 只构建 `--bin api-ws-demo`，新增可执行文件时要保持这一点（D4）。
+
+
+## 2026-10-27 · dioman 五方法复核（部分完成）
+
+本轮入口：dioman/accept/bin/build_plugin_matrix.dart 生成 scenarios/plugins.json；
+dioman/accept/bin/run_plugin_matrix.dart 执行方法清单；中文逐格矩阵在 dioman/accept/docs/MATRIX-plugins.md。
+完整汇总为 dioman/accept/results/review-summary.json，收尾检查为 verification-review.json；
+D16 的 audit.json 保留为历史证据，不代表本轮补齐全部缺声明组合。
+新增79个方法场景和2个安全状态子场景后共409场景；校验命令保持 gen-index / validate --check-index。
+历史跳过3547格复核后，70格在全部网络显式说明禁止主动注入429/503，其中56格原来缺声明；
+其余3477格仍未补齐预期和真实执行。单体全部选项、全部原生边界及全部实现不变量尚未穷尽。
+share重放准备异常导致跟随者悬挂的修复，真实双风格证据在 share-prepare-real.json。
+不得仅因方法清单160格通过，就将整项复核报告为完成。
+
+## 2026-10-27 · 测试整理资源定位
+
+单体与边界场景已归入对应领域文件，plugins.json 保留配对和全量场景；五方法清单在 dioman/accept/lib/plugin_matrix_plan.json。两组等价零值边界已合并，旧 id 映射见 dioman/test/README.md。现有 18 个文件共 407 场景。原 results 证据不重写，新执行证据在 dioman/coverage/accept/。

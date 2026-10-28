@@ -2338,5 +2338,382 @@
         }
       }
     }
+  },
+  {
+    "id": "plugins.single-share",
+    "title": "share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "share.single-start-explicit-key",
+    "title": "share 单独：显式 key 下 start 策略只发一次",
+    "why": "不装 key 插件时用请求级显式 key 也能合并；3 个并发请求只打一次服务端",
+    "requires": [
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "options": {
+                "key": "s1",
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "options": {
+                "key": "s1",
+                "share": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 300
+              },
+              "options": {
+                "key": "s1",
+                "share": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": true,
+            "hit": 1
+          },
+          "b": {
+            "ok": true,
+            "hit": 1
+          },
+          "c": {
+            "ok": true,
+            "hit": 1
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          },
+          "peak_inflight": {
+            "max": 1
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "share.single-req-policy-race",
+    "title": "share 单独：请求级 policy=race 覆盖插件默认 start",
+    "why": "插件默认 start，请求级写 race 后最快的成功响应分发给所有人",
+    "requires": [
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "slow",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 1500,
+                "v": 1
+              },
+              "options": {
+                "key": "same",
+                "share": "race"
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "fast",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 100,
+                "v": 2
+              },
+              "options": {
+                "key": "same",
+                "share": "race"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "slow": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "v": "2"
+                }
+              }
+            }
+          },
+          "fast": {
+            "ok": true,
+            "data": {
+              "request": {
+                "query": {
+                  "v": "2"
+                }
+              }
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "share.single-all-timeout-aborts-server",
+    "title": "share 单独：所有订阅者都超时后掐断底层请求",
+    "why": "每个订阅者按自己的 timeout 退出；最后一个也超时后必须 abort 底层请求，服务端才能观察到断开，不能留着空跑到 delay 结束",
+    "requires": [
+      "share"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "share": {
+          "policy": "start"
+        }
+      }
+    },
+    "steps": [
+      {
+        "parallel": [
+          {
+            "request": {
+              "id": "a",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 5000
+              },
+              "options": {
+                "key": "st",
+                "share": true,
+                "timeout_ms": 700
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "b",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 5000
+              },
+              "options": {
+                "key": "st",
+                "share": true,
+                "timeout_ms": 300
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "c",
+              "path": "/t/echo",
+              "query": {
+                "delay_ms": 5000
+              },
+              "options": {
+                "key": "st",
+                "share": true,
+                "timeout_ms": 500
+              }
+            }
+          }
+        ]
+      },
+      {
+        "wait": 500
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "a": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "b": {
+            "ok": false,
+            "error": "timeout"
+          },
+          "c": {
+            "ok": false,
+            "error": "timeout"
+          }
+        },
+        "server": {
+          "aborted": {
+            "min": 1
+          },
+          "by_path": {
+            "/t/echo": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
   }
 ]

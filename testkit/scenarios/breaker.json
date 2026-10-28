@@ -1258,5 +1258,336 @@
       }
     },
     "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.single-breaker",
+    "title": "breaker 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "breaker 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "breaker"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-breaker-threshold-0",
+    "title": "breaker.threshold = 1",
+    "why": "breaker.threshold = 1",
+    "requires": [
+      "breaker"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-breaker-threshold-1",
+    "title": "breaker.threshold = 64",
+    "why": "breaker.threshold = 64",
+    "requires": [
+      "breaker"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "threshold": 64
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-breaker-open-ms-0",
+    "title": "breaker.open_ms = 0",
+    "why": "breaker.open_ms = 0",
+    "requires": [
+      "breaker"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "open_ms": 0
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-breaker-open-ms-1",
+    "title": "breaker.open_ms = 1",
+    "why": "breaker.open_ms = 1",
+    "requires": [
+      "breaker"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "open_ms": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-breaker-open-ms-2",
+    "title": "breaker.open_ms = 2147483647",
+    "why": "breaker.open_ms = 2147483647",
+    "requires": [
+      "breaker"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "breaker": {
+          "open_ms": 2147483647
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
   }
 ]

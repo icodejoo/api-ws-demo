@@ -25,7 +25,7 @@
 TEST_MODE=1 cargo run --release
 
 # 2. 网络代理
-cargo run --release --bin netem -- --control 127.0.0.1:9090
+cargo run --release --bin netem -- --control 127.0.0.1:47090
 
 # 3. 客户端执行器，以 axp 为例
 cd <codejoo>/apps/axp && npm run accept

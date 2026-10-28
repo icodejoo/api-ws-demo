@@ -71,17 +71,17 @@ CORS 是完全放开的（`Access-Control-Allow-Origin: *` 等），包括限流
 
 ```bash
 # GET：500ms 延迟 + 201 状态码 + 自定义业务码和消息
-curl "http://localhost:8080/api/mock?delay_ms=500&status=201&code=7&message=hello"
+curl "http://localhost:47080/api/mock?delay_ms=500&status=201&code=7&message=hello"
 # -> HTTP 201, {"code":7,"data":null,"message":"hello"}
 
 # POST：模拟一个"业务失败但HTTP层是200"的场景，且 data 是嵌套对象
 curl -X POST -H "Content-Type: application/json" \
   -d '{"code":42,"message":"库存不足","data":{"itemId":123,"remaining":0}}' \
-  http://localhost:8080/api/mock
+  http://localhost:47080/api/mock
 # -> HTTP 200, {"code":42,"data":{"itemId":123,"remaining":0},"message":"库存不足"}
 
 # 故意传一个非法状态码
-curl "http://localhost:8080/api/mock?status=9999"
+curl "http://localhost:47080/api/mock?status=9999"
 # -> HTTP 400, {"code":400,"data":null,"message":"invalid status code: 9999"}
 ```
 
@@ -108,9 +108,9 @@ curl "http://localhost:8080/api/mock?status=9999"
 用法示例：
 
 ```bash
-curl --compressed http://localhost:8080/api/compressed        # curl 自动解压并打印可读 JSON
-curl -s http://localhost:8080/api/compressed | gunzip          # 手动解压，效果一样
-curl -s http://localhost:8080/api/compressed-mp | xxd | head    # 看原始 MessagePack 字节
+curl --compressed http://localhost:47080/api/compressed        # curl 自动解压并打印可读 JSON
+curl -s http://localhost:47080/api/compressed | gunzip          # 手动解压，效果一样
+curl -s http://localhost:47080/api/compressed-mp | xxd | head    # 看原始 MessagePack 字节
 ```
 
 STOMP 协议下也有完全对应的 5 个 topic（见下文 STOMP 部分），行为和数据完全一致，只是传输方式换成了
@@ -296,13 +296,13 @@ cargo run --release
 ```
 
 ```powershell
-cargo run --release --bin netem -- --control 127.0.0.1:9090
+cargo run --release --bin netem -- --control 127.0.0.1:47090
 ```
 
 在 Bash 中，第一条启动命令为 `TEST_MODE=1 cargo run --release`。`TEST_MODE=1` 跳过限流和 CPU 熔断，
 仍保留测试接口的资源上限；线上默认不开启。netem 仅在本地运行，不进入 Docker 镜像。
 
-向 netem 的 `POST /proxies` 发送 `{"upstream":"127.0.0.1:8080","profile":"weak"}`，拿返回的 `port`
+向 netem 的 `POST /proxies` 发送 `{"upstream":"127.0.0.1:47080","profile":"weak"}`，拿返回的 `port`
 作为客户端连接端口。通过 `PUT /proxies/{id}` 的 `{"profile":"normal"}` 可以立即恢复已有连接和新连接；
 支持 normal、weak、lossy、offline、blackhole、flap 预设。dns 由执行器替换域名，不经过代理。
 
@@ -314,34 +314,34 @@ cargo run --release --bin netem -- --control 127.0.0.1:9090
 
 ```powershell
 cargo test
-$env:PORT = "8080"
+$env:PORT = "47080"
 $env:RUST_LOG = "info,api_ws_demo=debug"
 cargo run
 ```
 
 ```powershell
-curl http://localhost:8080/health
-curl http://localhost:8080/api/info
-curl -X POST -H "Content-Type: application/json" -d '{"hello":"world"}' http://localhost:8080/api/echo
+curl http://localhost:47080/health
+curl http://localhost:47080/api/info
+curl -X POST -H "Content-Type: application/json" -d '{"hello":"world"}' http://localhost:47080/api/echo
 ```
 
 原始 WebSocket（用 `websocat` 或 `wscat`）：
 
 ```powershell
-websocat ws://localhost:8080/ws
+websocat ws://localhost:47080/ws
 ```
 
 STOMP（Git-Bash/WSL 下用 `printf`，因为需要发送 NUL 帧结束符）：
 
 ```bash
-printf 'CONNECT\naccept-version:1.2\nhost:localhost\n\n\0' | websocat ws://localhost:8080/stomp
+printf 'CONNECT\naccept-version:1.2\nhost:localhost\n\n\0' | websocat ws://localhost:47080/stomp
 ```
 
 ## Docker
 
 ```powershell
 docker build -t api-ws-demo:local .
-docker run --rm -p 8080:8080 -e PORT=8080 api-ws-demo:local
+docker run --rm -p 47080:47080 -e PORT=47080 api-ws-demo:local
 ```
 
 ## 部署到 Render.com

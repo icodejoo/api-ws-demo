@@ -226,6 +226,10 @@
             "normalize": {
               "type": "boolean"
             },
+            "filter": {
+              "type": "boolean",
+              "description": "true 才对本请求启用过滤：发送前剔除 query/JSON 对象 body 顶层的 null/undefined/NaN/空白字符串，保留 0/false（CONTRACT §7）；需 requires 含 filter 且 client.plugins 装配 filter"
+            },
             "breaker": {
               "type": "boolean"
             }

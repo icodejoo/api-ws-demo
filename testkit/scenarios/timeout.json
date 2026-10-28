@@ -195,8 +195,8 @@
   },
   {
     "id": "timeout.connect-blackhole",
-    "title": "连接超时：黑洞",
-    "why": "connect_ms 先于默认超时触发",
+    "title": "黑洞已连接后由接收超时终止",
+    "why": "blackhole 接受 TCP 连接但不返回响应；连接预算不限制已建立的连接，receive_ms 控制接收等待",
     "requires": [
       "timeout"
     ],
@@ -207,7 +207,8 @@
       "base_timeout_ms": 10000,
       "plugins": {
         "timeout": {
-          "connect_ms": 800
+          "connect_ms": 200,
+          "receive_ms": 800
         }
       }
     },
@@ -747,5 +748,288 @@
         }
       }
     }
+  },
+  {
+    "id": "plugins.single-timeout",
+    "title": "timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-timeout-connect-ms-0",
+    "title": "timeout.connect_ms = 1",
+    "why": "timeout.connect_ms = 1",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "connect_ms": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 50
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-timeout-connect-ms-1",
+    "title": "timeout.connect_ms = 2147483647",
+    "why": "timeout.connect_ms = 2147483647",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "connect_ms": 2147483647
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-timeout-receive-ms-0",
+    "title": "timeout.receive_ms = 1",
+    "why": "timeout.receive_ms = 1",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "receive_ms": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 50
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "error": [
+              "timeout"
+            ]
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-timeout-receive-ms-1",
+    "title": "timeout.receive_ms = 2147483647",
+    "why": "timeout.receive_ms = 2147483647",
+    "requires": [
+      "timeout"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {
+          "receive_ms": 2147483647
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
   }
 ]

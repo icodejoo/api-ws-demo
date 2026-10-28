@@ -477,5 +477,161 @@
         }
       }
     }
+  },
+  {
+    "id": "plugins.single-mock",
+    "title": "mock 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "mock 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "mock"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "mock": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "mock.single-fallback-disabled",
+    "title": "mock 单独：fallback_on_404=false 时 404 不回落",
+    "why": "关闭回落后 mock 返回 404 就是最终结果，不能再偷偷打真实接口",
+    "requires": [
+      "mock"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "styles": [
+      "http"
+    ],
+    "client": {
+      "plugins": {
+        "mock": {
+          "fallback_on_404": false
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "status": 404
+          },
+          "options": {
+            "mock": true
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:404"
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/mock/t/echo": {
+              "eq": 1
+            },
+            "/t/echo": {
+              "eq": 0
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
   }
 ]

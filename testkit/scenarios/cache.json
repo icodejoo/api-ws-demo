@@ -2062,5 +2062,690 @@
         }
       }
     }
+  },
+  {
+    "id": "plugins.single-cache",
+    "title": "cache 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "cache 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-cache-ttl-ms-0",
+    "title": "cache.ttl_ms = 0",
+    "why": "cache.ttl_ms = 0",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "ttl_ms": 0
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-cache-ttl-ms-1",
+    "title": "cache.ttl_ms = 1",
+    "why": "cache.ttl_ms = 1",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "ttl_ms": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-cache-ttl-ms-2",
+    "title": "cache.ttl_ms = 2147483647",
+    "why": "cache.ttl_ms = 2147483647",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "ttl_ms": 2147483647
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-cache-max-0",
+    "title": "cache.max = 0",
+    "why": "cache.max = 0",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "max": 0
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-cache-max-1",
+    "title": "cache.max = 1",
+    "why": "cache.max = 1",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "max": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-cache-max-2",
+    "title": "cache.max = 64",
+    "why": "cache.max = 64",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "max": 64
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-cache-methods-0",
+    "title": "cache.methods = []",
+    "why": "cache.methods = []",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "methods": []
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-cache-methods-1",
+    "title": "cache.methods = [GET]",
+    "why": "cache.methods = [GET]",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "methods": [
+            "GET"
+          ]
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "cache.single-explicit-key-expires",
+    "title": "cache 单独：请求级显式 key 共享缓存，请求级 ttl 到期失效",
+    "why": "不装 key 插件时靠请求级 cache.key 区分缓存；同 key 不同查询共享，过了请求级 ttl 必须回源",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "ttl_ms": 60000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "query": {
+                "v": 1
+              },
+              "options": {
+                "cache": {
+                  "ttl_ms": 300,
+                  "key": "ck"
+                }
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "query": {
+                "v": 2
+              },
+              "options": {
+                "cache": {
+                  "ttl_ms": 300,
+                  "key": "ck"
+                }
+              }
+            }
+          },
+          {
+            "wait": 600
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "query": {
+                "v": 3
+              },
+              "options": {
+                "cache": {
+                  "ttl_ms": 300,
+                  "key": "ck"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true,
+            "data": {
+              "request": {
+                "query": {
+                  "v": "1"
+                }
+              }
+            }
+          },
+          "r3": {
+            "ok": true,
+            "hit": 2,
+            "data": {
+              "request": {
+                "query": {
+                  "v": "3"
+                }
+              }
+            }
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "cache.single-clear-cache",
+    "title": "cache 单独：clear_cache 后同 key 重新回源",
+    "why": "手动清缓存必须对只装 cache 的客户端同样生效",
+    "requires": [
+      "cache"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "cache": {
+          "ttl_ms": 5000
+        }
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "r1",
+              "path": "/t/echo",
+              "options": {
+                "cache": {
+                  "ttl_ms": 5000,
+                  "key": "cc"
+                }
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "r2",
+              "path": "/t/echo",
+              "options": {
+                "cache": {
+                  "ttl_ms": 5000,
+                  "key": "cc"
+                }
+              }
+            }
+          },
+          {
+            "clear_cache": {}
+          },
+          {
+            "request": {
+              "id": "r3",
+              "path": "/t/echo",
+              "options": {
+                "cache": {
+                  "ttl_ms": 5000,
+                  "key": "cc"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 1
+          },
+          "r2": {
+            "ok": true,
+            "hit": 1,
+            "from_cache": true
+          },
+          "r3": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_path": {
+            "/t/echo": {
+              "eq": 2
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
   }
 ]

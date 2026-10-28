@@ -1,0 +1,5525 @@
+{
+  "version": 1,
+  "plugins": [
+    "auth",
+    "cache",
+    "cancel",
+    "envs",
+    "filter",
+    "key",
+    "loading",
+    "logger",
+    "mock",
+    "normalize",
+    "notify",
+    "repath",
+    "retry",
+    "share"
+  ],
+  "provenance": "由 TypeScript AST 提取接口、继承字段、模块增强及导出，人工维护映射。source 相对 axp 根目录；@internal 导出保留注明并单列。类型导出单列，不计运行时 API。；范围以本次源码快照为准，后续源码变化需人工更新，不会自动从已安装版本推断 API。",
+  "apis": [
+    {
+      "id": "auth.opt.enable",
+      "plugin": "auth",
+      "category": "opt",
+      "description": "总开关，默认 true",
+      "source": "src/plugins/auth.ts:626",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.opt.tokenManager",
+      "plugin": "auth",
+      "category": "opt",
+      "description": "token 管理器（accessToken/refreshToken/clear/canRefresh）",
+      "source": "src/plugins/auth.ts:628",
+      "declaration": "tokenManager: ITokenManager;",
+      "expressible": true,
+      "expression": "执行器固定 TokenStore（非 TokenManager 类）；有鉴权请求",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.opt.tokenManager.canRefresh",
+      "plugin": "auth",
+      "category": "opt",
+      "description": "是否允许刷新；鉴权终态过期或刷新失败后置 false，登录成功后由调用方显式重置为 true，set/clear 不自动重置。",
+      "source": "src/objects/TokenManager.ts:11",
+      "declaration": "canRefresh: boolean;",
+      "expressible": true,
+      "expression": "过期终态置 false；仅事件触达，未证明后续刷新许可",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "expired",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.opt.tokenManager.accessToken",
+      "plugin": "auth",
+      "category": "opt",
+      "description": "当前可用于 Authorization 头的 access token，未登录为 undefined",
+      "source": "src/objects/TokenManager.ts:13",
+      "declaration": "get accessToken(): string | undefined;",
+      "expressible": true,
+      "expression": "受保护请求成功并断言响应数据/结果，读取 TokenStore.accessToken",
+      "rules": [
+        {
+          "kind": "protectedSuccess"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.opt.tokenManager.refreshToken",
+      "plugin": "auth",
+      "category": "opt",
+      "description": "当前的 refresh token，未登录为 undefined",
+      "source": "src/objects/TokenManager.ts:15",
+      "declaration": "get refreshToken(): string | undefined;",
+      "expressible": true,
+      "expression": "onRefresh 读取 refreshToken 并实际刷新",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "refresh"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.cb.tokenManager.set",
+      "plugin": "auth",
+      "category": "cb",
+      "description": "写入一对新的 access/refresh token（登录成功或刷新成功后调用）",
+      "source": "src/objects/TokenManager.ts:17",
+      "declaration": "set(accessToken?: string, refreshToken?: string): void;",
+      "expressible": true,
+      "expression": "执行器 onRefresh 内 set；未独立断言接口写入效果",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "refresh",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.cb.tokenManager.clear",
+      "plugin": "auth",
+      "category": "cb",
+      "description": "清除所有已存储的 token（登出或刷新彻底失败时调用）",
+      "source": "src/objects/TokenManager.ts:19",
+      "declaration": "clear(): void;",
+      "expressible": true,
+      "expression": "过期回调前 clear；未独立断言 token 清空",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "expired",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.opt.methods",
+      "plugin": "auth",
+      "category": "opt",
+      "description": "受保护 method 白名单（小写），'*' 通配，与 urlPattern 取交集，默认 '*'",
+      "source": "src/plugins/auth.ts:630",
+      "declaration": "methods?: string | string[];",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.opt.urlPattern",
+      "plugin": "auth",
+      "category": "opt",
+      "description": "受保护 URL pathname 模式（URLPattern 语法，'!' 前缀否定），默认 '*'",
+      "source": "src/plugins/auth.ts:632",
+      "declaration": "urlPattern?: string | string[];",
+      "expressible": true,
+      "expression": "client.plugins.auth.url_pattern",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "url_pattern"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.cb.isProtected",
+      "plugin": "auth",
+      "category": "cb",
+      "description": "函数式插件级判定（叠加在 methods+urlPattern 上），返回 boolean 即终值",
+      "source": "src/plugins/auth.ts:634",
+      "declaration": "isProtected?: (config: AxiosRequestConfig) => boolean | null | undefined | void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有自定义回调配置或注册步骤",
+      "rules": [],
+      "priority": 1,
+      "rank": 1,
+      "scope": "public"
+    },
+    {
+      "id": "auth.opt.accessDeniedCode",
+      "plugin": "auth",
+      "category": "opt",
+      "description": "请求阶段越权合成响应的业务码，默认 'ACCESS_DENIED'",
+      "source": "src/plugins/auth.ts:636",
+      "declaration": "accessDeniedCode?: string;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.cb.onFailure",
+      "plugin": "auth",
+      "category": "cb",
+      "description": "响应侧统一路由→5动作之一，默认 DEFAULT_ON_AUTH_FAILURE（标准OAuth）",
+      "source": "src/plugins/auth.ts:638",
+      "declaration": "onFailure?: TAuthFunc<AuthFailureAction | null | undefined | void>;",
+      "expressible": true,
+      "expression": "执行器固定 makeOnFailure；仅固定路由可触发，无法任意自定义",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "refresh"
+        },
+        {
+          "kind": "eventPositive",
+          "path": "expired"
+        },
+        {
+          "kind": "eventPositive",
+          "path": "denied"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.cb.onRefresh",
+      "plugin": "auth",
+      "category": "cb",
+      "description": "必填：刷新实现；onFailure=Refresh 时调用，返回false/抛错=失败，同窗口并发共享一次",
+      "source": "src/plugins/auth.ts:640",
+      "declaration": "onRefresh: TAuthFunc<unknown>;",
+      "expressible": true,
+      "expression": "expect.*.client.refresh",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "refresh"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.cb.onAccessDenied",
+      "plugin": "auth",
+      "category": "cb",
+      "description": "禁止访问回调（无token/onFailure=Deny），未配置回退 onAccessExpired",
+      "source": "src/plugins/auth.ts:642",
+      "declaration": "onAccessDenied?: TAuthFunc<void>;",
+      "expressible": true,
+      "expression": "expect.*.client.denied",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "denied"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.cb.onAccessExpired",
+      "plugin": "auth",
+      "category": "cb",
+      "description": "必填：过期回调（Expired/刷新失败/重放后仍失败），调用前已 tm.clear()",
+      "source": "src/plugins/auth.ts:644",
+      "declaration": "onAccessExpired: TAuthFunc<void>;",
+      "expressible": true,
+      "expression": "expect.*.client.expired",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "expired"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.cb.ready",
+      "plugin": "auth",
+      "category": "cb",
+      "description": "受保护请求发送前注入凭证，默认写 tm.accessToken 到 Authorization 头",
+      "source": "src/plugins/auth.ts:646",
+      "declaration": "ready?: TAuthFunc<void, AxiosRequestConfig>;",
+      "expressible": true,
+      "expression": "默认 ready 注入 Authorization；受保护请求成功。无法自定义回调",
+      "rules": [
+        {
+          "kind": "protectedSuccess"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.name",
+      "plugin": "auth",
+      "category": "const",
+      "description": "声明：name",
+      "source": "src/plugins/auth.ts:13",
+      "declaration": "name = 'axp:auth'",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.ACCESS_DENIED_CODE",
+      "plugin": "auth",
+      "category": "const",
+      "description": "默认越权业务码，用于 `$synthDenied` 合成的响应",
+      "source": "src/plugins/auth.ts:35",
+      "declaration": "ACCESS_DENIED_CODE = 'ACCESS_DENIED'",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.AuthFailureAction",
+      "plugin": "auth",
+      "category": "const",
+      "description": "`onFailure` 路由决策枚举，驱动 5 种动作",
+      "source": "src/plugins/auth.ts:65",
+      "declaration": "AuthFailureAction =",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.AuthFailureAction.Refresh",
+      "plugin": "auth",
+      "category": "const",
+      "description": "需要刷新——token 与 tm 当前一致（真过期）",
+      "source": "src/plugins/auth.ts:67",
+      "declaration": "Refresh: 'refresh'",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.AuthFailureAction.Replay",
+      "plugin": "auth",
+      "category": "const",
+      "description": "无需刷新直接重发——已被并发刷新或 token 不一致（stale）",
+      "source": "src/plugins/auth.ts:69",
+      "declaration": "Replay: 'replay'",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.AuthFailureAction.Deny",
+      "plugin": "auth",
+      "category": "const",
+      "description": "越权拒绝——调用 onAccessDenied",
+      "source": "src/plugins/auth.ts:71",
+      "declaration": "Deny: 'deny'",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.AuthFailureAction.Expired",
+      "plugin": "auth",
+      "category": "const",
+      "description": "会话过期——tm.clear() 后调用 onAccessExpired",
+      "source": "src/plugins/auth.ts:73",
+      "declaration": "Expired: 'expired'",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.AuthFailureAction.Others",
+      "plugin": "auth",
+      "category": "const",
+      "description": "与插件无关，原样传播",
+      "source": "src/plugins/auth.ts:75",
+      "declaration": "Others: 'others'",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.fn.authFailureFactory",
+      "plugin": "auth",
+      "category": "fn",
+      "description": "默认 `onFailure` 工厂（柯里化）——按 header 字段名生成标准 OAuth 路由器。决策顺序： 非401/403→Others；tm无token→401:Expired/403:Deny；未带token→Replay；带token且与tm 一致→Refresh（真过期）；带token但不一致→Replay（已被并发刷新，stale）。",
+      "source": "src/plugins/auth.ts:101",
+      "declaration": "export function authFailureFactory(headerName = 'Authorization')",
+      "expressible": true,
+      "expression": "makeOnFailure 调用默认 header 工厂并委托 401 路由；自定义 header 无法表达",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "refresh"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.const.DEFAULT_ON_AUTH_FAILURE",
+      "plugin": "auth",
+      "category": "const",
+      "description": "默认 `onFailure` 单例",
+      "source": "src/plugins/auth.ts:126",
+      "declaration": "DEFAULT_ON_AUTH_FAILURE = /*#__PURE__*/ authFailureFactory()",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.fn.axpAuth",
+      "plugin": "auth",
+      "category": "fn",
+      "description": "鉴权插件——单一刷新窗口 + onFailure 五动作路由",
+      "source": "src/plugins/auth.ts:150",
+      "declaration": "export default function axpAuth(options: IAuthOptions): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.auth（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.fn.$pathnameOf",
+      "plugin": "auth",
+      "category": "fn",
+      "description": "取出 URL 的 pathname：去掉 `scheme://host` 前缀与 `?query`/`#hash` 后缀，空结果返回 `'/'`。",
+      "source": "src/plugins/auth.ts:412",
+      "declaration": "export function $pathnameOf(url: string): string",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "auth.fn.$compileMethods",
+      "plugin": "auth",
+      "category": "fn",
+      "description": "编译 methods 选项为谓词：undefined/''/[] 恒false；'*' 或含'*'恒true；字符串单值比较； 数组用 Set.has。",
+      "source": "src/plugins/auth.ts:455",
+      "declaration": "export function $compileMethods(m: string | readonly string[] | undefined): Predicate",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "auth.fn.$compileUrlPatterns",
+      "plugin": "auth",
+      "category": "fn",
+      "description": "编译 urlPattern 选项为谓词：undefined/[] 恒false；'*'/['*'] 恒true；否则用 URLPattern （不可用回退正则），'*' 任意、':name' 单段、'!' 前缀否定。",
+      "source": "src/plugins/auth.ts:482",
+      "declaration": "export function $compileUrlPatterns(p: string | readonly string[] | undefined): Predicate",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "auth.fn.$patternToRegex",
+      "plugin": "auth",
+      "category": "fn",
+      "description": "URLPattern pathname 子集转正则：'*'⇒.*，':name'⇒[^/]+，其余转义为字面量。",
+      "source": "src/plugins/auth.ts:529",
+      "declaration": "export function $patternToRegex(pat: string): RegExp | null",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "auth.fn.$normalize",
+      "plugin": "auth",
+      "category": "fn",
+      "description": "声明：$normalize",
+      "source": "src/plugins/auth.ts:599",
+      "declaration": "export function $normalize(opts: IAuthOptions): IAuthConfig",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "auth.req.protected",
+      "plugin": "auth",
+      "category": "req",
+      "description": "请求级是否受保护，单次覆盖插件级判定：true/false 强制，或函数 MaybeFun",
+      "source": "src/plugins/auth.ts:656",
+      "declaration": "protected?: MaybeFun<boolean | undefined | null | void>;",
+      "expressible": true,
+      "expression": "request.options.auth；仅布尔，函数不支持",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "auth"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.req.authExpired",
+      "plugin": "auth",
+      "category": "req",
+      "description": "只读结果标记：请求因会话过期失败时为 true，出现在失败响应/错误的 config 上（含刷新窗口内被阻断的请求）",
+      "source": "src/plugins/auth.ts:697",
+      "declaration": "authExpired?: boolean;",
+      "expressible": true,
+      "expression": "expect.*.client.expired 与 results.<id>.error=expired（执行器读取 config.authExpired 归类）；只读标记，不是可配置项",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "expired"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.opt.enable",
+      "plugin": "cache",
+      "category": "opt",
+      "description": "插件级总开关；默认 true",
+      "source": "src/plugins/cache.ts:337",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.opt.expires",
+      "plugin": "cache",
+      "category": "opt",
+      "description": "默认 TTL（毫秒）；可由请求级 config.cache.expires 覆盖，默认 60_000",
+      "source": "src/plugins/cache.ts:339",
+      "declaration": "expires?: number;",
+      "expressible": true,
+      "expression": "client.plugins.cache.ttl_ms",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "ttl_ms"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.cb.key",
+      "plugin": "cache",
+      "category": "cb",
+      "description": "默认 key 计算函数；未指定时回退到 config.key（key 插件写入）",
+      "source": "src/plugins/cache.ts:341",
+      "declaration": "key?: (config: AxiosRequestConfig) => string | undefined;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有自定义回调配置或注册步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.opt.clone",
+      "plugin": "cache",
+      "category": "opt",
+      "description": "默认拷贝策略；对象形式请求级 config.cache.clone 未指定时回退到此，默认共享引用",
+      "source": "src/plugins/cache.ts:343",
+      "declaration": "clone?: TCloneStrategy;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 3,
+      "scope": "public"
+    },
+    {
+      "id": "cache.opt.max",
+      "plugin": "cache",
+      "category": "opt",
+      "description": "最大缓存条数，超出按 LRU 淘汰；每次写入还会顺带清理过期项。默认 500，可传 `Infinity` 不限。",
+      "source": "src/plugins/cache.ts:350",
+      "declaration": "max?: number;",
+      "expressible": true,
+      "expression": "client.plugins.cache.max",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "max"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.cb.shouldCache",
+      "plugin": "cache",
+      "category": "cb",
+      "description": "写入判定：返回 false 则这次响应不入缓存（仍正常返回给调用方）。 默认不缓存业务失败信封（HTTP 非 2xx，或 body.code 不是 0",
+      "source": "src/plugins/cache.ts:362",
+      "declaration": "shouldCache?: (response: AxiosResponse) => boolean;",
+      "expressible": true,
+      "expression": "client.plugins.cache.methods；仅执行器约定的固定实现/取值，自定义实现无法表达",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "methods"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.opt.storage",
+      "plugin": "cache",
+      "category": "opt",
+      "description": "声明：storage；类型保留，工厂未消费",
+      "source": "src/plugins/cache.ts:364",
+      "declaration": "storage?:",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.cb.storage.getItem",
+      "plugin": "cache",
+      "category": "cb",
+      "description": "声明：storage.getItem；类型保留，工厂未消费",
+      "source": "src/plugins/cache.ts:365",
+      "declaration": "getItem: (key: string) => any | Promise<any>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.cb.storage.setItem",
+      "plugin": "cache",
+      "category": "cb",
+      "description": "声明：storage.setItem；类型保留，工厂未消费",
+      "source": "src/plugins/cache.ts:366",
+      "declaration": "setItem: (key: string, value: any) => any | Promise<any>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.cb.storage.removeItem",
+      "plugin": "cache",
+      "category": "cb",
+      "description": "声明：storage.removeItem；类型保留，工厂未消费",
+      "source": "src/plugins/cache.ts:367",
+      "declaration": "removeItem: (key: string) => any | Promise<any>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.cb.storage.clear",
+      "plugin": "cache",
+      "category": "cb",
+      "description": "声明：storage.clear；类型保留，工厂未消费",
+      "source": "src/plugins/cache.ts:368",
+      "declaration": "clear: () => any | Promise<any>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.opt.memory",
+      "plugin": "cache",
+      "category": "opt",
+      "description": "声明：memory；类型保留，工厂未消费",
+      "source": "src/plugins/cache.ts:371",
+      "declaration": "memory?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.fn.axpCache",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "响应缓存插件：TTL 内对相同 key 的请求直接返回缓存响应，跳过 HTTP。 - **基于 adapter 包装**：命中直接 `Promise.resolve(cachedResponse)`；未命中走原 adapter 并把响应写入缓存 - **缓存维度**：默认 `config.key`；可用请求级 `config.cache.key` 或插件级 `defaults.key` 自定义 - **TTL**：请求级 `expires` > 插件级 `defaults.expires`，默认 60s - **存储**：进程内 Map（不持久化）；要 sessionStorage/localStorage 请在外面包一层 - **失效操作**：导出 `removeCache(ax, key)`",
+      "source": "src/plugins/cache.ts:55",
+      "declaration": "export default function axpCache(",
+      "expressible": true,
+      "expression": "client.plugins.cache（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.fn.$resolveCloneFn",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "把 clone 策略解析成一个「拷贝 data」的函数；`null` 表示共享引用（不拷贝）。 - 缺省/`cache: true` → null（共享引用） - `'shallow'` → 浅拷贝（仅顶层；嵌套仍共享，适合 immutable-update 风格） - `'deep'` → `structuredClone`（环境不支持则**直接抛错**，绝不静默退化为浅拷贝） - `function` → 自定义深拷贝（data 含 Date/Map/类实例/函数等不可结构化克隆时使用）",
+      "source": "src/plugins/cache.ts:147",
+      "declaration": "export function $resolveCloneFn(\r\n  clone: TCloneStrategy | undefined,\r\n): ((data: any) => any) | null",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "cache.fn.$shallowClone",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "浅拷贝：数组/对象复制顶层，原始值原样返回",
+      "source": "src/plugins/cache.ts:165",
+      "declaration": "export function $shallowClone(d: any): any",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "cache.fn.$applyClone",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "按拷贝函数发出响应：null → 原样共享；否则壳拷贝 + 拷贝后的 data",
+      "source": "src/plugins/cache.ts:172",
+      "declaration": "export function $applyClone(\r\n  resp: AxiosResponse,\r\n  cloneFn: ((data: any) => any) | null,\r\n): AxiosResponse",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "cache.fn.$resolveCache",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "解析请求级 cache 配置；null 表示本请求不缓存。 - `false`/未指定 → null（不缓存） - `true` → 启用 + **共享引用**（不携带 clone，拷贝语义只在对象形式里指定） - 对象 → 启用；`clone` 请求级优先、回退插件级 `defaults.clone`",
+      "source": "src/plugins/cache.ts:194",
+      "declaration": "export function $resolveCache(\r\n  config: AxiosRequestConfig,\r\n  defaults: ICacheOptions,\r\n): IResolvedCache | null",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "cache.fn.$resolveKey",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "解析缓存 key：请求级 > 插件级 > config.key（key 插件兜底）",
+      "source": "src/plugins/cache.ts:212",
+      "declaration": "export function $resolveKey(\r\n  config: AxiosRequestConfig,\r\n  resolved: IResolvedCache,\r\n  defaults: ICacheOptions,\r\n): string | undefined",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "cache.fn.removeCache",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "清除指定 axios 实例的某条缓存",
+      "source": "src/plugins/cache.ts:231",
+      "declaration": "export function removeCache(ax: AxiosInstance, key: string): boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 5,
+      "scope": "public"
+    },
+    {
+      "id": "cache.fn.clearCache",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "清空指定 axios 实例的全部缓存",
+      "source": "src/plugins/cache.ts:243",
+      "declaration": "export function clearCache(ax: AxiosInstance): number",
+      "expressible": true,
+      "expression": "step.clear_cache",
+      "rules": [
+        {
+          "kind": "step",
+          "path": "clear_cache"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.fn.$defaultShouldCache",
+      "plugin": "cache",
+      "category": "fn",
+      "description": "默认写入判定：状态非 2xx、或信封里 code 不是成功值（0",
+      "source": "src/plugins/cache.ts:261",
+      "declaration": "export function $defaultShouldCache(response: AxiosResponse): boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "cache.req.cache",
+      "plugin": "cache",
+      "category": "req",
+      "description": "响应缓存： - `false`/未指定 → 不缓存 - `true` → 启用，**返回共享引用**（零拷贝，须视为只读；要改请用对象形式指定 clone） - `{ expires?, key?, clone?, shouldCache? }` → 自定义 TTL/key/拷贝策略/写入判定",
+      "source": "src/plugins/cache.ts:420",
+      "declaration": "cache?: boolean | IResolvedCache;",
+      "expressible": true,
+      "expression": "request.options.cache",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "cache"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.req.cache.expires",
+      "plugin": "cache",
+      "category": "req",
+      "description": "本请求生效的 TTL（毫秒）",
+      "source": "src/plugins/cache.ts:377",
+      "declaration": "expires?: number;",
+      "expressible": true,
+      "expression": "request.options.cache.ttl_ms",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "cache.ttl_ms"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.req.cache.key",
+      "plugin": "cache",
+      "category": "req",
+      "description": "本请求生效的 key 或 key 计算函数",
+      "source": "src/plugins/cache.ts:379",
+      "declaration": "key?: string | ((config: AxiosRequestConfig) => string | undefined);",
+      "expressible": true,
+      "expression": "request.options.cache.key",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "cache.key"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.req.cache.clone",
+      "plugin": "cache",
+      "category": "req",
+      "description": "本请求生效的拷贝策略",
+      "source": "src/plugins/cache.ts:381",
+      "declaration": "clone?: TCloneStrategy;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 4,
+      "scope": "public"
+    },
+    {
+      "id": "cache.req.cache.shouldCache",
+      "plugin": "cache",
+      "category": "req",
+      "description": "本请求生效的写入判定",
+      "source": "src/plugins/cache.ts:383",
+      "declaration": "shouldCache?: (response: AxiosResponse) => boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cancel.opt.enable",
+      "plugin": "cancel",
+      "category": "opt",
+      "description": "插件级总开关，默认 true",
+      "source": "src/plugins/cancel.ts:119",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cancel.fn.axpCancel",
+      "plugin": "cancel",
+      "category": "fn",
+      "description": "取消请求插件：为每个未自带 signal/cancelToken 的请求自动注入 AbortController，并维护 该 axios 实例的活跃请求集合，配合 cancelAll(ax) 可一次性中止所有在飞请求。",
+      "source": "src/plugins/cancel.ts:38",
+      "declaration": "export default function axpCancel({ enable = true }: ICancelOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.cancel（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cancel.fn.cancelAll",
+      "plugin": "cancel",
+      "category": "fn",
+      "description": "中止指定 axios 实例当前所有活跃请求",
+      "source": "src/plugins/cancel.ts:107",
+      "declaration": "export function cancelAll(ax: AxiosInstance, reason?: string): number",
+      "expressible": true,
+      "expression": "step.cancel_all",
+      "rules": [
+        {
+          "kind": "step",
+          "path": "cancel_all"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "envs.cb.rules[].rule",
+      "plugin": "envs",
+      "category": "cb",
+      "description": "规则判定，返回 true 的第一条会被采用",
+      "source": "src/plugins/envs.ts:51",
+      "declaration": "rule: () => boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "envs.opt.rules[].config",
+      "plugin": "envs",
+      "category": "opt",
+      "description": "该环境对应的 axios 默认配置（浅合并到 `axios.defaults`）/ the axios defaults for this environment (shallow-merged into `axios.defaults`)",
+      "source": "src/plugins/envs.ts:53",
+      "declaration": "config: CreateAxiosDefaults;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "envs.fn.axpEnvs",
+      "plugin": "envs",
+      "category": "fn",
+      "description": "多环境配置插件：install 时按 `rule()` 选第一个匹配的配置，浅合并到 `axios.defaults`。无拦截器，纯 install-time 行为零运行时开销；命中后 break，余下规则不再求值；无匹配则 no-op。",
+      "source": "src/plugins/envs.ts:20",
+      "declaration": "export default function axpEnvs(rules: IEnvRule[] = []): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.envs（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.opt.enable",
+      "plugin": "filter",
+      "category": "opt",
+      "description": "插件级总开关；默认 `true`",
+      "source": "src/plugins/filter.ts:133",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.cb.predicate",
+      "plugin": "filter",
+      "category": "cb",
+      "description": "自定义\"是否丢弃\"判断；返回 `true` 表示该条目被丢弃",
+      "source": "src/plugins/filter.ts:135",
+      "declaration": "predicate?: TPredicate;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有自定义回调配置或注册步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.opt.ignoreKeys",
+      "plugin": "filter",
+      "category": "opt",
+      "description": "这些 key 即使 predicate 说要丢也保留",
+      "source": "src/plugins/filter.ts:137",
+      "declaration": "ignoreKeys?: string[];",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 9,
+      "scope": "public"
+    },
+    {
+      "id": "filter.opt.ignoreValues",
+      "plugin": "filter",
+      "category": "opt",
+      "description": "这些 value 即使 predicate 说要丢也保留（=== 比较，NaN 特例）/ these values are kept even if `predicate` says to drop them (`===`, NaN special case)",
+      "source": "src/plugins/filter.ts:139",
+      "declaration": "ignoreValues?: any[];",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.fn.axpFilter",
+      "plugin": "filter",
+      "category": "fn",
+      "description": "在请求发出前过滤掉 params/data 中的\"空字段\"，避免无意义的 key/value 污染服务端日志、缓存或签名。默认丢掉 null/undefined/NaN/空白字符串；`predicate` 可自定义丢弃判断，`ignoreKeys`/`ignoreValues` 豁免过滤。请求级 `config.filter` 可为 falsy(跳过)/true/undefined(走插件默认)/对象(覆盖)/函数(动态返回以上任一)。",
+      "source": "src/plugins/filter.ts:14",
+      "declaration": "export default function axpFilter({ enable = true, predicate, ignoreKeys, ignoreValues }: IFilterOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.filter（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.fn.$resolveOptions",
+      "plugin": "filter",
+      "category": "fn",
+      "description": "解析请求级 config.filter（支持 MaybeFun + 对象/布尔），与插件级 defaults 合并。优先级：请求级显式字段 > 插件级 defaults > 内置默认。",
+      "source": "src/plugins/filter.ts:68",
+      "declaration": "export function $resolveOptions(\r\n    config: AxiosRequestConfig,\r\n    defaults: IFilterOptions,\r\n): (Required<Pick<IFilterOptions, 'predicate'>> & Pick<IFilterOptions, 'ignoreKeys' | 'ignoreValues'>) | null",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "filter.fn.$filter",
+      "plugin": "filter",
+      "category": "fn",
+      "description": "对一层对象做条目级过滤（不递归——嵌套结构由 key 等后续插件按需处理；filter 只剥离顶层无意义字段）。key 命中 ignoreKeys 或 value 命中 ignoreValues → 保留；predicate(kv) === true → 丢弃；其余保留。可选 `dropped` 出参收集被丢弃条目（调试日志用）。",
+      "source": "src/plugins/filter.ts:91",
+      "declaration": "export function $filter(\r\n    obj: Record<string, any>,\r\n    opts: { predicate: TPredicate; ignoreKeys?: string[]; ignoreValues?: any[] },\r\n    dropped?: TDroppedKV[],\r\n): Record<string, any>",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "filter.fn.defaultPredicate",
+      "plugin": "filter",
+      "category": "fn",
+      "description": "默认 predicate：与 key 插件的默认过滤语义对齐",
+      "source": "src/plugins/filter.ts:120",
+      "declaration": "export function defaultPredicate(kv: [key: string, value: any]): boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.req.filter",
+      "plugin": "filter",
+      "category": "req",
+      "description": "请求级过滤配置，缺省回退插件级 defaults",
+      "source": "src/plugins/filter.ts:146",
+      "declaration": "filter?: MaybeFun<IFilterOptions | boolean | Falsy>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.cb.before",
+      "plugin": "key",
+      "category": "cb",
+      "description": "请求发出前的钩子。 Hook before the request is sent.",
+      "source": "src/types.ts:68",
+      "declaration": "before?(config: InternalAxiosRequestConfig): any",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有自定义回调配置或注册步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.cb.after",
+      "plugin": "key",
+      "category": "cb",
+      "description": "请求发出后的钩子。 Hook after the request is sent.",
+      "source": "src/types.ts:70",
+      "declaration": "after?(config: InternalAxiosRequestConfig): any",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有自定义回调配置或注册步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.opt.enable",
+      "plugin": "key",
+      "category": "opt",
+      "description": "插件级总开关",
+      "source": "src/plugins/key.ts:379",
+      "declaration": "enable?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.opt.fastMode",
+      "plugin": "key",
+      "category": "opt",
+      "description": "是否启用简单模式：`true` 仅用 method+url（性能最高），`false` 用 method+url+params+data（准确度最高）",
+      "source": "src/plugins/key.ts:386",
+      "declaration": "fastMode?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.opt.ignores",
+      "plugin": "key",
+      "category": "opt",
+      "description": "豁免空值过滤的键名或值（同一份列表，对齐 dioman `DiomanKey.ignores`）/ keys or values exempt from empty-value filtering (one list, mirrors dioman's `DiomanKey.ignores`)",
+      "source": "src/plugins/key.ts:388",
+      "declaration": "ignores?: any[]",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.opt.sample",
+      "plugin": "key",
+      "category": "opt",
+      "description": "是否对超长字符串(>64)采样而非全量哈希：`false`(默认) 全量哈希准确度最高，`true` 仅采首/中/尾各 8 字符+长度，适合超大 payload 场景",
+      "source": "src/plugins/key.ts:395",
+      "declaration": "sample?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.opt.scope",
+      "plugin": "key",
+      "category": "opt",
+      "description": "会话/租户标识：并入最终 key，使不同账号/租户的缓存与共享互不串用。 常量或函数（每次请求调用）；返回 null/undefined/'' 表示不并入。请求级 `key: { scope }` 优先于插件级。 切换账号时建议同时调用 `clearCache(axios)` 清掉旧缓存。",
+      "source": "src/plugins/key.ts:406",
+      "declaration": "scope?: string | number | ((config: AxiosRequestConfig) => string | number | null | undefined | void)",
+      "expressible": true,
+      "expression": "client.plugins.key.scope；仅执行器约定的固定实现/取值，自定义实现无法表达",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "scope"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.fn.axpKey",
+      "plugin": "key",
+      "category": "fn",
+      "description": "为每个请求生成稳定唯一的 key（写入 `config.key`），供 cache/share 等下游插件做去重/缓存标识。",
+      "source": "src/plugins/key.ts:16",
+      "declaration": "export default function axpKey({ after, before, enable = true, fastMode, ignores, sample, scope }: IKeyOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.key（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.fn.$parse",
+      "plugin": "key",
+      "category": "fn",
+      "description": "解析 `config.key` 得到最终 key 字符串（`null` = 不生成）。优先级：请求级显式字段 > 插件级 defaults > 内置默认。",
+      "source": "src/plugins/key.ts:65",
+      "declaration": "export function $parse(config: AxiosRequestConfig, defaults?: IKeyObject): string | null",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "key.fn.$key",
+      "plugin": "key",
+      "category": "fn",
+      "description": "流式 FNV-1a 双车道——单 key 由两条独立种子的 32bit FNV 拼接成 ~64bit，把生日碰撞阈值从 ~7.7 万个 key 推到 ~50 亿，cache 误命中实际归零。 - simple：仅 method+url（去重/share 够用）；deep（默认）：method+url+完整 params+完整 data - opts.ignores：deep 模式下让指定键/值豁免空值过滤 - sample：仅对 >64 字符长串采样（默认 false=全量哈希，避免“中段差异”碰撞；仅超大 payload 场景开启） - 性能：对象层用可交换累加代替 `Object.keys().sort()`，省掉排序与分配开销",
+      "source": "src/plugins/key.ts:170",
+      "declaration": "export function $key(config: AxiosRequestConfig, simple = true, opts?: KeyOpts, sample = false): string",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key",
+      "plugin": "key",
+      "category": "req",
+      "description": "请求级 key 配置，缺省回退插件级 defaults",
+      "source": "src/plugins/key.ts:413",
+      "declaration": "key?: MaybeFun<'deep' | IKeyObject | number | null | undefined | void | boolean | ({} & string)>;",
+      "expressible": true,
+      "expression": "request.options.key；true/deep→原生 deep，simple→原生 true，其它字符串原样；对象/数值/函数不支持",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "key"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.opt.enable",
+      "plugin": "loading",
+      "category": "opt",
+      "description": "插件级总开关；默认 true",
+      "source": "src/plugins/loading.ts:321",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.cb.loading",
+      "plugin": "loading",
+      "category": "cb",
+      "description": "loading 状态切换回调（兜底）；请求级未指定函数时使用",
+      "source": "src/plugins/loading.ts:323",
+      "declaration": "loading?: TLoadingFunc;",
+      "expressible": true,
+      "expression": "expect.*.client.loading；仅执行器约定的固定实现/取值，自定义实现无法表达",
+      "rules": [
+        {
+          "kind": "eventExists",
+          "path": "loading"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.opt.delay",
+      "plugin": "loading",
+      "category": "opt",
+      "description": "0→1 后延迟多久才真正显示，期间计数回落到 0 则从不显示；默认 0（即时显示）",
+      "source": "src/plugins/loading.ts:325",
+      "declaration": "delay?: number;",
+      "expressible": true,
+      "expression": "client.plugins.loading.delay_ms",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "delay_ms"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.opt.delayClose",
+      "plugin": "loading",
+      "category": "opt",
+      "description": "1→0 后延迟多久才真正隐藏，期间新请求把计数顶回 1 则取消隐藏；默认 0（即时隐藏）",
+      "source": "src/plugins/loading.ts:327",
+      "declaration": "delayClose?: number;",
+      "expressible": true,
+      "expression": "client.plugins.loading.delay_close_ms",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "delay_close_ms"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.fn.axpLoading",
+      "plugin": "loading",
+      "category": "fn",
+      "description": "在请求生命周期内自动调用 `loading(true)`",
+      "source": "src/plugins/loading.ts:51",
+      "declaration": "export default function axpLoading({ enable = true, loading, delay = 0, delayClose = 0 }: ILoadingOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.loading（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.fn.$resolveLoading",
+      "plugin": "loading",
+      "category": "fn",
+      "description": "解析本次请求要使用的 loading 回调： - `$isSkipped` → null（跳过本请求） - `config.loading` 是函数 → 直接作为回调（请求级覆盖） - `config.loading` 是对象且给了 `loading` 字段 → 用它 - 否则回退到插件级 `defaults.loading`",
+      "source": "src/plugins/loading.ts:108",
+      "declaration": "export function $resolveLoading(\r\n    config: AxiosRequestConfig,\r\n    defaults: ILoadingOptions,\r\n): TLoadingFunc | null",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "loading.fn.$resolveDelay",
+      "plugin": "loading",
+      "category": "fn",
+      "description": "解析 `delay`：请求级对象 > 插件级 > 0",
+      "source": "src/plugins/loading.ts:120",
+      "declaration": "export function $resolveDelay(config: AxiosRequestConfig, defaults: ILoadingOptions): number",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "loading.fn.$resolveDelayClose",
+      "plugin": "loading",
+      "category": "fn",
+      "description": "解析 `delayClose`：请求级对象 > 插件级 > 0",
+      "source": "src/plugins/loading.ts:127",
+      "declaration": "export function $resolveDelayClose(config: AxiosRequestConfig, defaults: ILoadingOptions): number",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "loading.fn.$wrap",
+      "plugin": "loading",
+      "category": "fn",
+      "description": "构造包装后的 adapter：闭包内维护一个 `count`，按计数边界触发 true/false；中间过程仅 加减计数器；插件安装时由最终响应链释放，独立使用时在 adapter 的 finally 释放。",
+      "source": "src/plugins/loading.ts:176",
+      "declaration": "export function $wrap(prev: AxiosAdapter, defaults: ILoadingOptions, logical = false): LoadingAdapter",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "loading.req.loading",
+      "plugin": "loading",
+      "category": "req",
+      "description": "控制本请求是否参与全局 loading 计数： - `false` → 跳过本请求（不计数、不调用回调） - `true` 或未指定 → 参与，使用插件级默认（回调/delay/delayClose） - `function` → 参与，使用此函数作为本请求的回调（覆盖插件级 `loading`） - `ILoadingOptions` → 参与，按字段覆盖插件级默认（`loading`/`delay`/ `delayClose`），`enable: false` 等价于顶层 `false`",
+      "source": "src/plugins/loading.ts:348",
+      "declaration": "loading?: boolean | TLoadingFunc | ILoadingOptions;",
+      "expressible": true,
+      "expression": "request.options.loading；仅布尔，对象/函数形式无法表达",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "loading"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.req.loading.enable",
+      "plugin": "loading",
+      "category": "req",
+      "description": "插件级总开关；默认 true",
+      "source": "src/plugins/loading.ts:321",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.req.loading.loading",
+      "plugin": "loading",
+      "category": "req",
+      "description": "loading 状态切换回调（兜底）；请求级未指定函数时使用",
+      "source": "src/plugins/loading.ts:323",
+      "declaration": "loading?: TLoadingFunc;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.req.loading.delay",
+      "plugin": "loading",
+      "category": "req",
+      "description": "0→1 后延迟多久才真正显示，期间计数回落到 0 则从不显示；默认 0（即时显示）",
+      "source": "src/plugins/loading.ts:325",
+      "declaration": "delay?: number;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.req.loading.delayClose",
+      "plugin": "loading",
+      "category": "req",
+      "description": "1→0 后延迟多久才真正隐藏，期间新请求把计数顶回 1 则取消隐藏；默认 0（即时隐藏）",
+      "source": "src/plugins/loading.ts:327",
+      "declaration": "delayClose?: number;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.opt.debug",
+      "plugin": "logger",
+      "category": "opt",
+      "description": "打开后其它插件的诊断日志才会输出，默认 `false`",
+      "source": "src/plugins/logger.ts:31",
+      "declaration": "debug?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.opt.logger",
+      "plugin": "logger",
+      "category": "opt",
+      "description": "日志 sink，默认 `console.*`",
+      "source": "src/plugins/logger.ts:33",
+      "declaration": "logger?: PluginLogger;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.cb.logger.log",
+      "plugin": "logger",
+      "category": "cb",
+      "description": "普通日志。 Regular log.",
+      "source": "src/types.ts:23",
+      "declaration": "log(...args: unknown[]): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.cb.logger.warn",
+      "plugin": "logger",
+      "category": "cb",
+      "description": "警告级别。 Warning level.",
+      "source": "src/types.ts:25",
+      "declaration": "warn(...args: unknown[]): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.cb.logger.error",
+      "plugin": "logger",
+      "category": "cb",
+      "description": "错误级别。 Error level.",
+      "source": "src/types.ts:27",
+      "declaration": "error(...args: unknown[]): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.fn.axpLogger",
+      "plugin": "logger",
+      "category": "fn",
+      "description": "给其它插件提供\"要不要打日志、打到哪\"的共享配置，直接写在 `axios.defaults.debug`/`axios.defaults.logger` 上（其它插件 install 时读 defaults，运行时读 `config.debug`/`config.logger`——二者同源，靠 axios 的 defaults 合并机制继承，因此支持按请求覆盖）。不装此插件时其它插件读到的都是 `undefined`，日志调用等效 no-op。跟 dioman 的 `DiomanLog`（往响应体里塞文字日志）不是一回事——本插件不产生任何拦截器，纯粹只设两个共享字段。",
+      "source": "src/plugins/logger.ts:13",
+      "declaration": "export default function axpLogger({ debug = false, logger = CONSOLE_LOGGER }: ILoggerOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.log（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.req.debug",
+      "plugin": "logger",
+      "category": "req",
+      "description": "是否输出诊断日志，继承自 `axios.defaults.debug`，可按请求覆盖",
+      "source": "src/plugins/logger.ts:39",
+      "declaration": "debug?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.req.logger",
+      "plugin": "logger",
+      "category": "req",
+      "description": "日志 sink，继承自 `axios.defaults.logger`，可按请求覆盖",
+      "source": "src/plugins/logger.ts:41",
+      "declaration": "logger?: PluginLogger;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.req.logger.log",
+      "plugin": "logger",
+      "category": "req",
+      "description": "普通日志。 Regular log.",
+      "source": "src/types.ts:23",
+      "declaration": "log(...args: unknown[]): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.req.logger.warn",
+      "plugin": "logger",
+      "category": "req",
+      "description": "警告级别。 Warning level.",
+      "source": "src/types.ts:25",
+      "declaration": "warn(...args: unknown[]): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.req.logger.error",
+      "plugin": "logger",
+      "category": "req",
+      "description": "错误级别。 Error level.",
+      "source": "src/types.ts:27",
+      "declaration": "error(...args: unknown[]): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.opt.enable",
+      "plugin": "mock",
+      "category": "opt",
+      "description": "插件级总开关；建议设为 import.meta.env.DEV 之类的编译期常量，默认 false",
+      "source": "src/plugins/mock.ts:209",
+      "declaration": "enable?: boolean;",
+      "expressible": true,
+      "expression": "执行器固定 enable:true；无法配置 false",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "mock",
+          "equals": true
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.opt.mock",
+      "plugin": "mock",
+      "category": "opt",
+      "description": "默认是否 mock；true 时所有请求走 mockUrl，除非请求级显式 mock: false",
+      "source": "src/plugins/mock.ts:211",
+      "declaration": "mock?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.opt.mockUrl",
+      "plugin": "mock",
+      "category": "opt",
+      "description": "mock 服务器基地址",
+      "source": "src/plugins/mock.ts:213",
+      "declaration": "mockUrl?: string;",
+      "expressible": true,
+      "expression": "执行器固定 <baseURL>/t/mock；无法配置其它地址",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "mock",
+          "equals": true
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.cb.fallbackWhen",
+      "plugin": "mock",
+      "category": "cb",
+      "description": "自定义\"mock 不存在\"判定；返回 true 触发回落，默认 404 或网络不可达",
+      "source": "src/plugins/mock.ts:215",
+      "declaration": "fallbackWhen?: MockFallbackDecider;",
+      "expressible": true,
+      "expression": "client.plugins.mock.fallback_on_404；仅执行器约定的固定实现/取值，自定义实现无法表达；只有 false 会传自定义 fallbackWhen，true/缺省走默认判定",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "fallback_on_404",
+          "equals": false
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.fn.axpMock",
+      "plugin": "mock",
+      "category": "fn",
+      "description": "Mock 插件：命中请求**优先打 mock，mock 不存在则自动回落真实接口**。 （mock 仅应在开发环境启用 `enable: import.meta.env.DEV`，故回落即默认行为，无需开关。） - **触发判定**：`config.mock` 为真，或插件级 `mock: true` 兜底 - **URL 改写**：见 `$rewriteUrl`（绝对/相对/无 url 三种） - **回落**：先打 mock，mock **不存在**（默认：HTTP 404，或不可达的网络错误）→ 改用 **原始请求**打真实接口；判定可由 `fallbackWhen` 自定义（如把 5xx/501 也视为\"无 mock\"） - **实现层**：基于 adapter 包装（而非拦截器）——只有 adapter 能\"先发 mock、看结果、再改发真实\"。 回落只重走底层 adapter，不会二次触发其它拦截器",
+      "source": "src/plugins/mock.ts:37",
+      "declaration": "export default function axpMock(\r\n  { enable = false, mock: mockGlobal = false, mockUrl, fallbackWhen }: IMockOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.mock（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.fn.$shouldMock",
+      "plugin": "mock",
+      "category": "fn",
+      "description": "仅判断\"是否启用 mock\"",
+      "source": "src/plugins/mock.ts:92",
+      "declaration": "export function $shouldMock(config: AxiosRequestConfig, defaults: IMockOptions): boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "mock.fn.$resolveMock",
+      "plugin": "mock",
+      "category": "fn",
+      "description": "解析 mock 配置；null 表示本请求不 mock",
+      "source": "src/plugins/mock.ts:111",
+      "declaration": "export function $resolveMock(config: AxiosRequestConfig, defaults: IMockOptions): IResolvedMock | null",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "mock.fn.$shouldFallback",
+      "plugin": "mock",
+      "category": "fn",
+      "description": "默认\"mock 不存在\"判定：带响应（含 axios 抛出的 HTTP 错误）只认 404，无响应的网络不可达才回落（排除主动取消）",
+      "source": "src/plugins/mock.ts:143",
+      "declaration": "export function $shouldFallback(info: { response?: AxiosResponse; error?: any }): boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "mock.fn.$rewriteUrl",
+      "plugin": "mock",
+      "category": "fn",
+      "description": "将 config.url",
+      "source": "src/plugins/mock.ts:154",
+      "declaration": "export function $rewriteUrl(config: AxiosRequestConfig, mockUrl: string): void",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "mock.req.mock",
+      "plugin": "mock",
+      "category": "req",
+      "description": "mock 配置（mock 不存在时自动回落真实接口）： - `false` → 不 mock（覆盖插件级） - `true` → 启用，使用插件级 mockUrl - `{ mock?, mockUrl?, fallbackWhen? }` → 自定义",
+      "source": "src/plugins/mock.ts:231",
+      "declaration": "mock?: boolean | { mock?: boolean; mockUrl?: string; fallbackWhen?: MockFallbackDecider };",
+      "expressible": true,
+      "expression": "request.options.mock；仅布尔，对象/函数形式无法表达",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "mock"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.req.mock.mock",
+      "plugin": "mock",
+      "category": "req",
+      "description": "声明：mock.mock",
+      "source": "src/plugins/mock.ts:231",
+      "declaration": "mock?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.req.mock.mockUrl",
+      "plugin": "mock",
+      "category": "req",
+      "description": "声明：mock.mockUrl",
+      "source": "src/plugins/mock.ts:231",
+      "declaration": "mockUrl?: string;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.req.mock.fallbackWhen",
+      "plugin": "mock",
+      "category": "req",
+      "description": "声明：mock.fallbackWhen",
+      "source": "src/plugins/mock.ts:231",
+      "declaration": "fallbackWhen?: MockFallbackDecider",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.opt.enable",
+      "plugin": "normalize",
+      "category": "opt",
+      "description": "插件总开关，默认 `true`",
+      "source": "src/plugins/normalize.ts:65",
+      "declaration": "enable?: boolean,",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.opt.nullable",
+      "plugin": "normalize",
+      "category": "opt",
+      "description": "预留字段，镜像 `IHttpOptions.nullable`，当前未被读取/消费；预留，当前未消费",
+      "source": "src/plugins/normalize.ts:67",
+      "declaration": "nullable?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.fn.axpNormalize",
+      "plugin": "normalize",
+      "category": "fn",
+      "description": "严格响应校验插件：业务失败(`successful === false`)时以 `AxpError` reject；不改写成功响应的 `response.data`，返回形态统一由 `Core` dispatch 决定。",
+      "source": "src/plugins/normalize.ts:25",
+      "declaration": "export default function axpNormalize(\r\n  { enable = true }: INormalizeOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.normalize（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.req.normalize",
+      "plugin": "normalize",
+      "category": "req",
+      "description": "请求级归一化开关或选项；false",
+      "source": "src/plugins/normalize.ts:80",
+      "declaration": "normalize?: MaybeFun<INormalizeOptions | boolean | Falsy>",
+      "expressible": true,
+      "expression": "request.options.normalize；仅布尔，对象/函数形式无法表达",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "normalize"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "notify.cb.notify",
+      "plugin": "notify",
+      "category": "cb",
+      "description": "拿到非空消息时触发（比如弹 toast）",
+      "source": "src/plugins/notify.ts:73",
+      "declaration": "notify: (message: string) => void;",
+      "expressible": true,
+      "expression": "expect.*.client.notify；仅执行器约定的固定实现/取值，自定义实现无法表达",
+      "rules": [
+        {
+          "kind": "eventPositive",
+          "path": "notify"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "notify.cb.stringify",
+      "plugin": "notify",
+      "category": "cb",
+      "description": "响应/错误 → 一句消息，返回空字符串表示不通知；响应侧和错误侧共用同一个函数，`status`/`data` 为 0/undefined 通常意味着网络层错误",
+      "source": "src/plugins/notify.ts:75",
+      "declaration": "stringify: (data: T | undefined, message: string, status: number, config: AxiosRequestConfig) => string;",
+      "expressible": true,
+      "expression": "expect.*.client.notify；仅执行器约定的固定实现/取值，自定义实现无法表达",
+      "rules": [
+        {
+          "kind": "eventExists",
+          "path": "notify"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "notify.fn.axpNotify",
+      "plugin": "notify",
+      "category": "fn",
+      "description": "从响应/错误中提取一句消息转给 `notify`（如弹 toast）；移植自 dioman 的 `DiomanNotify`。响应侧和错误侧共用同一个 `stringify`，返回非空才真正触发。 - `stringify` 抛错不会打断请求本身：外面包了 try/catch 吞掉，仍按原样 resolve/reject （dioman 包 try/catch 是为了防止 Dio 的 `handler.next()` 永远不被调用导致请求悬挂；axios 的 Promise 链没有这个问题，异常会自然传播到下一个拦截器——这里包 try/catch 纯粹是为了不让通知失败反噬一个原本成功的响应，理由不同但结论一样得包） - 不改写 response/error 本身，只做旁路副作用",
+      "source": "src/plugins/notify.ts:26",
+      "declaration": "export default function axpNotify<T = unknown>({ notify, stringify }: INotifyOptions<T>): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.notify（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "repath.opt.enable",
+      "plugin": "repath",
+      "category": "opt",
+      "description": "是否启用插件",
+      "source": "src/plugins/repath.ts:7",
+      "declaration": "enable?: boolean,",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "repath.opt.pattern",
+      "plugin": "repath",
+      "category": "opt",
+      "description": "自定义 url 变量匹配规则",
+      "source": "src/plugins/repath.ts:9",
+      "declaration": "pattern?: RegExp;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "repath.opt.removeKey",
+      "plugin": "repath",
+      "category": "opt",
+      "description": "params/data 命中 url 参数时，替换的同时是否从 params/data 中删除该字段，默认 true",
+      "source": "src/plugins/repath.ts:11",
+      "declaration": "removeKey?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 10,
+      "scope": "public"
+    },
+    {
+      "id": "repath.fn.axpRepath",
+      "plugin": "repath",
+      "category": "fn",
+      "description": "将路径变量替换成真实值（`{id}`",
+      "source": "src/plugins/repath.ts:24",
+      "declaration": "export default function axpRepath(\r\n    { enable = true, removeKey = true, pattern = /{([^}]+)}|\\[([^\\]]+)]|:([^/\\s]+)/g }: IRepathOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.repath（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.enable",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "插件级总开关，默认 true；设为 false 时整个插件不安装",
+      "source": "src/plugins/retry.ts:507",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.max",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "默认最大重试次数，可由请求级 config.retry 覆盖，默认 0（不重试）",
+      "source": "src/plugins/retry.ts:509",
+      "declaration": "max?: number;",
+      "expressible": true,
+      "expression": "client.plugins.retry.max",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "max"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.methods",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "允许重试的方法白名单（不区分大小写），硬性否决、shouldRetry 说了也不算，默认幂等动词（不含 post/patch）",
+      "source": "src/plugins/retry.ts:511",
+      "declaration": "methods?: string[];",
+      "expressible": true,
+      "expression": "client.plugins.retry.methods",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "methods"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.cb.shouldRetry",
+      "plugin": "retry",
+      "category": "cb",
+      "description": "判断是否该重试；返回明确 true/false 就采用，返回 undefined 才退回 statusCodes 表",
+      "source": "src/plugins/retry.ts:513",
+      "declaration": "shouldRetry?: TShouldRetry;",
+      "expressible": true,
+      "expression": "执行器固定 makeShouldRetry；仅调用可推断，未逐条证明回调否决/回退分支",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.statusCodes",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "shouldRetry 未给出明确结果时用的状态码表，默认 [408,429,500,502,503,504]",
+      "source": "src/plugins/retry.ts:515",
+      "declaration": "statusCodes?: number[];",
+      "expressible": true,
+      "expression": "中立 statuses 传入 statusCodes，但执行器 shouldRetry 始终返回布尔值；原生状态表回退未被证明",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "statuses",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.delay",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "重试前的等待时长，默认 3000ms（响应带 Retry-After 时被其覆盖）",
+      "source": "src/plugins/retry.ts:517",
+      "declaration": "delay?: TRetryDelay;",
+      "expressible": true,
+      "expression": "client.plugins.retry.delay_ms；仅数字，回调另列",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "delay_ms"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.jitter",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "给 `delay` 加抖动的策略，默认不抖动（对齐 ky 的 jitter，Retry-After 场景下不生效）",
+      "source": "src/plugins/retry.ts:519",
+      "declaration": "jitter?: TJitter;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 8,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.delayMax",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "`delay`（含抖动后）的封顶值，默认不封顶（对齐 ky 的 backoffLimit，Retry-After 场景下不生效）",
+      "source": "src/plugins/retry.ts:521",
+      "declaration": "delayMax?: number;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 6,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.respectRetryAfter",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "是否尊重响应的 `Retry-After` 头（数字秒或 HTTP-date），默认 true",
+      "source": "src/plugins/retry.ts:523",
+      "declaration": "respectRetryAfter?: boolean;",
+      "expressible": true,
+      "expression": "client.plugins.retry.respect_retry_after",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "respect_retry_after"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.afterStatusCodes",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "只在这些状态码上信 Retry-After 头（其它状态码即使带了也不认，照样走计算出的 delay），默认 [413,429,503]，对齐 ky",
+      "source": "src/plugins/retry.ts:525",
+      "declaration": "afterStatusCodes?: number[];",
+      "expressible": true,
+      "expression": "执行器固定 [200,413,429,503]；请求 retry_after 与耗时/计数断言",
+      "rules": [
+        {
+          "kind": "retryAfter"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.opt.retryAfterMax",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "`Retry-After` 换算出的等待上限（毫秒），默认不封顶",
+      "source": "src/plugins/retry.ts:527",
+      "declaration": "retryAfterMax?: number;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 1,
+      "rank": 7,
+      "scope": "public"
+    },
+    {
+      "id": "retry.fn.axpRetry",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "失败重试插件：请求失败（或被判定为业务异常）后按 `delay` 等待、重发，最多 `max` 次。",
+      "source": "src/plugins/retry.ts:72",
+      "declaration": "export default function axpRetry(",
+      "expressible": true,
+      "expression": "client.plugins.retry（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.fn.$resolveMax",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析最大重试次数：请求级 > 插件级 > 0",
+      "source": "src/plugins/retry.ts:236",
+      "declaration": "export function $resolveMax(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): number",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveShouldRetry",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析 shouldRetry 判定函数：请求级 > 插件级 > undefined（不设默认值，交给状态码表兜底）",
+      "source": "src/plugins/retry.ts:247",
+      "declaration": "export function $resolveShouldRetry(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): TShouldRetry | undefined",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveStatusCodes",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析该重试的状态码表：请求级 > 插件级 > 默认 [408,429,500,502,503,504]",
+      "source": "src/plugins/retry.ts:258",
+      "declaration": "export function $resolveStatusCodes(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): number[]",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveAfterStatusCodes",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析\"信 Retry-After 头\"限定的状态码表：请求级 > 插件级 > 默认 [413,429,503]",
+      "source": "src/plugins/retry.ts:268",
+      "declaration": "export function $resolveAfterStatusCodes(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): number[]",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveDelay",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析 delay 配置：请求级 > 插件级 > 默认 3000ms",
+      "source": "src/plugins/retry.ts:278",
+      "declaration": "export function $resolveDelay(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): TRetryDelay",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveJitter",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析抖动策略：请求级 > 插件级 > 默认不抖动",
+      "source": "src/plugins/retry.ts:288",
+      "declaration": "export function $resolveJitter(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): TJitter | undefined",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveDelayMax",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析 delay 的封顶值：请求级 > 插件级 > 默认不封顶",
+      "source": "src/plugins/retry.ts:298",
+      "declaration": "export function $resolveDelayMax(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): number",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveMethods",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析该重试的方法白名单：请求级 > 插件级 > 默认（幂等的动词，见 DEFAULT_METHODS）",
+      "source": "src/plugins/retry.ts:337",
+      "declaration": "export function $resolveMethods(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): string[]",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$shouldRetry",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "是否该重试。优先级从高到低、每一级都能提前否决： 1. 单请求禁用（`retry: false` 或 `retry: { enable: false }`）—— 最高优先级硬性否决 2. `methods` 白名单 —— 方法不在表里直接否决，`shouldRetry` 说了也不算（对齐 ky：非幂等动词默认不重试，不能被自定义判断绕过，防止一次误判导致的重复 POST/PATCH 之类副作用） 3. `shouldRetry?.(response?, err?) ?? statusCodes.includes(status) ?? false` —— 返回明确的 true/false 就直接采用，返回 undefined 才退回状态码表 （`config.retry === true` 表示\"不覆盖，尊重插件默认\"，不在这里特殊处理——它 不是 number 也不是对象，每个 `$resolve*` 都会自然落回插件级默认，效果一致。）",
+      "source": "src/plugins/retry.ts:389",
+      "declaration": "export function $shouldRetry(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n  response?: AxiosResponse,\r\n  err?: AxiosError,\r\n): boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveRespectRetryAfter",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析是否尊重服务端 `Retry-After`：请求级 > 插件级 > 默认 true",
+      "source": "src/plugins/retry.ts:418",
+      "declaration": "export function $resolveRespectRetryAfter(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.fn.$resolveRetryAfterMax",
+      "plugin": "retry",
+      "category": "fn",
+      "description": "解析 `Retry-After` 换算出的等待上限：请求级 > 插件级 > 默认不封顶",
+      "source": "src/plugins/retry.ts:429",
+      "declaration": "export function $resolveRetryAfterMax(\r\n  config: AxiosRequestConfig,\r\n  defaults: IRetryOptions,\r\n): number",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "retry.req.retry",
+      "plugin": "retry",
+      "category": "req",
+      "description": "失败重试配置",
+      "source": "src/plugins/retry.ts:540",
+      "declaration": "retry?: number | boolean | IRetryOptions;",
+      "expressible": true,
+      "expression": "request.options.retry",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "retry"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.enable",
+      "plugin": "retry",
+      "category": "req",
+      "description": "插件级总开关，默认 true；设为 false 时整个插件不安装；声明允许，但请求级解析器未读取 enable",
+      "source": "src/plugins/retry.ts:507",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.max",
+      "plugin": "retry",
+      "category": "req",
+      "description": "默认最大重试次数，可由请求级 config.retry 覆盖，默认 0（不重试）",
+      "source": "src/plugins/retry.ts:509",
+      "declaration": "max?: number;",
+      "expressible": true,
+      "expression": "request.options.retry.max",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "retry.max"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.methods",
+      "plugin": "retry",
+      "category": "req",
+      "description": "允许重试的方法白名单（不区分大小写），硬性否决、shouldRetry 说了也不算，默认幂等动词（不含 post/patch）",
+      "source": "src/plugins/retry.ts:511",
+      "declaration": "methods?: string[];",
+      "expressible": true,
+      "expression": "request.options.retry.methods",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "retry.methods"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.shouldRetry",
+      "plugin": "retry",
+      "category": "req",
+      "description": "判断是否该重试；返回明确 true/false 就采用，返回 undefined 才退回 statusCodes 表",
+      "source": "src/plugins/retry.ts:513",
+      "declaration": "shouldRetry?: TShouldRetry;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.statusCodes",
+      "plugin": "retry",
+      "category": "req",
+      "description": "shouldRetry 未给出明确结果时用的状态码表，默认 [408,429,500,502,503,504]",
+      "source": "src/plugins/retry.ts:515",
+      "declaration": "statusCodes?: number[];",
+      "expressible": true,
+      "expression": "中立 statuses 传入 statusCodes，但执行器 shouldRetry 始终返回布尔值；原生状态表回退未被证明",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "retry.statuses",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.delay",
+      "plugin": "retry",
+      "category": "req",
+      "description": "重试前的等待时长，默认 3000ms（响应带 Retry-After 时被其覆盖）",
+      "source": "src/plugins/retry.ts:517",
+      "declaration": "delay?: TRetryDelay;",
+      "expressible": true,
+      "expression": "request.options.retry.delay_ms；仅数字，回调另列",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "retry.delay_ms"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.jitter",
+      "plugin": "retry",
+      "category": "req",
+      "description": "给 `delay` 加抖动的策略，默认不抖动（对齐 ky 的 jitter，Retry-After 场景下不生效）",
+      "source": "src/plugins/retry.ts:519",
+      "declaration": "jitter?: TJitter;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.delayMax",
+      "plugin": "retry",
+      "category": "req",
+      "description": "`delay`（含抖动后）的封顶值，默认不封顶（对齐 ky 的 backoffLimit，Retry-After 场景下不生效）",
+      "source": "src/plugins/retry.ts:521",
+      "declaration": "delayMax?: number;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.respectRetryAfter",
+      "plugin": "retry",
+      "category": "req",
+      "description": "是否尊重响应的 `Retry-After` 头（数字秒或 HTTP-date），默认 true",
+      "source": "src/plugins/retry.ts:523",
+      "declaration": "respectRetryAfter?: boolean;",
+      "expressible": true,
+      "expression": "request.options.retry.respect_retry_after",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "retry.respect_retry_after"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.afterStatusCodes",
+      "plugin": "retry",
+      "category": "req",
+      "description": "只在这些状态码上信 Retry-After 头（其它状态码即使带了也不认，照样走计算出的 delay），默认 [413,429,503]，对齐 ky",
+      "source": "src/plugins/retry.ts:525",
+      "declaration": "afterStatusCodes?: number[];",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.retryAfterMax",
+      "plugin": "retry",
+      "category": "req",
+      "description": "`Retry-After` 换算出的等待上限（毫秒），默认不封顶",
+      "source": "src/plugins/retry.ts:527",
+      "declaration": "retryAfterMax?: number;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.opt.enable",
+      "plugin": "share",
+      "category": "opt",
+      "description": "插件级总开关；默认 true",
+      "source": "src/plugins/share.ts:301",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.opt.policy",
+      "plugin": "share",
+      "category": "opt",
+      "description": "默认共享策略；可由请求级 config.share 覆盖，默认 'start'",
+      "source": "src/plugins/share.ts:303",
+      "declaration": "policy?: SharePolicy;",
+      "expressible": true,
+      "expression": "client.plugins.share.policy",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "policy"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.fn.axpShare",
+      "plugin": "share",
+      "category": "fn",
+      "description": "防抖/节流/合并多策略合一插件，按 `policy` 切换具体语义。 **所有策略以 `config.key` 为去重维度——key 由 `key` 插件计算。** - **start**：相同 key 的并发请求等待并复用首个的 promise（HTTP 只发一次） - **end**：后到的请求顶替前面，所有 caller 等待最后一个的 HTTP 结果 - **race**：多个 caller 各自发 HTTP，第一个成功的赢家分发给所有 caller（`Promise.any`） - **none**：不参与，等同于关闭；没有 key 也走 none",
+      "source": "src/plugins/share.ts:36",
+      "declaration": "export default function axpShare({ enable = true, policy = 'start' }: ISharedOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "client.plugins.share（仅工厂调用；不代表选项全覆盖）",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.fn.$rebindResponse",
+      "plugin": "share",
+      "category": "fn",
+      "description": "把共享响应换成属于该订阅者的响应外壳（`config` 重绑为本次请求的 config）。",
+      "source": "src/plugins/share.ts:79",
+      "declaration": "export function $rebindResponse(r: AxiosResponse, config: AxiosRequestConfig): AxiosResponse",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.fn.$rebindError",
+      "plugin": "share",
+      "category": "fn",
+      "description": "给订阅者一个独立的 error：保留原型与全部自有属性（AxiosError",
+      "source": "src/plugins/share.ts:91",
+      "declaration": "export function $rebindError(err: unknown, config: AxiosRequestConfig): unknown",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.fn.$follow",
+      "plugin": "share",
+      "category": "fn",
+      "description": "为一个订阅者包一层“自己的”视图：监听该请求自己的 signal",
+      "source": "src/plugins/share.ts:113",
+      "declaration": "export function $follow(shared: Promise<AxiosResponse>, config: InternalAxiosRequestConfig): Promise<AxiosResponse>",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.fn.$resolvePolicy",
+      "plugin": "share",
+      "category": "fn",
+      "description": "解析本次请求生效的共享策略：请求级 `config.share` 优先，回退插件级 `defaults.policy`。",
+      "source": "src/plugins/share.ts:165",
+      "declaration": "export function $resolvePolicy(config: AxiosRequestConfig, defaults: ISharedOptions): SharePolicy",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "share.fn.$createEntry",
+      "plugin": "share",
+      "category": "fn",
+      "description": "创建共享 entry：手写 `new Promise` 取出 resolve/reject（不用 ES2024 的 `Promise.withResolvers`），配 cleanup 在 settle 后自动从 map 清理（避免下一轮命中陈旧条目）。",
+      "source": "src/plugins/share.ts:199",
+      "declaration": "export function $createEntry(map: Map<string, IShareEntry>, key: string): IShareEntry",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "share.fn.$end",
+      "plugin": "share",
+      "category": "fn",
+      "description": "**end**：每来一个新请求 ++seq；只有 myGen === e.seq 的 HTTP 才 settle 共享 promise。",
+      "source": "src/plugins/share.ts:226",
+      "declaration": "export function $end(prev: AxiosAdapter, map: Map<string, IShareEntry>, key: string, config: InternalAxiosRequestConfig): Promise<AxiosResponse>",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "share.fn.$race",
+      "plugin": "share",
+      "category": "fn",
+      "description": "**race**：每个 caller 各发 HTTP，**第一个成功**的赢家分发给所有 caller（`Promise.any` 语义）； 所有 in-flight 都失败才用最后一个 error reject。",
+      "source": "src/plugins/share.ts:252",
+      "declaration": "export function $race(prev: AxiosAdapter, map: Map<string, IShareEntry>, key: string, config: InternalAxiosRequestConfig): Promise<AxiosResponse>",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "share.fn.$start",
+      "plugin": "share",
+      "category": "fn",
+      "description": "**start**：相同 key 的并发请求等待并复用首发 caller 的 promise，HTTP 只发一次。",
+      "source": "src/plugins/share.ts:276",
+      "declaration": "export function $start(\r\n    prev: AxiosAdapter,\r\n    map: Map<string, IShareEntry>,\r\n    key: string,\r\n    config: InternalAxiosRequestConfig,\r\n): Promise<AxiosResponse>",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "internal": true,
+      "scope": "internal"
+    },
+    {
+      "id": "share.req.share",
+      "plugin": "share",
+      "category": "req",
+      "description": "共享策略（同 `config.key` 的并发请求如何处理）： - `false` → 不共享（policy='none'） - `true`/未指定 → 走插件级 `policy` - 字符串 policy → 强制使用该策略 - `{ policy }` → 对象形式 - 函数 → 动态返回上述任一形式",
+      "source": "src/plugins/share.ts:336",
+      "declaration": "share?: MaybeFun<SharePolicy | boolean | { policy?: SharePolicy }>;",
+      "expressible": true,
+      "expression": "request.options.share；仅布尔和策略字符串，对象/函数不支持",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "share"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.req.filter.enable",
+      "plugin": "filter",
+      "category": "req",
+      "description": "插件级总开关；默认 `true`",
+      "source": "src/plugins/filter.ts:133",
+      "declaration": "enable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.req.filter.predicate",
+      "plugin": "filter",
+      "category": "req",
+      "description": "自定义\"是否丢弃\"判断；返回 `true` 表示该条目被丢弃",
+      "source": "src/plugins/filter.ts:135",
+      "declaration": "predicate?: TPredicate;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.req.filter.ignoreKeys",
+      "plugin": "filter",
+      "category": "req",
+      "description": "这些 key 即使 predicate 说要丢也保留",
+      "source": "src/plugins/filter.ts:137",
+      "declaration": "ignoreKeys?: string[];",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.req.filter.ignoreValues",
+      "plugin": "filter",
+      "category": "req",
+      "description": "这些 value 即使 predicate 说要丢也保留（=== 比较，NaN 特例）/ these values are kept even if `predicate` says to drop them (`===`, NaN special case)",
+      "source": "src/plugins/filter.ts:139",
+      "declaration": "ignoreValues?: any[];",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key.enable",
+      "plugin": "key",
+      "category": "req",
+      "description": "插件级总开关",
+      "source": "src/plugins/key.ts:379",
+      "declaration": "enable?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key.fastMode",
+      "plugin": "key",
+      "category": "req",
+      "description": "是否启用简单模式：`true` 仅用 method+url（性能最高），`false` 用 method+url+params+data（准确度最高）",
+      "source": "src/plugins/key.ts:386",
+      "declaration": "fastMode?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key.ignores",
+      "plugin": "key",
+      "category": "req",
+      "description": "豁免空值过滤的键名或值（同一份列表，对齐 dioman `DiomanKey.ignores`）/ keys or values exempt from empty-value filtering (one list, mirrors dioman's `DiomanKey.ignores`)",
+      "source": "src/plugins/key.ts:388",
+      "declaration": "ignores?: any[]",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key.sample",
+      "plugin": "key",
+      "category": "req",
+      "description": "是否对超长字符串(>64)采样而非全量哈希：`false`(默认) 全量哈希准确度最高，`true` 仅采首/中/尾各 8 字符+长度，适合超大 payload 场景",
+      "source": "src/plugins/key.ts:395",
+      "declaration": "sample?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key.scope",
+      "plugin": "key",
+      "category": "req",
+      "description": "会话/租户标识：并入最终 key，使不同账号/租户的缓存与共享互不串用。 常量或函数（每次请求调用）；返回 null/undefined/'' 表示不并入。请求级 `key: { scope }` 优先于插件级。 切换账号时建议同时调用 `clearCache(axios)` 清掉旧缓存。",
+      "source": "src/plugins/key.ts:406",
+      "declaration": "scope?: string | number | ((config: AxiosRequestConfig) => string | number | null | undefined | void)",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.req.normalize.enable",
+      "plugin": "normalize",
+      "category": "req",
+      "description": "插件总开关，默认 `true`",
+      "source": "src/plugins/normalize.ts:65",
+      "declaration": "enable?: boolean,",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.req.normalize.nullable",
+      "plugin": "normalize",
+      "category": "req",
+      "description": "预留字段，镜像 `IHttpOptions.nullable`，当前未被读取/消费；预留，当前未消费",
+      "source": "src/plugins/normalize.ts:67",
+      "declaration": "nullable?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.req.share.policy",
+      "plugin": "share",
+      "category": "req",
+      "description": "默认共享策略；可由请求级 config.share 覆盖，默认 'start'",
+      "source": "src/plugins/share.ts:303",
+      "declaration": "policy?: SharePolicy;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.export.Core",
+      "plugin": "public",
+      "category": "export",
+      "description": "Core 公开运行时类型（默认接口与同名 class 声明合并）",
+      "source": "src/core.ts:27",
+      "declaration": "export default class Core<T = unknown>",
+      "expressible": true,
+      "expression": "Axp.create 间接构造公开 Core 类型；其它成员分别登记",
+      "rules": [
+        {
+          "kind": "client"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.export.Axp",
+      "plugin": "public",
+      "category": "export",
+      "description": "入口导出 Axp；以规范化、经人工验证过的顺序一次性装配 axp 插件集——对应 dioman 的 `Dioman.install`。传入你想要的插件（已用各自工厂函数构造好）；省略的插件会被跳过。插件彼此独立——`Axp.install` 只是按顺序调用每个选中插件的 `install(axios)` 并收集返回的 `PluginCleanup`，没有共享编排器代为跟踪拦截器 id；每个插件像 dioman 的 `DiomanPlugin` 一样管理自己的 teardown。",
+      "source": "src/install.ts:39",
+      "declaration": "export const Axp =",
+      "expressible": true,
+      "expression": "执行器固定调用 Axp.create/install；成员仍需分别验收",
+      "rules": [
+        {
+          "kind": "client"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.export.pluginLog",
+      "plugin": "public",
+      "category": "export",
+      "description": "入口导出 pluginLog；仅在 source.debug 为真值时打印日志，读取 source.logger（缺省用 CONSOLE_LOGGER）。 source 通常是 axios.defaults（install 时）或某次请求的 config（运行时）。",
+      "source": "src/helper.ts:52",
+      "declaration": "export function pluginLog(source: LoggableSource | undefined, ...args: unknown[]): void",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.export.pluginWarn",
+      "plugin": "public",
+      "category": "export",
+      "description": "入口导出 pluginWarn；同 `pluginLog`，但调用 logger 的 `.warn`。",
+      "source": "src/helper.ts:65",
+      "declaration": "export function pluginWarn(source: LoggableSource | undefined, ...args: unknown[]): void",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.export.pluginError",
+      "plugin": "public",
+      "category": "export",
+      "description": "入口导出 pluginError；同 `pluginLog`，但调用 logger 的 `.error`。",
+      "source": "src/helper.ts:78",
+      "declaration": "export function pluginError(source: LoggableSource | undefined, ...args: unknown[]): void",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.export.AxpResponse",
+      "plugin": "public",
+      "category": "export",
+      "description": "入口导出 AxpResponse；归一化后的接口响应对象，把 axios 原始响应统一整理成规整结构并附带成功/失败判定。",
+      "source": "src/objects/Response.ts:6",
+      "declaration": "export default class AxpResponse<T extends any = any>",
+      "expressible": true,
+      "expression": "执行器 makeShouldCache 调用 AxpResponse.fromResponse；只触达该静态方法",
+      "rules": [
+        {
+          "kind": "pluginOther",
+          "plugin": "cache",
+          "path": "methods"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.export.ApiError",
+      "plugin": "public",
+      "category": "export",
+      "description": "入口导出 ApiError；携带 `ApiResponse` 的业务错误。`normalize` 在业务判定失败时 reject 此对象，下游 `catch (e)` 可用 `e instanceof ApiError` 判别，并经 `e.response` 拿到结构化信息 —— 相比旧版直接 `reject(response)`（非 Error、无 stack、无法 instanceof）更可控。",
+      "source": "src/objects/Response.ts:87",
+      "declaration": "export class AxpError<T = any> extends Error",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.export.TokenManager",
+      "plugin": "public",
+      "category": "export",
+      "description": "入口导出 TokenManager；`ITokenManager` 的默认实现：access/refresh token 存于内存并镜像持久化到 localStorage（若存在），构造时从 localStorage 恢复上次会话的 token。",
+      "source": "src/objects/TokenManager.ts:72",
+      "declaration": "export default class TokenManager implements ITokenManager",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.handle.axios",
+      "plugin": "public",
+      "category": "handle",
+      "description": "`install` 被调用时传入的 `AxiosInstance`。",
+      "source": "src/install.ts:163",
+      "declaration": "readonly axios: AxiosInstance;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.handle.plugins",
+      "plugin": "public",
+      "category": "handle",
+      "description": "当前跟踪的插件快照（注册顺序），每次读取是新数组——改动请用 `prepend`/`append`/`insertBefore`/`insertAfter`。",
+      "source": "src/install.ts:167",
+      "declaration": "readonly plugins: readonly Plugin[];",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.handle.plugin",
+      "plugin": "public",
+      "category": "handle",
+      "description": "按 `.name` 查找被跟踪的插件；插件是工厂函数产出的普通对象而非类实例，故按名称而非类型查找。",
+      "source": "src/install.ts:171",
+      "declaration": "plugin(name: string): Plugin | undefined;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.handle.dispose",
+      "plugin": "public",
+      "category": "handle",
+      "description": "按安装顺序反序调用每个被跟踪插件的 cleanup；不影响以其他方式装配的插件。",
+      "source": "src/install.ts:175",
+      "declaration": "dispose(): void;",
+      "expressible": true,
+      "expression": "执行器 finally 调用；未断言卸载/重装",
+      "rules": [
+        {
+          "kind": "client",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.handle.prepend",
+      "plugin": "public",
+      "category": "handle",
+      "description": "把 `p` 加到所有已跟踪插件之前；实现为整体拆卸+按新顺序重装，不影响此 handle 之外的装配。",
+      "source": "src/install.ts:179",
+      "declaration": "prepend(p: Plugin): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.handle.append",
+      "plugin": "public",
+      "category": "handle",
+      "description": "把 `p` 加到所有已跟踪插件之后——普通 install 调用，纯追加无需重排。",
+      "source": "src/install.ts:183",
+      "declaration": "append(p: Plugin): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.handle.insertBefore",
+      "plugin": "public",
+      "category": "handle",
+      "description": "把 `p` 插入到 `anchor` 之前；`anchor` 不在此 handle 中则抛错。",
+      "source": "src/install.ts:187",
+      "declaration": "insertBefore(anchor: Plugin, p: Plugin): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.handle.insertAfter",
+      "plugin": "public",
+      "category": "handle",
+      "description": "把 `p` 插入到 `anchor` 之后；`anchor` 不在此 handle 中则抛错。",
+      "source": "src/install.ts:191",
+      "declaration": "insertAfter(anchor: Plugin, p: Plugin): void;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.method.install",
+      "plugin": "auth",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/auth.ts:150",
+      "declaration": "export default function axpAuth(options: IAuthOptions): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.method.cleanup",
+      "plugin": "auth",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/auth.ts:150",
+      "declaration": "export default function axpAuth(options: IAuthOptions): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.method.install",
+      "plugin": "cache",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/cache.ts:55",
+      "declaration": "export default function axpCache(",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.method.cleanup",
+      "plugin": "cache",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/cache.ts:55",
+      "declaration": "export default function axpCache(",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cancel.method.install",
+      "plugin": "cancel",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/cancel.ts:38",
+      "declaration": "export default function axpCancel({ enable = true }: ICancelOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cancel.method.cleanup",
+      "plugin": "cancel",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/cancel.ts:38",
+      "declaration": "export default function axpCancel({ enable = true }: ICancelOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "envs.method.install",
+      "plugin": "envs",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/envs.ts:20",
+      "declaration": "export default function axpEnvs(rules: IEnvRule[] = []): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "envs.method.cleanup",
+      "plugin": "envs",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/envs.ts:20",
+      "declaration": "export default function axpEnvs(rules: IEnvRule[] = []): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.method.install",
+      "plugin": "filter",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/filter.ts:14",
+      "declaration": "export default function axpFilter({ enable = true, predicate, ignoreKeys, ignoreValues }: IFilterOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.method.cleanup",
+      "plugin": "filter",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/filter.ts:14",
+      "declaration": "export default function axpFilter({ enable = true, predicate, ignoreKeys, ignoreValues }: IFilterOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.method.install",
+      "plugin": "key",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/key.ts:16",
+      "declaration": "export default function axpKey({ after, before, enable = true, fastMode, ignores, sample, scope }: IKeyOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.method.cleanup",
+      "plugin": "key",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/key.ts:16",
+      "declaration": "export default function axpKey({ after, before, enable = true, fastMode, ignores, sample, scope }: IKeyOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.method.install",
+      "plugin": "loading",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/loading.ts:51",
+      "declaration": "export default function axpLoading({ enable = true, loading, delay = 0, delayClose = 0 }: ILoadingOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.method.cleanup",
+      "plugin": "loading",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/loading.ts:51",
+      "declaration": "export default function axpLoading({ enable = true, loading, delay = 0, delayClose = 0 }: ILoadingOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.method.install",
+      "plugin": "logger",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/logger.ts:13",
+      "declaration": "export default function axpLogger({ debug = false, logger = CONSOLE_LOGGER }: ILoggerOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.method.cleanup",
+      "plugin": "logger",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/logger.ts:13",
+      "declaration": "export default function axpLogger({ debug = false, logger = CONSOLE_LOGGER }: ILoggerOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.method.install",
+      "plugin": "mock",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/mock.ts:37",
+      "declaration": "export default function axpMock(\r\n  { enable = false, mock: mockGlobal = false, mockUrl, fallbackWhen }: IMockOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.method.cleanup",
+      "plugin": "mock",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/mock.ts:37",
+      "declaration": "export default function axpMock(\r\n  { enable = false, mock: mockGlobal = false, mockUrl, fallbackWhen }: IMockOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.method.install",
+      "plugin": "normalize",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/normalize.ts:25",
+      "declaration": "export default function axpNormalize(\r\n  { enable = true }: INormalizeOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.method.cleanup",
+      "plugin": "normalize",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/normalize.ts:25",
+      "declaration": "export default function axpNormalize(\r\n  { enable = true }: INormalizeOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "notify.method.install",
+      "plugin": "notify",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/notify.ts:26",
+      "declaration": "export default function axpNotify<T = unknown>({ notify, stringify }: INotifyOptions<T>): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "notify.method.cleanup",
+      "plugin": "notify",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/notify.ts:26",
+      "declaration": "export default function axpNotify<T = unknown>({ notify, stringify }: INotifyOptions<T>): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "repath.method.install",
+      "plugin": "repath",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/repath.ts:24",
+      "declaration": "export default function axpRepath(\r\n    { enable = true, removeKey = true, pattern = /{([^}]+)}|\\[([^\\]]+)]|:([^/\\s]+)/g }: IRepathOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "repath.method.cleanup",
+      "plugin": "repath",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/repath.ts:24",
+      "declaration": "export default function axpRepath(\r\n    { enable = true, removeKey = true, pattern = /{([^}]+)}|\\[([^\\]]+)]|:([^/\\s]+)/g }: IRepathOptions = {},\r\n): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.method.install",
+      "plugin": "retry",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/retry.ts:72",
+      "declaration": "export default function axpRetry(",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.method.cleanup",
+      "plugin": "retry",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/retry.ts:72",
+      "declaration": "export default function axpRetry(",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.method.install",
+      "plugin": "share",
+      "category": "method",
+      "description": "工厂返回 Plugin.install(axios)，安装插件",
+      "source": "src/plugins/share.ts:36",
+      "declaration": "export default function axpShare({ enable = true, policy = 'start' }: ISharedOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器按 client.plugins 调用 install",
+      "rules": [
+        {
+          "kind": "installed"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.method.cleanup",
+      "plugin": "share",
+      "category": "method",
+      "description": "install 返回的 cleanup，撤销注册并释放资源",
+      "source": "src/plugins/share.ts:36",
+      "declaration": "export default function axpShare({ enable = true, policy = 'start' }: ISharedOptions = {}): Plugin",
+      "expressible": true,
+      "expression": "执行器 finally dispose；仅资源归零不足以证明撤销全部注册",
+      "rules": [
+        {
+          "kind": "installed",
+          "confidence": "doubt"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.prop.name",
+      "plugin": "auth",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/auth.ts:150",
+      "declaration": "export default function axpAuth(options: IAuthOptions): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cache.prop.name",
+      "plugin": "cache",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/cache.ts:55",
+      "declaration": "export default function axpCache(",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "cancel.prop.name",
+      "plugin": "cancel",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/cancel.ts:38",
+      "declaration": "export default function axpCancel({ enable = true }: ICancelOptions = {}): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "envs.prop.name",
+      "plugin": "envs",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/envs.ts:20",
+      "declaration": "export default function axpEnvs(rules: IEnvRule[] = []): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "filter.prop.name",
+      "plugin": "filter",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/filter.ts:14",
+      "declaration": "export default function axpFilter({ enable = true, predicate, ignoreKeys, ignoreValues }: IFilterOptions = {}): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "key.prop.name",
+      "plugin": "key",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/key.ts:16",
+      "declaration": "export default function axpKey({ after, before, enable = true, fastMode, ignores, sample, scope }: IKeyOptions = {}): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "loading.prop.name",
+      "plugin": "loading",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/loading.ts:51",
+      "declaration": "export default function axpLoading({ enable = true, loading, delay = 0, delayClose = 0 }: ILoadingOptions = {}): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "logger.prop.name",
+      "plugin": "logger",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/logger.ts:13",
+      "declaration": "export default function axpLogger({ debug = false, logger = CONSOLE_LOGGER }: ILoggerOptions = {}): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "mock.prop.name",
+      "plugin": "mock",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/mock.ts:37",
+      "declaration": "export default function axpMock(\r\n  { enable = false, mock: mockGlobal = false, mockUrl, fallbackWhen }: IMockOptions = {},\r\n): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.prop.name",
+      "plugin": "normalize",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/normalize.ts:25",
+      "declaration": "export default function axpNormalize(\r\n  { enable = true }: INormalizeOptions = {},\r\n): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "notify.prop.name",
+      "plugin": "notify",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/notify.ts:26",
+      "declaration": "export default function axpNotify<T = unknown>({ notify, stringify }: INotifyOptions<T>): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "repath.prop.name",
+      "plugin": "repath",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/repath.ts:24",
+      "declaration": "export default function axpRepath(\r\n    { enable = true, removeKey = true, pattern = /{([^}]+)}|\\[([^\\]]+)]|:([^/\\s]+)/g }: IRepathOptions = {},\r\n): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "retry.prop.name",
+      "plugin": "retry",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/retry.ts:72",
+      "declaration": "export default function axpRetry(",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "share.prop.name",
+      "plugin": "share",
+      "category": "prop",
+      "description": "Plugin.name：插件实例的名称",
+      "source": "src/plugins/share.ts:36",
+      "declaration": "export default function axpShare({ enable = true, policy = 'start' }: ISharedOptions = {}): Plugin",
+      "expressible": false,
+      "expression": "中立 schema 无法表达",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "auth.req.protected.callback",
+      "plugin": "auth",
+      "category": "req",
+      "description": "请求级 protected 函数形式",
+      "source": "src/plugins/auth.ts:656",
+      "declaration": "protected?: MaybeFun<boolean | undefined | null | void>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "auth.req.protected",
+      "scope": "public"
+    },
+    {
+      "id": "cache.cb.clone",
+      "plugin": "cache",
+      "category": "opt",
+      "description": "插件级 clone 自定义拷贝函数",
+      "source": "src/plugins/cache.ts:343",
+      "declaration": "clone?: TCloneStrategy;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有自定义回调配置或注册步骤",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "cache.opt.clone",
+      "scope": "public"
+    },
+    {
+      "id": "cache.req.cache.key.callback",
+      "plugin": "cache",
+      "category": "req",
+      "description": "请求级 cache.key 计算函数",
+      "source": "src/plugins/cache.ts:379",
+      "declaration": "key?: string | ((config: AxiosRequestConfig) => string | undefined);",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "cache.req.cache.key",
+      "scope": "public"
+    },
+    {
+      "id": "cache.req.cache.clone.callback",
+      "plugin": "cache",
+      "category": "req",
+      "description": "请求级 cache.clone 自定义拷贝函数",
+      "source": "src/plugins/cache.ts:381",
+      "declaration": "clone?: TCloneStrategy;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "cache.req.cache.clone",
+      "scope": "public"
+    },
+    {
+      "id": "key.cb.scope",
+      "plugin": "key",
+      "category": "opt",
+      "description": "插件级 scope 回调（仅 scope=user 固定回调可映射）",
+      "source": "src/plugins/key.ts:406",
+      "declaration": "scope?: string | number | ((config: AxiosRequestConfig) => string | number | null | undefined | void)",
+      "expressible": true,
+      "expression": "key.scope=user → 每请求读取 TokenStore.user；仅此固定回调",
+      "rules": [
+        {
+          "kind": "plugin",
+          "path": "scope",
+          "equals": "user"
+        }
+      ],
+      "priority": 2,
+      "variantOf": "key.opt.scope",
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key.callback",
+      "plugin": "key",
+      "category": "req",
+      "description": "请求级 key 动态函数",
+      "source": "src/plugins/key.ts:413",
+      "declaration": "key?: MaybeFun<'deep' | IKeyObject | number | null | undefined | void | boolean | ({} & string)>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "key.req.key",
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key.number",
+      "plugin": "key",
+      "category": "req",
+      "description": "请求级 key 数值形式",
+      "source": "src/plugins/key.ts:413",
+      "declaration": "key?: MaybeFun<'deep' | IKeyObject | number | null | undefined | void | boolean | ({} & string)>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "key.req.key",
+      "scope": "public"
+    },
+    {
+      "id": "key.req.key.scope.callback",
+      "plugin": "key",
+      "category": "req",
+      "description": "请求级 scope 计算函数",
+      "source": "src/plugins/key.ts:406",
+      "declaration": "scope?: string | number | ((config: AxiosRequestConfig) => string | number | null | undefined | void)",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "key.req.key.scope",
+      "scope": "public"
+    },
+    {
+      "id": "filter.req.filter.callback",
+      "plugin": "filter",
+      "category": "req",
+      "description": "请求级 filter 动态函数",
+      "source": "src/plugins/filter.ts:146",
+      "declaration": "filter?: MaybeFun<IFilterOptions | boolean | Falsy>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "filter.req.filter",
+      "scope": "public"
+    },
+    {
+      "id": "loading.req.loading.callback",
+      "plugin": "loading",
+      "category": "req",
+      "description": "请求级 loading 回调形式",
+      "source": "src/plugins/loading.ts:348",
+      "declaration": "loading?: boolean | TLoadingFunc | ILoadingOptions;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "loading.req.loading",
+      "scope": "public"
+    },
+    {
+      "id": "normalize.req.normalize.callback",
+      "plugin": "normalize",
+      "category": "req",
+      "description": "请求级 normalize 动态函数",
+      "source": "src/plugins/normalize.ts:80",
+      "declaration": "normalize?: MaybeFun<INormalizeOptions | boolean | Falsy>",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "normalize.req.normalize",
+      "scope": "public"
+    },
+    {
+      "id": "share.req.share.callback",
+      "plugin": "share",
+      "category": "req",
+      "description": "请求级 share 动态函数",
+      "source": "src/plugins/share.ts:336",
+      "declaration": "share?: MaybeFun<SharePolicy | boolean | { policy?: SharePolicy }>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "share.req.share",
+      "scope": "public"
+    },
+    {
+      "id": "retry.cb.delay",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "插件级 delay 计算函数，允许终止重试",
+      "source": "src/plugins/retry.ts:517",
+      "declaration": "delay?: TRetryDelay;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有自定义回调配置或注册步骤",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "retry.opt.delay",
+      "scope": "public"
+    },
+    {
+      "id": "retry.cb.jitter",
+      "plugin": "retry",
+      "category": "opt",
+      "description": "插件级 jitter 抖动函数",
+      "source": "src/plugins/retry.ts:519",
+      "declaration": "jitter?: TJitter;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有自定义回调配置或注册步骤",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "retry.opt.jitter",
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.delay.callback",
+      "plugin": "retry",
+      "category": "req",
+      "description": "请求级 delay 计算函数",
+      "source": "src/plugins/retry.ts:517",
+      "declaration": "delay?: TRetryDelay;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "retry.req.retry.delay",
+      "scope": "public"
+    },
+    {
+      "id": "retry.req.retry.jitter.callback",
+      "plugin": "retry",
+      "category": "req",
+      "description": "请求级 jitter 抖动函数",
+      "source": "src/plugins/retry.ts:519",
+      "declaration": "jitter?: TJitter;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：仅支持 JSON 标量/约定对象，不支持此形式",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "retry.req.retry.jitter",
+      "scope": "public"
+    },
+    {
+      "id": "auth.fn.authFailureFactory.headerName",
+      "plugin": "auth",
+      "category": "fn",
+      "description": "导出工厂的自定义凭证头参数；执行器固定 Authorization",
+      "source": "src/plugins/auth.ts:101",
+      "declaration": "export function authFailureFactory(headerName = 'Authorization')",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：该参数无中立配置/步骤字段",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "auth.fn.authFailureFactory",
+      "scope": "public"
+    },
+    {
+      "id": "cancel.fn.cancelAll.reason",
+      "plugin": "cancel",
+      "category": "fn",
+      "description": "cancelAll 的 reason 参数；cancel_all step 仅有 after_ms",
+      "source": "src/plugins/cancel.ts:107",
+      "declaration": "export function cancelAll(ax: AxiosInstance, reason?: string): number",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：该参数无中立配置/步骤字段",
+      "rules": [],
+      "priority": 2,
+      "variantOf": "cancel.fn.cancelAll",
+      "scope": "public"
+    },
+    {
+      "id": "normalize.global.normalize",
+      "plugin": "normalize",
+      "category": "global",
+      "description": "ICommonOptions.normalize 全局配置；由 normalize 模块增强声明",
+      "source": "src/plugins/normalize.ts:73",
+      "declaration": "normalize?: MaybeFun<INormalizeOptions | boolean | Falsy>",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：client 只提供插件选项和 base_timeout_ms，不能设置 Core 全局 normalize",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.axios",
+      "plugin": "public",
+      "category": "member",
+      "description": "底层 axios 实例（公开引用）",
+      "source": "src/core.ts:29",
+      "declaration": "axios: AxiosInstance;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.constructor",
+      "plugin": "public",
+      "category": "member",
+      "description": "归一化 axios 实例的 `adapter`/`transitional` 设置后立即调用 `#build()` 装配原型方法；不会自动安装任何插件。",
+      "source": "src/core.ts:39",
+      "declaration": "constructor(axios: AxiosInstance, _options: CoreOptions = {})",
+      "expressible": true,
+      "expression": "执行器 Axp.create(instance) 构造 Core；预留构造选项未覆盖",
+      "rules": [
+        {
+          "kind": "client"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.extends",
+      "plugin": "public",
+      "category": "member",
+      "description": "派生一个新的 `Core<T>`：克隆当前 axios defaults 后再应用 `overrides`。**不会**重放插件——记账在 `Axp.install` 返回的 `AxpHandle` 里，派生实例需要同一插件集时请自行重新调用 `Axp.install(child, sameConfig)`。",
+      "source": "src/core.ts:67",
+      "declaration": "extends(overrides: AxiosRequestConfig = {}): Core<T>",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.TokenManager.canRefresh",
+      "plugin": "public",
+      "category": "member",
+      "description": "刷新许可；登录方负责重新启用，写入 token 不会解除失败后的禁用状态。",
+      "source": "src/objects/TokenManager.ts:85",
+      "declaration": "canRefresh = true;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.TokenManager.constructor",
+      "plugin": "public",
+      "category": "member",
+      "description": "构造时尝试从 localStorage 恢复上次会话的 access/refresh token；SSR/非浏览器 环境或此前未登录过时两者均为 undefined。",
+      "source": "src/objects/TokenManager.ts:94",
+      "declaration": "constructor()",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.TokenManager.get.accessToken",
+      "plugin": "public",
+      "category": "member",
+      "description": "直接可用于 Authorization 头：裸 token 存在时返回 `Bearer <token>`",
+      "source": "src/objects/TokenManager.ts:100",
+      "declaration": "get accessToken(): string | undefined",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.TokenManager.set.accessToken",
+      "plugin": "public",
+      "category": "member",
+      "description": "写入新 access token，空值归一化为 undefined 并同步持久化",
+      "source": "src/objects/TokenManager.ts:105",
+      "declaration": "set accessToken(value: string | undefined | null)",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.TokenManager.get.refreshToken",
+      "plugin": "public",
+      "category": "member",
+      "description": "当前的 refresh token，未登录为 undefined",
+      "source": "src/objects/TokenManager.ts:111",
+      "declaration": "get refreshToken(): string | undefined",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.TokenManager.set.refreshToken",
+      "plugin": "public",
+      "category": "member",
+      "description": "写入新 refresh token，空值归一化为 undefined 并同步持久化",
+      "source": "src/objects/TokenManager.ts:116",
+      "declaration": "set refreshToken(value: string | undefined | null)",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.TokenManager.set",
+      "plugin": "public",
+      "category": "member",
+      "description": "写入一对新的 access/refresh token（经由各自 setter，同时持久化到 localStorage）。",
+      "source": "src/objects/TokenManager.ts:129",
+      "declaration": "set(accessToken?: string, refreshToken?: string)",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.TokenManager.clear",
+      "plugin": "public",
+      "category": "member",
+      "description": "清除内存中及 localStorage 中持久化的所有 token。",
+      "source": "src/objects/TokenManager.ts:139",
+      "declaration": "clear(): void",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.AxpResponse.status",
+      "plugin": "public",
+      "category": "member",
+      "description": "HTTP 状态码",
+      "source": "src/objects/Response.ts:8",
+      "declaration": "declare status: number;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.AxpResponse.code",
+      "plugin": "public",
+      "category": "member",
+      "description": "业务信封中的 code；无信封时保持构造时的默认值",
+      "source": "src/objects/Response.ts:10",
+      "declaration": "declare code: number | string;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.AxpResponse.message",
+      "plugin": "public",
+      "category": "member",
+      "description": "业务信封中的 message，缺失为 null",
+      "source": "src/objects/Response.ts:12",
+      "declaration": "declare message: string | null;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.AxpResponse.data",
+      "plugin": "public",
+      "category": "member",
+      "description": "信封中的 data 或非信封响应的原始 body，缺失时为 null。",
+      "source": "src/objects/Response.ts:14",
+      "declaration": "declare data: T | null;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.AxpResponse.successful",
+      "plugin": "public",
+      "category": "member",
+      "description": "由 isSuccessful(status, code) 在构造时算出的判定结果",
+      "source": "src/objects/Response.ts:16",
+      "declaration": "declare successful: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.AxpResponse.constructor",
+      "plugin": "public",
+      "category": "member",
+      "description": "构造一个 AxpResponse；successful 在构造时依据 status/code 立即算好。",
+      "source": "src/objects/Response.ts:28",
+      "declaration": "constructor(status: number = 0, code: number | string = 0, message: string | null = null, data: T | null = null)",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.AxpResponse.isSuccessful",
+      "plugin": "public",
+      "category": "member",
+      "description": "成功判定钩子（可整体覆盖）。默认约定： - HTTP 2xx 且业务 code 为 `'0000'`/`0` → 成功 - 无业务 code（非信封式接口，code 为 null/undefined）→ 退化为纯 HTTP 语义 接入方若使用不同的成功码，赋值 `ApiResponse.isSuccessful = (status, code) => ...` 即可。",
+      "source": "src/objects/Response.ts:51",
+      "declaration": "static isSuccessful(status: number, code: number | string | null | undefined): boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.AxpResponse.fromResponse",
+      "plugin": "public",
+      "category": "member",
+      "description": "从 axios 响应构造包装对象；带 code 的非数组对象视为业务信封，其余 body 原样放入 data。",
+      "source": "src/objects/Response.ts:68",
+      "declaration": "static fromResponse(response: any): AxpResponse",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.ApiError.response",
+      "plugin": "public",
+      "category": "member",
+      "description": "触发本次错误的结构化响应对象",
+      "source": "src/objects/Response.ts:89",
+      "declaration": "declare readonly response: AxpResponse<T>;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.ApiError.constructor",
+      "plugin": "public",
+      "category": "member",
+      "description": "用一个已归一化的 AxpResponse 构造 ApiError；message 优先取响应自带的 message， 否则回退为包含 status/code 的默认文案。",
+      "source": "src/objects/Response.ts:100",
+      "declaration": "constructor(response: AxpResponse<T>)",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.fn.Axp.create",
+      "plugin": "public",
+      "category": "fn",
+      "description": "Axp.create 入口方法",
+      "source": "src/core.ts:153",
+      "declaration": "create",
+      "expressible": true,
+      "expression": "执行器每个场景固定调用 Axp.create",
+      "rules": [
+        {
+          "kind": "client"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.fn.Axp.install",
+      "plugin": "public",
+      "category": "fn",
+      "description": "Axp.install 入口方法",
+      "source": "src/install.ts:56",
+      "declaration": "install",
+      "expressible": true,
+      "expression": "执行器每个场景固定调用 Axp.install",
+      "rules": [
+        {
+          "kind": "client"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.get",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 get(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "get(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=GET；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "GET"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.head",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 head(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "head(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=HEAD；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "HEAD"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.options",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 options(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "options(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=OPTIONS；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "OPTIONS"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.purge",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 purge(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "purge(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=PURGE；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "PURGE"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.link",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 link(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "link(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=LINK；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "LINK"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.unlink",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 unlink(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "unlink(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=UNLINK；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "UNLINK"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.delete",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 delete(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "delete(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=DELETE；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "DELETE"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.post",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 post(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "post(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=POST；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "POST"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.put",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 put(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "put(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=PUT；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "PUT"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.member.Core.patch",
+      "plugin": "public",
+      "category": "member",
+      "description": "Core 动态装配的 patch(path)(payload,config) 方法",
+      "source": "src/core.ts:115",
+      "declaration": "patch(path, methodConfig?)(payload?, config?)",
+      "expressible": true,
+      "expression": "request.method=PATCH；默认 GET",
+      "rules": [
+        {
+          "kind": "method",
+          "method": "PATCH"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "notify.req.silent",
+      "plugin": "notify",
+      "category": "req",
+      "description": "IMethodOptions.silent：执行器 stringify 读取，notify 原生插件不直接读取",
+      "source": "src/types.ts:89",
+      "declaration": "silent?: boolean;",
+      "expressible": true,
+      "expression": "request.options.silent → config.silent；通过执行器固定 stringify 生效",
+      "rules": [
+        {
+          "kind": "request",
+          "path": "silent"
+        }
+      ],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.req.nullable",
+      "plugin": "public",
+      "category": "req",
+      "description": "IHttpOptions.nullable：返回形态/空数据选项",
+      "source": "src/types.ts:99",
+      "declaration": "nullable?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.req.wrap",
+      "plugin": "public",
+      "category": "req",
+      "description": "IHttpOptions.wrap：返回形态/空数据选项",
+      "source": "src/types.ts:101",
+      "declaration": "wrap?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "public.req.raw",
+      "plugin": "public",
+      "category": "req",
+      "description": "IHttpOptions.raw：返回形态/空数据选项",
+      "source": "src/types.ts:103",
+      "declaration": "raw?: boolean;",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.global.normalize.enable",
+      "plugin": "normalize",
+      "category": "global",
+      "description": "全局 normalize 对象字段 enable",
+      "source": "src/plugins/normalize.ts:65",
+      "declaration": "enable?: boolean,",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    },
+    {
+      "id": "normalize.global.normalize.nullable",
+      "plugin": "normalize",
+      "category": "global",
+      "description": "全局 normalize 对象字段 nullable",
+      "source": "src/plugins/normalize.ts:67",
+      "declaration": "nullable?: boolean",
+      "expressible": false,
+      "expression": "中立 schema 无法表达：没有该成员/配置的操作步骤",
+      "rules": [],
+      "priority": 2,
+      "scope": "public"
+    }
+  ],
+  "publicExports": [
+    {
+      "name": "PluginCleanup",
+      "original": "PluginCleanup",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:16",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "PluginLogger",
+      "original": "PluginLogger",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:21",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "Plugin",
+      "original": "Plugin",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:35",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "CoreOptions",
+      "original": "CoreOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:46",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "ICommonOptions",
+      "original": "ICommonOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:61",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "IPluginCommonRequestOptions",
+      "original": "IPluginCommonRequestOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:66",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "IPluginCommonResponseOptions",
+      "original": "IPluginCommonResponseOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:76",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "IBaseOptions",
+      "original": "IBaseOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:82",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "IMethodOptions",
+      "original": "IMethodOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:86",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "IHttpOptions",
+      "original": "IHttpOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:97",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "IInnerOptions",
+      "original": "IInnerOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:109",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "NormalizeOptions",
+      "original": "NormalizeOptions",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:117",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "HttpInternalRequestConfig",
+      "original": "HttpInternalRequestConfig",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:127",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "MethodSchema",
+      "original": "MethodSchema",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:176",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "HttpMethodLower",
+      "original": "HttpMethodLower",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:185",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "HttpPrototype",
+      "original": "HttpPrototype",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:190",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "Primitive",
+      "original": "Primitive",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:315",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "MaybeFun",
+      "original": "MaybeFun",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:320",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "Falsy",
+      "original": "Falsy",
+      "module": "./types",
+      "typeOnly": true,
+      "source": "src/types.ts:324",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "Core",
+      "original": "default",
+      "module": "./core",
+      "typeOnly": false,
+      "source": "src/index.ts:2",
+      "api": "public.export.Core"
+    },
+    {
+      "name": "Axp",
+      "original": "Axp",
+      "module": "./install",
+      "typeOnly": false,
+      "source": "src/index.ts:3",
+      "api": "public.export.Axp"
+    },
+    {
+      "name": "AxpPlugins",
+      "original": "AxpPlugins",
+      "module": "./install",
+      "typeOnly": true,
+      "source": "src/index.ts:4",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "AxpHandle",
+      "original": "AxpHandle",
+      "module": "./install",
+      "typeOnly": true,
+      "source": "src/index.ts:4",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "pluginLog",
+      "original": "pluginLog",
+      "module": "./helper",
+      "typeOnly": false,
+      "source": "src/index.ts:5",
+      "api": "public.export.pluginLog"
+    },
+    {
+      "name": "pluginWarn",
+      "original": "pluginWarn",
+      "module": "./helper",
+      "typeOnly": false,
+      "source": "src/index.ts:5",
+      "api": "public.export.pluginWarn"
+    },
+    {
+      "name": "pluginError",
+      "original": "pluginError",
+      "module": "./helper",
+      "typeOnly": false,
+      "source": "src/index.ts:5",
+      "api": "public.export.pluginError"
+    },
+    {
+      "name": "LoggableSource",
+      "original": "LoggableSource",
+      "module": "./helper",
+      "typeOnly": true,
+      "source": "src/index.ts:6",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "AxpResponse",
+      "original": "default",
+      "module": "./objects/Response",
+      "typeOnly": false,
+      "source": "src/index.ts:9",
+      "api": "public.export.AxpResponse"
+    },
+    {
+      "name": "ApiError",
+      "original": "AxpError",
+      "module": "./objects/Response",
+      "typeOnly": false,
+      "source": "src/index.ts:9",
+      "api": "public.export.ApiError"
+    },
+    {
+      "name": "TokenManager",
+      "original": "default",
+      "module": "./objects/TokenManager",
+      "typeOnly": false,
+      "source": "src/index.ts:10",
+      "api": "public.export.TokenManager"
+    },
+    {
+      "name": "ITokenManager",
+      "original": "ITokenManager",
+      "module": "./objects/TokenManager",
+      "typeOnly": true,
+      "source": "src/index.ts:11",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpAuth",
+      "original": "default",
+      "module": "./plugins/auth",
+      "typeOnly": false,
+      "source": "src/index.ts:18",
+      "api": "auth.fn.axpAuth"
+    },
+    {
+      "name": "AuthFailureAction",
+      "original": "AuthFailureAction",
+      "module": "./plugins/auth",
+      "typeOnly": false,
+      "source": "src/index.ts:19",
+      "api": "auth.const.AuthFailureAction"
+    },
+    {
+      "name": "authFailureFactory",
+      "original": "authFailureFactory",
+      "module": "./plugins/auth",
+      "typeOnly": false,
+      "source": "src/index.ts:20",
+      "api": "auth.fn.authFailureFactory"
+    },
+    {
+      "name": "DEFAULT_ON_AUTH_FAILURE",
+      "original": "DEFAULT_ON_AUTH_FAILURE",
+      "module": "./plugins/auth",
+      "typeOnly": false,
+      "source": "src/index.ts:21",
+      "api": "auth.const.DEFAULT_ON_AUTH_FAILURE"
+    },
+    {
+      "name": "ACCESS_DENIED_CODE",
+      "original": "ACCESS_DENIED_CODE",
+      "module": "./plugins/auth",
+      "typeOnly": false,
+      "source": "src/index.ts:22",
+      "api": "auth.const.ACCESS_DENIED_CODE"
+    },
+    {
+      "name": "IAuthOptions",
+      "original": "IAuthOptions",
+      "module": "./plugins/auth",
+      "typeOnly": true,
+      "source": "src/index.ts:25",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "TAuthFunc",
+      "original": "TAuthFunc",
+      "module": "./plugins/auth",
+      "typeOnly": true,
+      "source": "src/index.ts:25",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpKey",
+      "original": "default",
+      "module": "./plugins/key",
+      "typeOnly": false,
+      "source": "src/index.ts:27",
+      "api": "key.fn.axpKey"
+    },
+    {
+      "name": "$key",
+      "original": "$key",
+      "module": "./plugins/key",
+      "typeOnly": false,
+      "source": "src/index.ts:27",
+      "api": "key.fn.$key"
+    },
+    {
+      "name": "IKeyOptions",
+      "original": "IKeyOptions",
+      "module": "./plugins/key",
+      "typeOnly": true,
+      "source": "src/index.ts:28",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "IKeyObject",
+      "original": "IKeyObject",
+      "module": "./plugins/key",
+      "typeOnly": true,
+      "source": "src/index.ts:28",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "KeyOpts",
+      "original": "KeyOpts",
+      "module": "./plugins/key",
+      "typeOnly": true,
+      "source": "src/index.ts:28",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpCache",
+      "original": "default",
+      "module": "./plugins/cache",
+      "typeOnly": false,
+      "source": "src/index.ts:30",
+      "api": "cache.fn.axpCache"
+    },
+    {
+      "name": "removeCache",
+      "original": "removeCache",
+      "module": "./plugins/cache",
+      "typeOnly": false,
+      "source": "src/index.ts:30",
+      "api": "cache.fn.removeCache"
+    },
+    {
+      "name": "clearCache",
+      "original": "clearCache",
+      "module": "./plugins/cache",
+      "typeOnly": false,
+      "source": "src/index.ts:30",
+      "api": "cache.fn.clearCache"
+    },
+    {
+      "name": "ICacheOptions",
+      "original": "ICacheOptions",
+      "module": "./plugins/cache",
+      "typeOnly": true,
+      "source": "src/index.ts:31",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpCancel",
+      "original": "default",
+      "module": "./plugins/cancel",
+      "typeOnly": false,
+      "source": "src/index.ts:33",
+      "api": "cancel.fn.axpCancel"
+    },
+    {
+      "name": "cancelAll",
+      "original": "cancelAll",
+      "module": "./plugins/cancel",
+      "typeOnly": false,
+      "source": "src/index.ts:33",
+      "api": "cancel.fn.cancelAll"
+    },
+    {
+      "name": "ICancelOptions",
+      "original": "ICancelOptions",
+      "module": "./plugins/cancel",
+      "typeOnly": true,
+      "source": "src/index.ts:34",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpEnvs",
+      "original": "default",
+      "module": "./plugins/envs",
+      "typeOnly": false,
+      "source": "src/index.ts:36",
+      "api": "envs.fn.axpEnvs"
+    },
+    {
+      "name": "IEnvRule",
+      "original": "IEnvRule",
+      "module": "./plugins/envs",
+      "typeOnly": true,
+      "source": "src/index.ts:37",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "IEnvsOptions",
+      "original": "IEnvsOptions",
+      "module": "./plugins/envs",
+      "typeOnly": true,
+      "source": "src/index.ts:37",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpFilter",
+      "original": "default",
+      "module": "./plugins/filter",
+      "typeOnly": false,
+      "source": "src/index.ts:39",
+      "api": "filter.fn.axpFilter"
+    },
+    {
+      "name": "IFilterOptions",
+      "original": "IFilterOptions",
+      "module": "./plugins/filter",
+      "typeOnly": true,
+      "source": "src/index.ts:40",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "TPredicate",
+      "original": "TPredicate",
+      "module": "./plugins/filter",
+      "typeOnly": true,
+      "source": "src/index.ts:40",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpLoading",
+      "original": "default",
+      "module": "./plugins/loading",
+      "typeOnly": false,
+      "source": "src/index.ts:42",
+      "api": "loading.fn.axpLoading"
+    },
+    {
+      "name": "ILoadingOptions",
+      "original": "ILoadingOptions",
+      "module": "./plugins/loading",
+      "typeOnly": true,
+      "source": "src/index.ts:43",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "TLoadingFunc",
+      "original": "TLoadingFunc",
+      "module": "./plugins/loading",
+      "typeOnly": true,
+      "source": "src/index.ts:43",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpLogger",
+      "original": "default",
+      "module": "./plugins/logger",
+      "typeOnly": false,
+      "source": "src/index.ts:45",
+      "api": "logger.fn.axpLogger"
+    },
+    {
+      "name": "ILoggerOptions",
+      "original": "ILoggerOptions",
+      "module": "./plugins/logger",
+      "typeOnly": true,
+      "source": "src/index.ts:46",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpMock",
+      "original": "default",
+      "module": "./plugins/mock",
+      "typeOnly": false,
+      "source": "src/index.ts:48",
+      "api": "mock.fn.axpMock"
+    },
+    {
+      "name": "IMockOptions",
+      "original": "IMockOptions",
+      "module": "./plugins/mock",
+      "typeOnly": true,
+      "source": "src/index.ts:49",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpNormalize",
+      "original": "default",
+      "module": "./plugins/normalize",
+      "typeOnly": false,
+      "source": "src/index.ts:51",
+      "api": "normalize.fn.axpNormalize"
+    },
+    {
+      "name": "INormalizeOptions",
+      "original": "INormalizeOptions",
+      "module": "./plugins/normalize",
+      "typeOnly": true,
+      "source": "src/index.ts:52",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpNotify",
+      "original": "default",
+      "module": "./plugins/notify",
+      "typeOnly": false,
+      "source": "src/index.ts:54",
+      "api": "notify.fn.axpNotify"
+    },
+    {
+      "name": "INotifyOptions",
+      "original": "INotifyOptions",
+      "module": "./plugins/notify",
+      "typeOnly": true,
+      "source": "src/index.ts:55",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpRepath",
+      "original": "default",
+      "module": "./plugins/repath",
+      "typeOnly": false,
+      "source": "src/index.ts:57",
+      "api": "repath.fn.axpRepath"
+    },
+    {
+      "name": "IRepathOptions",
+      "original": "IRepathOptions",
+      "module": "./plugins/repath",
+      "typeOnly": true,
+      "source": "src/index.ts:58",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpRetry",
+      "original": "default",
+      "module": "./plugins/retry",
+      "typeOnly": false,
+      "source": "src/index.ts:60",
+      "api": "retry.fn.axpRetry"
+    },
+    {
+      "name": "IRetryOptions",
+      "original": "IRetryOptions",
+      "module": "./plugins/retry",
+      "typeOnly": true,
+      "source": "src/index.ts:61",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "TShouldRetry",
+      "original": "TShouldRetry",
+      "module": "./plugins/retry",
+      "typeOnly": true,
+      "source": "src/index.ts:61",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "TRetryDelay",
+      "original": "TRetryDelay",
+      "module": "./plugins/retry",
+      "typeOnly": true,
+      "source": "src/index.ts:61",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "axpShare",
+      "original": "default",
+      "module": "./plugins/share",
+      "typeOnly": false,
+      "source": "src/index.ts:63",
+      "api": "share.fn.axpShare"
+    },
+    {
+      "name": "ISharedOptions",
+      "original": "ISharedOptions",
+      "module": "./plugins/share",
+      "typeOnly": true,
+      "source": "src/index.ts:64",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    },
+    {
+      "name": "SharePolicy",
+      "original": "SharePolicy",
+      "module": "./plugins/share",
+      "typeOnly": true,
+      "source": "src/index.ts:64",
+      "api": null,
+      "note": "仅类型，JSON 黑盒不能验证编译契约；不计运行时 API 分母"
+    }
+  ],
+  "risks": [
+    {
+      "plugins": [
+        "auth",
+        "cache"
+      ],
+      "risk": "账号切换、刷新后旧缓存或在途响应可能泄露旧会话数据",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "auth",
+        "key"
+      ],
+      "risk": "scope 与令牌刷新/换用户顺序影响隔离",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "auth",
+        "share"
+      ],
+      "risk": "刷新重放与单飞窗口可能互等或复用旧凭证",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "auth",
+        "retry"
+      ],
+      "risk": "401 刷新与重试预算优先级，重复重放",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "cache",
+        "share"
+      ],
+      "risk": "命中与同键并发的写入代次、clearCache 后回写",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "cancel",
+        "share"
+      ],
+      "risk": "首发取消可能连带跟随者，取消资源未释放",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "cancel",
+        "retry"
+      ],
+      "risk": "退避期间取消应阻止重发并回收 controller",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "mock",
+        "cache"
+      ],
+      "risk": "mock/真实地址 key 冲突及回落缓存污染",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "mock",
+        "share"
+      ],
+      "risk": "mock 回落可能与共享窗口互等或错误重绑定",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "mock",
+        "retry"
+      ],
+      "risk": "404 回落与重试叠加可能重复发送",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "repath",
+        "key"
+      ],
+      "risk": "先替换路径再计算 key，否则不同资源串用",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "filter",
+        "key"
+      ],
+      "risk": "先过滤再哈希，空值差异不能造成错误合并",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "normalize",
+        "retry"
+      ],
+      "risk": "业务码与 HTTP 状态判定顺序影响重试",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "notify",
+        "retry"
+      ],
+      "risk": "多次尝试只应在最终失败通知",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "loading",
+        "retry"
+      ],
+      "risk": "逻辑请求只计一对 loading，退避不闪烁",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "loading",
+        "mock"
+      ],
+      "risk": "探测和回落不应重复计数",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "loading",
+        "share"
+      ],
+      "risk": "共享跟随者计数及取消后隐藏配对",
+      "priority": 1
+    },
+    {
+      "plugins": [
+        "envs",
+        "auth"
+      ],
+      "risk": "baseURL/headers 规则变化影响凭证目标",
+      "priority": 2
+    },
+    {
+      "plugins": [
+        "envs",
+        "mock"
+      ],
+      "risk": "环境 baseURL 与固定 mockUrl 可能指向不同环境",
+      "priority": 2
+    },
+    {
+      "plugins": [
+        "envs",
+        "cache"
+      ],
+      "risk": "切环境沿用同 key 可能读到旧环境缓存",
+      "priority": 2
+    },
+    {
+      "plugins": [
+        "logger",
+        "auth"
+      ],
+      "risk": "诊断日志中的凭证及请求级日志 sink 覆盖",
+      "priority": 2
+    },
+    {
+      "plugins": [
+        "logger",
+        "cancel"
+      ],
+      "risk": "取消错误路径日志回调异常影响清理",
+      "priority": 2
+    },
+    {
+      "plugins": [
+        "repath",
+        "filter"
+      ],
+      "risk": "路径变量应在过滤与删除字段之前消费",
+      "priority": 2
+    },
+    {
+      "plugins": [
+        "normalize",
+        "notify"
+      ],
+      "risk": "信封失败与传输失败的通知次数/文案",
+      "priority": 2
+    },
+    {
+      "plugins": [
+        "cache",
+        "loading"
+      ],
+      "risk": "命中缓存也应保持逻辑 loading 成对",
+      "priority": 2
+    }
+  ],
+  "notes": [
+    "字段级静态触达覆盖，不代表执行通过、值域/分支全覆盖；缺少结果报告，不宣称验收已通过。",
+    "请求级嵌套字段按接口展开；回调联合形式另列 variantOf；第三方 Axios 配置不递归展开。",
+    "入口类型导出单列，保留编译契约缺口；JSDoc 明确 @internal 且未由 index 重导出的函数只列导出盘点，不计公开 API 分母。",
+    "严格单插件仅允许 client.plugins 中一个 axp 插件；不把 key/normalize 自动视为辅助插件。",
+    "unsupported requires 或安装 breaker/offline/timeout 的场景整条不可执行，不能充当 API 覆盖。"
+  ]
+}

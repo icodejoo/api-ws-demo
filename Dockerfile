@@ -29,6 +29,6 @@ FROM scratch AS runtime
 COPY --from=builder /api-ws-demo-bin /api-ws-demo
 
 ENV RUST_LOG=info
-EXPOSE 8080
+EXPOSE 47080
 
 ENTRYPOINT ["/api-ws-demo"]

@@ -290,13 +290,26 @@
       "normalize"
     ],
     "networks": [
-      "normal"
+      "normal",
+      "weak",
+      "lossy",
+      "offline",
+      "blackhole",
+      "flap",
+      "dns"
     ],
     "client": {
       "plugins": {
         "retry": {
           "max": 3,
-          "delay_ms": 100
+          "delay_ms": 100,
+          "statuses": [
+            429,
+            500,
+            502,
+            503,
+            504
+          ]
         },
         "normalize": {}
       }
@@ -332,7 +345,26 @@
           "pending_after": {
             "eq": 0
           }
-        }
+        },
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "weak": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "lossy": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "offline": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "blackhole": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "flap": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "dns": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
       }
     }
   },
@@ -345,7 +377,13 @@
       "normalize"
     ],
     "networks": [
-      "normal"
+      "normal",
+      "weak",
+      "lossy",
+      "offline",
+      "blackhole",
+      "flap",
+      "dns"
     ],
     "client": {
       "plugins": {
@@ -392,7 +430,26 @@
           "pending_after": {
             "eq": 0
           }
-        }
+        },
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "weak": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "lossy": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "offline": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "blackhole": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "flap": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "dns": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
       }
     }
   },
@@ -1943,15 +2000,20 @@
   {
     "id": "retry.flap-no-retry-then-ok",
     "title": "无重试时断网期间失败、恢复后成功",
-    "why": "对照组：不重试则首个请求以 network 失败，恢复后的请求成功",
+    "why": "对照组：retry.max=0，500ms 连接预算保证首个请求在恢复前以 network 或 timeout 结束，恢复后成功",
     "requires": [
-      "retry"
+      "retry",
+      "timeout"
     ],
     "networks": [
       "flap"
     ],
     "client": {
       "plugins": {
+        "timeout": {
+          "connect_ms": 500,
+          "receive_ms": 4000
+        },
         "retry": {
           "max": 0,
           "delay_ms": 100
@@ -1980,7 +2042,10 @@
         "results": {
           "r1": {
             "ok": false,
-            "error": "network"
+            "error": [
+              "network",
+              "timeout"
+            ]
           },
           "r2": {
             "ok": true
@@ -2242,13 +2307,26 @@
       "normalize"
     ],
     "networks": [
-      "normal"
+      "normal",
+      "weak",
+      "lossy",
+      "offline",
+      "blackhole",
+      "flap",
+      "dns"
     ],
     "client": {
       "plugins": {
         "retry": {
           "max": 3,
-          "delay_ms": 50
+          "delay_ms": 50,
+          "statuses": [
+            429,
+            500,
+            502,
+            503,
+            504
+          ]
         },
         "normalize": {}
       }
@@ -2281,7 +2359,26 @@
           "pending_after": {
             "eq": 0
           }
-        }
+        },
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "weak": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "lossy": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "offline": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "blackhole": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "flap": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
+      },
+      "dns": {
+        "skip": "本轮用户要求遇 429/503 立即停止；本场景主动注入这两个状态，无法在该约束下完成真实状态码验收。保留专门测试，不以 500 替代其结论。"
       }
     }
   },
@@ -2745,6 +2842,833 @@
               "eq": 2
             }
           }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "plugins.single-retry",
+    "title": "retry 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "retry 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-retry-max-0",
+    "title": "retry.max = 0、retry.delay_ms = 0（合并等价缺省配置）",
+    "why": "retry.max = 0、retry.delay_ms = 0（合并等价缺省配置）",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 0,
+          "delay_ms": 0
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-retry-max-1",
+    "title": "retry.max = 1",
+    "why": "retry.max = 1",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-retry-max-2",
+    "title": "retry.max = 5",
+    "why": "retry.max = 5",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 5
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-retry-delay-ms-1",
+    "title": "retry.delay_ms = 1",
+    "why": "retry.delay_ms = 1",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "delay_ms": 1
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-retry-methods-0",
+    "title": "retry.methods = []",
+    "why": "retry.methods = []",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "methods": []
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.boundary-retry-methods-1",
+    "title": "retry.methods = [GET]",
+    "why": "retry.methods = [GET]",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "methods": [
+            "GET"
+          ]
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "boundary",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "boundary": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "retry.single-req-max-delay",
+    "title": "retry 单独：请求级 max 与 delay_ms 覆盖插件默认",
+    "why": "请求自己收紧次数并拉长间隔：插件 max=3/delay=10，请求 max=1/delay=400，应只重试一次且间隔不少于 400ms",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "styles": [
+      "http"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 3,
+          "delay_ms": 10
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "key": "k",
+            "fail_times": 9
+          },
+          "options": {
+            "retry": {
+              "max": 1,
+              "delay_ms": 400
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_key": {
+            "k": {
+              "eq": 2
+            }
+          }
+        },
+        "duration_ms": {
+          "min": 350
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.single-req-methods",
+    "title": "retry 单独：请求级 methods 单次放行 POST",
+    "why": "插件默认不重试 POST；请求显式 methods:[POST] 才允许，且只影响这一次请求",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "styles": [
+      "http"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 2,
+          "delay_ms": 50
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "allowed",
+          "method": "POST",
+          "path": "/t/echo",
+          "query": {
+            "key": "a",
+            "fail_times": 1
+          },
+          "body": {
+            "n": 1
+          },
+          "options": {
+            "retry": {
+              "max": 2,
+              "delay_ms": 50,
+              "methods": [
+                "POST"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "denied",
+          "method": "POST",
+          "path": "/t/echo",
+          "query": {
+            "key": "d",
+            "fail_times": 1
+          },
+          "body": {
+            "n": 2
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "allowed": {
+            "ok": true,
+            "hit": 2,
+            "data": {
+              "request": {
+                "body": {
+                  "json": {
+                    "n": 1
+                  }
+                }
+              }
+            }
+          },
+          "denied": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_key": {
+            "a": {
+              "eq": 2
+            },
+            "d": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.single-plugin-methods",
+    "title": "retry 单独：插件级 methods 只放行 POST",
+    "why": "methods 是白名单：只列 POST 时，POST 失败可重试，GET 失败不重试",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "styles": [
+      "http"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 2,
+          "delay_ms": 50,
+          "methods": [
+            "POST"
+          ]
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "post",
+          "method": "POST",
+          "path": "/t/echo",
+          "query": {
+            "key": "p",
+            "fail_times": 1
+          },
+          "body": {
+            "n": 1
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "get",
+          "path": "/t/echo",
+          "query": {
+            "key": "g",
+            "fail_times": 1
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "post": {
+            "ok": true,
+            "hit": 2
+          },
+          "get": {
+            "ok": false,
+            "error": "status:500"
+          }
+        },
+        "server": {
+          "by_key": {
+            "p": {
+              "eq": 2
+            },
+            "g": {
+              "eq": 1
+            }
+          }
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.single-retry-after-honored",
+    "title": "retry 单独：respect_retry_after=true 时按 Retry-After 等待",
+    "why": "delay=50ms 但服务端要求 Retry-After 2s，必须等够；用 413 注入，避开主动注入 429/503 的限制",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "styles": [
+      "http"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 2,
+          "delay_ms": 50,
+          "statuses": [
+            413
+          ],
+          "respect_retry_after": true
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "key": "k",
+            "fail_times": 1,
+            "fail_status": 413,
+            "retry_after": 2
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_key": {
+            "k": {
+              "eq": 2
+            }
+          }
+        },
+        "duration_ms": {
+          "min": 1800
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.single-retry-after-ignored",
+    "title": "retry 单独：respect_retry_after=false 时忽略 Retry-After",
+    "why": "关闭后只按自身退避（50ms）重试，不能被 Retry-After 2s 拖慢",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "styles": [
+      "http"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 2,
+          "delay_ms": 50,
+          "statuses": [
+            413
+          ],
+          "respect_retry_after": false
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "key": "k",
+            "fail_times": 1,
+            "fail_status": 413,
+            "retry_after": 2
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_key": {
+            "k": {
+              "eq": 2
+            }
+          }
+        },
+        "duration_ms": {
+          "max": 1500
+        },
+        "client": {
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "retry.single-req-retry-after-override",
+    "title": "retry 单独：请求级 respect_retry_after 覆盖插件默认",
+    "why": "插件默认遵守 Retry-After，但请求自己关闭后应只按自身退避重试",
+    "requires": [
+      "retry"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "styles": [
+      "http"
+    ],
+    "client": {
+      "plugins": {
+        "retry": {
+          "max": 2,
+          "delay_ms": 50,
+          "statuses": [
+            413
+          ],
+          "respect_retry_after": true
+        }
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "r1",
+          "path": "/t/echo",
+          "query": {
+            "key": "k",
+            "fail_times": 1,
+            "fail_status": 413,
+            "retry_after": 2
+          },
+          "options": {
+            "retry": {
+              "max": 2,
+              "delay_ms": 50,
+              "respect_retry_after": false
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "r1": {
+            "ok": true,
+            "hit": 2
+          }
+        },
+        "server": {
+          "by_key": {
+            "k": {
+              "eq": 2
+            }
+          }
+        },
+        "duration_ms": {
+          "max": 1500
         },
         "client": {
           "pending_after": {

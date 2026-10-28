@@ -156,3 +156,74 @@
   吊销数量只统计本次新失效且未过期、未使用的令牌；日志增加 style 和 reason。
 - **理由**：跨语言场景需要一致的响应和可核对的服务端记录。
 - **拍板**：用户。
+
+
+## D14 · 2026-10-27 · dioman Dart io 执行器接入与公开 API 探针
+
+- **背景**：用户要求 dioman 读取中立场景，复用已启动的真实服务与 netem，公开选项/方法逐项覆盖并验证插件任意组合。
+- **结论**：执行器放在 dioman/accept，17 种能力、16 个 step 均有映射。未知字段显式报错；缺能力按 missing 跳过。上游使用 127.0.0.1:28080，netem 控制地址 127.0.0.1:9090，每轮唯一 X-Test-Run。
+- **职责边界**：连接/收发超时由 DiomanTimeout 设置；逻辑总预算由执行器 Timer 管理。离线探测是宿主输入，DiomanOffline 负责队列及拒绝。业务信封在转换器中提前转成原始响应错误，使 auth/retry/cache 能按同一种逻辑失败组合。
+- **场景修正**：expire_local 在执行器中只更换 access；previous 场景先建立真正存在的旧值，撤销 access 后保留当前的被撤销令牌；201 成功显式给 code=0；429 重试显式给状态白名单；慢刷新 cancel_all 补装 cancel；离线恢复场景要求恢复后的请求成功。以上均依据现有契约，不迁就客户端失败。
+- **扩展**：新增 combo.all-seventeen-plugins；dioman 专用真实幂集探针覆盖全部 131071 个非空子集，逐项检查 payload、服务端 hit 与资源释放。API AST 清单、逐字段读取与源码 lcov 分开报告，未运行不得宣称通过。
+- **当前核实状态**：normal×http 基线 300 通过、0 失败；新增 5 个库级回归通过。全矩阵运行中 28080 服务停止监听，9090 仍可达且 PID 已改变；已停止本次执行器请求，未启动、重启或关闭这两个服务。后续完整矩阵与 API 100% 以实际补跑报告为准。
+- **拍板**：用户授权接入、修库与扩展场景；具体映射和证据边界由本次执行实现。
+
+
+## D15 · 2026-10-27 · dioman 本轮证据边界与中断结果
+
+- **已核实**：normal×http 历史基线 300 通过、0 失败；最终全量库级测试 290 通过、4 跳过，耗时 8 分 42 秒。dart analyze 无问题；328 个中立场景通过 validate --check-index（退出码 0）。
+- **覆盖指标**：最终单测 lcov 为 1683/1793 行，即 93.8650%；这是库级行覆盖，不代表真实服务公开 API 覆盖。AST 清单 691 项；专用真实 API 探针未完成，不能声称 API 达到 100%。17 插件真实幂集也未运行。
+- **矩阵中断**：现有场景计划 1059 项；本轮全矩阵执行 358 项，其中 210 通过、148 失败。服务停止监听后剩余 701 项标为跳过/未执行，不计为能力缺失，也不把全部失败归咎于 dioman。原始记录和审计见 dioman/accept/results/。
+- **库修复**：并发过期去重及稳定过期错误、重放仍 401 的会话结束、retry 遇 401 交回 auth（保留原始裸令牌）、每次重试计入 breaker、恢复响应写回 cache、share 首发取消交接给存活跟随者、notify 置于 normalize 前且同一逻辑请求仅通知一次。新增 7 个独立回归均通过。
+- **资源边界**：未操作两个服务进程。强制中断历史执行器时最后若干代理没有完整 ID 日志，清理状态不能全部核实；未盲删未知代理。后续版本已加入创建/删除日志和基础设施不可达时中断逻辑。
+- **未完成**：服务恢复后的最终修订正常网络复验、全网络/风格矩阵、逐项 API 真实证据及 131071 个真实插件子集。以实际后续补跑报告为准。
+
+
+## D16 · 2026-10-27 · dioman 恢复验收的最终证据（补充 D14、D15）
+
+- **背景与授权**：用户要求保留已有改动、自行执行、不转派、不 commit/stash，复用已启动服务。仅修改 dioman 与本 testkit。
+- **端口**：本轮实际使用 127.0.0.1:47080 / 47090。执行器支持 TESTKIT_SERVER / TESTKIT_NETEM 完整 HTTP 地址覆盖，上游由服务器地址派生；未启动、重启或停止服务。
+- **矩阵口径与取舍**：328 场景 × 7 网络 × 2 风格 × io 共 4592 个结论：1045 通过、0 失败、3547 跳过。其中 3533 个组合未被场景声明，另 14 个声明组合主动注入 429/503，与本轮遇到即停约束冲突，明确跳过。未将这些项计为通过。
+- **失败复查**：上轮 148 项失败本轮 144 通过、4 约束跳过、0 失败。本轮首次完整执行 1027 通过、18 失败、3547 跳过；定位并修正场景/执行器后，第二次完整矩阵 4592 项已执行到最终结果。原始记录保留在 all-resume.json，逐项分层与最终 run id 见 failure-triage.json。
+- **公开 API**：691/691，100% 的构造、读取、调用登记覆盖；真实服务轮次 dioman-api-1793099269471162，附 47080 服务端日志。metadata/兼容 API 在同一真实请求上下文中验证，不宣称它们自身发送 HTTP，也不代表所有参数值/分支均覆盖。
+- **组合策略**：17 个单开 + 136 个精确双开 + 全部同开 = 154 个真实组合，154 通过、0 失败。每子集独立 X-Test-Run，经过真实代理，校验 payload、hit=1、inflight=0 和 loading 释放。可复现命令见 dioman/accept/README.md；其余 130917 子集未执行，不宣称全幂集完成。
+- **场景修正依据**：Windows 连接拒绝与取消存在竞态；无重试 flap 对照组需短连接预算，避免系统 TCP 尝试跨过恢复窗口；offline/DNS 与 flap 不固定 loading 次数；blackhole 已接受 TCP 连接，应验证接收超时。未修改服务端契约或实现，只使用已有 schema 能力。
+- **执行器修正**：flap 宿主探测使用 500ms 预算；逐项结果增量追加 NDJSON、结束后汇总 JSON，避免同步反复编码完整历史阻塞事件循环，导致短 TTL 或在途窗口断言被执行器污染；修正 API 探针 filter 删除谓词方向。
+- **库状态**：本轮未新增修改 lib/；上轮七项库修复的独立回归全部复验通过。dart test 最终 290 通过、4 跳过、0 失败；dart analyze 无问题；node tools/validate.mjs --check-index 退出码 0，328 场景有效。上轮 lcov 数值仍为历史指标，未宣称本轮重采集。
+- **资源**：本轮代理日志中 1984 个创建 ID 均有删除成功记录。早期未记录 ID 的历史代理未核实归属、未盲删。
+- **最终产物**：dioman/accept/results/audit.json、api-coverage.json、api-evidence.json、powerset-summary.json、failure-triage.json、verification.json、proxy-cleanup.json、changed-files-resume.json。
+- **拍板**：用户授权的续跑、场景扩展与修复；执行策略与证据边界由本次执行记录。
+
+
+## D17 · 2026-10-27 · dioman 五方法复核及共享异常结算修复（部分完成）
+
+- **背景与授权**：用户要求自行执行、不转派、不commit/stash，保留原改动，复用47080/47090；仅修改dioman和本testkit。未操作服务进程，未增加依赖。
+- **跳过复核**：历史3547格 = 3477纯缺声明 + 56缺声明且主动注入429/503 + 14已声明注入429/503。5个注入场景对全部7网络写expect.skip，现70格有明确约束理由；其中56格补齐原缺声明。其余3477格未补齐预期并真实执行，不能宣称合规不适用或已验收。拆出安全状态码子矩阵和HTTP/业务码优先级子场景，8格真实通过，不代替429/503专门证据。
+- **方法矩阵**：新增79场景，单体34、全量6、部分边界56、配对64，共160格最终真实通过，0失败、0跳过；normal/weak/flap全开业务流覆盖两种风格。规则随实际请求记录，完整安装图逐边逆序拒绝、重复名拒绝及extra唯一/归属/前缀检查均执行。规则不重复计HTTP请求。
+- **配对选择**：搜索现有依赖后未新增第三方库；采用32×17二元正交数组最小实现，2个生成器单测独立枚举136×4状态。旧136双开集合数学上可覆盖四种开关状态，但旧证据仅http；本轮32行各跑http/business。
+- **新缺陷及修复**：share内部重试的重放准备（如自定义FormData.clone抛FormatException）进入异常兜底时只结束首发，未结算共享entry，使跟随者悬挂。修复前回归失败；补_finishOrDefer后单测和真实http/business各1格通过，服务端各命中1次、inflight=0、loading成对。另修正flap中offline早于notify拒绝导致的通知次数预期，两次首次失败已复验通过。
+- **库自审与覆盖**：上轮七文件diff逐项关联回归、顺序及extra注册；删除key私有_encode仅Map调用条件下的不可达非Map分支；修正README/Breaker类注释与逐尝试计数源码的冲突。原110行逐项处置：103行新命中、1行不可达删除、1行由缺陷修复替换且新出口覆盖、5行保留兜底未命中。最终lcov 1788/1793 = 99.7211%，5行逐条给出标准Dio契约下的不可达理由并保留依赖源码摘录，不计为覆盖。
+- **最终检查**：dart analyze无问题；dart test 330通过/4跳过/0失败，耗时08:25，已等到进程退出码0；新增缺口单测38个、pairwise生成器单测2个。node tools/validate.mjs --check-index退出码0，18文件409场景。公开API本轮重新执行691/691，run id为dioman-api-1793104721774626，不代表参数取值/触发路径穷举。
+- **资源**：本轮结果涉及的494个自建代理全部有删除成功记录；未盲删未知历史代理。每轮唯一X-Test-Run，无已观察到的429/503或服务不可达。
+- **尚未完成**：3477缺声明组合真实补跑；单体全部公开选项和触发路径；全部数值/时间/集合边界；全部源码不变量规则化。方法矩阵、覆盖和API指标分别报告，不将部分已实现矩阵通过称为整项完成。
+- **产物**：dioman/accept/MATRIX-plugins.md、COVERAGE-review.md、REVIEW-library.md、results/review-summary.json、verification-review.json、coverage-baseline-resolution.json、coverage-review.json、skip-review.json、plugin-matrix-final.json、share-prepare-real.json、proxy-cleanup-review.json。
+- **拍板**：用户授权修库与扩展测试；本轮实际完成范围与未完成事项由证据限定。
+
+
+## D18 · 2026-10-27 · 测试整理
+
+- **背景与授权**：用户要求自行整理 dioman 测试与本 testkit 场景，仅分类、归纳、去重，不新增测试能力、不改 lib/ 行为；不转派、不 commit/stash/reset/checkout，复用 47080/47090。
+- **选择与结论**：dioman 按 unit/rules/boundary/combo/integration/support 归类；accept 分 bin/lib/docs/results。单体和边界归入对应领域，plugins.json 保留配对/全量。严格比较网络、风格、步骤、断言和执行器缺省值后，合并 retry 两个零值场景及 loading 两个零值场景，保留 id 显式传两个选项；旧 id 映射在 dioman/test/README.md，生成器与方法清单同步。其余不同插件集合、边界输入和仲裁路径保留。
+- **结果**：409→407 场景，18 文件；gen-index 与 validate --check-index 退出 0。normal×http 376通过/33跳过→374通过/33跳过，均0失败；五方法160→156格通过、0失败。通过数减少完全对应两个去重场景及双风格格子，按旧→新 id 比对无缺失、无状态变化，未把原始格数减少隐瞒为不变。
+- **库级检查**：旧334运行时用例（330通过、4跳过）→328（本地325通过、real3通过）；5条重复合并、1条空跳过占位删除，映射无意外丢失/新增。行覆盖1788/1793保持不变，dart analyze无问题。默认排除real；因 test 排除优先于包含，真实命令为 dart test -t real --configuration=dart_test.real.yaml --fail-fast，单独 -t real 已验证退出79，不宣称符合原命令字面要求。
+- **证据与边界**：lib/ 与原 accept/results/ 哈希不变；新证据在 dioman/coverage/accept/，整理前后对比在 coverage/reorganization/，分类/全映射/文件清单在 test/README.md。未操作服务进程，未观察429/503或不可达。整理后532个自建代理中530个有删除日志，另2个逐 id GET 返回404确认不存在；日志缺项原因未定位，未盲删未知代理。选项/非法值/不变量的穷尽覆盖与历史未声明组合仍未补齐。
+- **拍板**：用户确定目录和去重规则；具体迁移与原生 test 配置差异按本条及映射表如实记录。
+
+
+## D19 · 2026-10-28 · filter 请求级开关与"假通过"修复
+
+- **背景**：场景 schema 的 `request.options` 没有 `filter` 字段，执行器无从映射，`client.plugins.filter` 装配的插件靠请求级 `config.filter` 触发，所以验收里 filter 从未真正生效。`filter.keeps-zero-false`、`key.filter-before-key` 等场景的"通过"是假通过（前者的子集匹配也看不出空值有没有被剔除）。
+- **选项**：A. schema 加 `options.filter: boolean`，场景显式开启，并按服务端实收内容断言；B. 只给相关场景标 requires、实际仍不生效，靠跳过规避。
+- **结论**：选 A。CONTRACT §7 定义 `filter` 的中立语义（请求级开启，剔除 query/JSON 对象 body 顶层的 null/undefined/NaN/空白字符串，保留 0/false，不递归）；`ignoreKeys`/`ignoreValues`/自定义 predicate 不在中立表达范围。新增 `scenarios/filter.json`，旧的两个 filter 场景补 `options.filter: true`。
+- **理由**：B 不解决问题，只是把假通过换成不运行；A 让能力和断言对得上，不认识该选项的执行器仍可按"缺能力/映射不了"处理。断言落在 echo 的 `body.raw`（精确串，可证明缺席）上；query 因 echo 的 query 是对象子集匹配，缺席只能靠 `key.filter-before-key` 的共享计数佐证。plugins.json、combos.json 里仅装配 filter 的场景保持不变，它们验证"装配不破坏其它能力"。
+- **拍板**：用户（jelon），2026-10-28。

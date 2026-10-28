@@ -197,13 +197,13 @@ barrier 分组、测试用户、token 都按 runId 隔离，不同轮次、不�
 
 ## 6. netem（网络条件代理）
 
-`cargo run --release --bin netem -- --control 127.0.0.1:9090`。它是独立的可执行文件，**不打进线上 Docker 镜像**。
+`cargo run --release --bin netem -- --control 127.0.0.1:47090`。它是独立的可执行文件，**不打进线上 Docker 镜像**。
 
 控制 API（JSON）：
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| `POST` | `/proxies` | 请求体 `{upstream:"127.0.0.1:8080", profile}`，返回 `{id, port}`，其中 port 是新分配的监听端口 |
+| `POST` | `/proxies` | 请求体 `{upstream:"127.0.0.1:47080", profile}`，返回 `{id, port}`，其中 port 是新分配的监听端口 |
 | `PUT` | `/proxies/{id}` | 请求体 `{profile}`，立即切换，对已建立和新建的连接都生效 |
 | `POST` | `/proxies/{id}/schedule` | 请求体 `[{at_ms, profile}]`，相对调用时刻按时间表切换，例如断 1500ms 后恢复 |
 | `GET` | `/proxies/{id}/stats` | 返回 `{connections, active, bytes_up, bytes_down, resets, refused}` |
@@ -247,7 +247,7 @@ profile 可以直接写预设名的字符串，也可以写对象：
 > PUT 完整替换 profile 并取消旧时间表；schedule 替换上一张时间表。refuse 同时关闭已有连接，
 > blackhole 保留已有连接的缓冲数据，恢复 pass 后可继续传输。内核拒绝连接时用户态无法逐次计数，
 > 因此 stats.refused 记录进入停止监听状态的次数。`/presets` 返回名字到配置的映射；flap 为时间表，
-> dns 为执行器域名说明，直接把 dns 用作代理 profile 返回 400。控制服务默认监听 127.0.0.1:9090，
+> dns 为执行器域名说明，直接把 dns 用作代理 profile 返回 400。控制服务默认监听 127.0.0.1:47090，
 > 代理监听随机的本机 IPv4 端口，上游使用明确的 IP:port。
 
 ## 7. 场景与预期
@@ -257,6 +257,14 @@ profile 可以直接写预设名的字符串，也可以写对象：
 - **能力声明**：场景用 `requires` 声明需要哪些能力，名字与语言无关，取 `auth`、`cache`、`retry`、`share`、`cancel`、
   `loading`、`mock`、`normalize`、`notify`、`repath`、`key`、`filter`、`envs`、`breaker`、`offline`、`timeout`、`log`。
   客户端缺少某项能力时跳过该场景，并在报告里写 `skipped: missing <cap>`，不算失败。
+- **`filter` 能力的中立语义**：`client.plugins.filter` 只表示"装配了过滤能力"，**不会对任何请求自动生效**；
+  请求必须显式写 `options.filter: true` 才开启。开启后，客户端在发送前剔除查询参数（`query`）和请求体（`body`，
+  仅当其为 JSON 对象）**顶层**的"空值"字段：`null`、`undefined`、`NaN`、空白字符串（仅含空白字符，含 `""`）；
+  `0`、`false` 等有效值必须保留，嵌套对象不递归。未写或写 `false` 时请求原样发送。
+  断言落点是服务端实际收到的参数（`/t/echo` 回显的 `request.query`、`request.body.json`）。
+  `ignoreKeys`、`ignoreValues`、自定义 predicate 属于各库的私有扩展，**不在中立表达范围内**，场景不得依赖。
+  注意：部分 HTTP 库序列化查询串时本来就会丢掉 `null`/`undefined`，所以"剔除 null"只在请求体上才能可靠断言，
+  查询参数上用空白字符串断言。
 - **插件配置**：`client.plugins` 写中立配置，各执行器自己映射成本库的参数。映射不了的字段要显式报错，不能静默忽略。
 - **响应风格维度**：每个场景默认在 `http` 和 `business` 两种风格下各跑一遍（§2.1）。场景可以用 `styles` 字段收窄范围。
 - **错误分类**：预期里的错误统一用下面这些取值，各执行器负责把本库的错误归到这些类别：

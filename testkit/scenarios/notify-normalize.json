@@ -1225,5 +1225,280 @@
         }
       }
     }
+  },
+  {
+    "id": "plugins.single-normalize",
+    "title": "normalize 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "normalize 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "normalize"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "normalize": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "plugins.single-notify",
+    "title": "notify 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "notify 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "requires": [
+      "notify"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@http": {
+        "results": {
+          "error": {
+            "ok": false,
+            "error": "status:500"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000
+  },
+  {
+    "id": "notify.single-silent-and-stringify",
+    "title": "notify 单独：失败提示一次，silent 请求与成功请求不提示",
+    "why": "只装 notify：非静默失败触发一次提示，silent 失败和成功都不触发，总计恰好 1 次",
+    "requires": [
+      "notify"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "styles": [
+      "http"
+    ],
+    "client": {
+      "plugins": {
+        "notify": {}
+      }
+    },
+    "steps": [
+      {
+        "sequence": [
+          {
+            "request": {
+              "id": "bad",
+              "path": "/t/echo",
+              "query": {
+                "key": "b",
+                "status": 500
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "quiet",
+              "path": "/t/echo",
+              "query": {
+                "key": "q",
+                "status": 500
+              },
+              "options": {
+                "silent": true
+              }
+            }
+          },
+          {
+            "request": {
+              "id": "ok",
+              "path": "/t/echo",
+              "query": {
+                "key": "o"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "bad": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "quiet": {
+            "ok": false,
+            "error": "status:500"
+          },
+          "ok": {
+            "ok": true
+          }
+        },
+        "client": {
+          "notify": {
+            "eq": 1
+          },
+          "pending_after": {
+            "eq": 0
+          }
+        }
+      }
+    }
   }
 ]
