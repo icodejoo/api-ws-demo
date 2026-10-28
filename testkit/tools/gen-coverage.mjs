@@ -2,6 +2,7 @@
 // 由人工维护的 coverage/axp-api.json 与 scenarios/*.json 生成 COVERAGE.md（零依赖）。
 // 用法：node tools/gen-coverage.mjs [scenarios 目录] [--check]
 // --check 只比较生成结果；文件缺失或过期时退出码为 1。
+// core 是内核条目（始终可用、不需装配）；cancel/key/normalize/log 属内核能力，不算插件。
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,10 +12,17 @@ const ROOT = path.join(here, '..');
 const DEFAULT_DIR = path.join(ROOT, 'scenarios');
 const CATALOG = path.join(ROOT, 'coverage', 'axp-api.json');
 const OUTPUT = path.join(ROOT, 'COVERAGE.md');
-const KINDS = new Set(['plugin', 'pluginOther', 'request', 'step', 'eventPositive', 'eventExists', 'installed', 'anyInstalled', 'client', 'method', 'protectedSuccess', 'retryAfter']);
+const KINDS = new Set(['plugin', 'pluginOther', 'request', 'requestField', 'clientField', 'step', 'eventPositive', 'eventExists', 'resultError', 'installed', 'anyInstalled', 'client', 'method', 'protectedSuccess', 'retryAfter']);
+/** 需要 path 的规则种类。 */
+const PATH_KINDS = ['plugin', 'pluginOther', 'request', 'requestField', 'clientField', 'step', 'eventPositive', 'eventExists'];
+/** 内核条目的台账名：始终可用，不需要在场景里装配。 */
+const CORE = 'core';
+/** 已并入内核的能力：场景里仍写 client.plugins.<名> 或 requires，执行器视为 axp 具备，不算装配插件。 */
+const KERNEL_CAPS = ['cancel', 'key', 'normalize', 'log'];
 const own = (o, k) => o != null && Object.hasOwn(o, k);
 const get = (o, key) => key.split('.').reduce((v, k) => v == null ? undefined : v[k], o);
-const capability = (p) => p === 'logger' ? 'log' : p;
+/** 条目是否无需装配即可用（内核与入口/装配）。 */
+const alwaysOn = (p) => p === CORE || p === 'public';
 const escape = (v) => String(v ?? '').replace(/\|/g, '&#124;').replace(/[\r\n]+/g, ' ');
 const code = (v) => '`' + escape(v).replace(/`/g, '&#96;') + '`';
 const pct = (n, d) => d ? (100 * n / d).toFixed(1) + '%' : '—';
@@ -32,7 +40,7 @@ function walkSteps(steps) {
 
 /** 校验人工台账，拼错规则或 API 引用直接失败，避免静默降低统计质量。 */
 function validateCatalog(c) {
-  if (c.plugins.length !== 14 || new Set(c.plugins).size !== 14) throw new Error('插件列表必须为 14 个且不重复');
+  if (!Array.isArray(c.plugins) || !c.plugins.length || new Set(c.plugins).size !== c.plugins.length) throw new Error('插件列表不能为空且不能重复');
   const ids = new Set();
   for (const a of c.apis) {
     if (ids.has(a.id)) throw new Error('API id 重复：' + a.id);
@@ -43,9 +51,10 @@ function validateCatalog(c) {
     for (const r of a.rules) {
       if (!KINDS.has(r.kind)) throw new Error('未知规则：' + r.kind);
       if (r.confidence && r.confidence !== 'doubt') throw new Error('未知置信度：' + a.id);
-      if (['plugin', 'pluginOther', 'request', 'step', 'eventPositive', 'eventExists'].includes(r.kind) && !r.path) throw new Error('规则缺少路径：' + a.id);
+      if (PATH_KINDS.includes(r.kind) && !r.path) throw new Error('规则缺少路径：' + a.id);
       if (r.kind === 'method' && typeof r.method !== 'string') throw new Error('规则缺少 method：' + a.id);
-      if (r.kind === 'pluginOther' && !c.plugins.includes(r.plugin)) throw new Error('规则引用未知插件：' + a.id);
+      if (r.kind === 'pluginOther' && ![...c.plugins, ...KERNEL_CAPS].includes(r.plugin)) throw new Error('规则引用未知插件：' + a.id);
+      if (['plugin', 'installed'].includes(r.kind) && alwaysOn(a.plugin)) throw new Error('内核/入口条目不能用装配类规则：' + a.id);
     }
     if (!a.expressible && a.rules.length) throw new Error('无法表达的 API 不应有命中规则：' + a.id);
   }
@@ -57,7 +66,7 @@ function validateCatalog(c) {
 /** 选项按实际映射位置匹配；显式 false/0 也算字段触达，不依赖 truthy。 */
 function matches(rule, a, ctx) {
   const { s, requests, steps, expectations } = ctx;
-  const p = capability(a.plugin);
+  const p = a.plugin;
   const selected = (v) => v !== undefined && (!own(rule, 'equals') || v === rule.equals);
   switch (rule.kind) {
     case 'installed': return own(s.client?.plugins, p);
@@ -65,10 +74,16 @@ function matches(rule, a, ctx) {
     case 'client': return requests.length > 0;
     case 'method': return requests.some(r => (r.method ?? 'GET').toUpperCase() === rule.method);
     case 'plugin': return selected(get(s.client?.plugins?.[p], rule.path));
-    case 'pluginOther': return selected(get(s.client?.plugins?.[capability(rule.plugin)], rule.path));
+    case 'pluginOther': return selected(get(s.client?.plugins?.[rule.plugin], rule.path));
     case 'request': return requests.some(r => selected(get(r.options, rule.path)));
+    // 请求顶层字段（cancel_after_ms、query、headers 等），不在 options 里。
+    case 'requestField': return requests.some(r => selected(get(r, rule.path)));
+    // client 顶层字段（base_timeout_ms），不在 client.plugins 里。
+    case 'clientField': return selected(get(s.client, rule.path));
     case 'step': return steps.some(s => own(s, rule.path));
     case 'eventExists': return expectations.some(e => own(e.client, rule.path));
+    // 断言里写了某个错误类别；error 允许单个或数组（任一即可），数组里列出也算触达。
+    case 'resultError': return expectations.some(e => Object.values(e.results ?? {}).some(r => [].concat(r.error ?? []).some(k => !own(rule, 'equals') || k === rule.equals)));
     case 'eventPositive': return expectations.some(e => {
       const v = e.client?.[rule.path];
       return v?.eq > 0 || v?.min > 0;
@@ -97,7 +112,8 @@ function matches(rule, a, ctx) {
 export function buildCoverage(dir = DEFAULT_DIR, catalogFile = CATALOG) {
   const c = JSON.parse(fs.readFileSync(catalogFile, 'utf8'));
   validateCatalog(c);
-  const supported = new Set(c.plugins.map(capability));
+  const plugins = c.plugins.filter(p => p !== CORE); // 真正需要装配的内置插件
+  const supported = new Set([...plugins, ...KERNEL_CAPS]);
   const seen = new Set();
   const contexts = fs.readdirSync(dir).filter(f => f.endsWith('.json')).sort().flatMap(file => {
     const list = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
@@ -107,10 +123,12 @@ export function buildCoverage(dir = DEFAULT_DIR, catalogFile = CATALOG) {
       seen.add(s.id);
       const steps = walkSteps(s.steps);
       const requests = steps.filter(s => s.request).map(s => s.request);
-      const installed = new Set(c.plugins.filter(p => own(s.client?.plugins, capability(p))));
+      // installed 只含装配的内置插件；内核能力（cancel/key/normalize/log）不算，单独记 kernel。
+      const installed = new Set(plugins.filter(p => own(s.client?.plugins, p)));
+      const kernel = KERNEL_CAPS.some(k => own(s.client?.plugins, k) || s.requires?.includes(k));
       const unsupported = [...new Set([...(s.requires ?? []), ...Object.keys(s.client?.plugins ?? {})])].filter(p => !supported.has(p));
       const expectations = Object.values(s.expect).filter(e => !e.skip);
-      return { s, file, steps, requests, installed, expectations, unsupported, eligible: !unsupported.length && expectations.length > 0 && requests.length > 0 };
+      return { s, file, steps, requests, installed, kernel, expectations, unsupported, eligible: !unsupported.length && expectations.length > 0 && requests.length > 0 };
     });
   });
   const refs = (ctx) => `[${code(ctx.s.id)}](scenarios/${ctx.file})`;
@@ -119,25 +137,28 @@ export function buildCoverage(dir = DEFAULT_DIR, catalogFile = CATALOG) {
   const rows = c.apis.filter(a => a.scope !== 'internal').map(a => {
     const covered = [], doubt = [], skipped = [];
     for (const ctx of contexts) {
-      if (a.plugin !== 'public' && !ctx.installed.has(a.plugin)) continue;
+      if (!alwaysOn(a.plugin) && !ctx.installed.has(a.plugin)) continue;
       const rules = a.rules.filter(r => matches(r, a, ctx));
       if (!rules.length) continue;
       if (!ctx.eligible) skipped.push(ctx);
       else if (rules.some(r => r.confidence !== 'doubt')) covered.push(ctx);
       else doubt.push(ctx);
     }
-    return { a, covered, doubt, skipped, single: covered.filter(ctx => ctx.installed.size === 1 && a.plugin !== 'public') };
+    // 严格单插件只对插件条目有意义：恰好装配这一个内置插件；内核与入口条目没有该口径。
+    return { a, covered, doubt, skipped, single: covered.filter(ctx => ctx.installed.size === 1 && !alwaysOn(a.plugin)) };
   });
-  const pluginRows = rows.filter(r => r.a.plugin !== 'public');
+  const pluginRows = rows.filter(r => !alwaysOn(r.a.plugin));
+  const coreRows = rows.filter(r => r.a.plugin === CORE);
   const gaps = pluginRows.filter(r => !r.covered.length);
+  const coreGaps = coreRows.filter(r => !r.covered.length);
   const singles = pluginRows.filter(r => !r.single.length);
   const pairRows = [];
   for (let i = 0; i < c.plugins.length; i++) for (let j = i + 1; j < c.plugins.length; j++) {
     const a = c.plugins[i], b = c.plugins[j];
-    // 安装或 requires 声明均算“涉及”；同时给出真正可在 axp 执行的数量。
-    const involving = ctx => [a, b].every(p => ctx.installed.has(p) || ctx.s.requires?.includes(capability(p)));
+    // 插件：安装或 requires 声明均算“涉及”；core：声明了任一内核能力算涉及。同时给出真正可在 axp 执行的数量（core 始终可用，只要求另一端已安装）。
+    const involving = ctx => [a, b].every(p => p === CORE ? ctx.kernel : ctx.installed.has(p) || ctx.s.requires?.includes(p));
     const declared = contexts.filter(involving);
-    const eligible = declared.filter(ctx => ctx.eligible && ctx.installed.has(a) && ctx.installed.has(b));
+    const eligible = declared.filter(ctx => ctx.eligible && [a, b].every(p => p === CORE || ctx.installed.has(p)));
     const risk = c.risks.find(r => r.plugins.includes(a) && r.plugins.includes(b));
     pairRows.push({ a, b, declared, eligible, risk });
   }
@@ -149,15 +170,17 @@ export function buildCoverage(dir = DEFAULT_DIR, catalogFile = CATALOG) {
     '由 ' + code('coverage/axp-api.json') + ' 与 ' + code('scenarios/*.json') + ' 生成。更新：' + code('node testkit/tools/gen-coverage.mjs') + '；检查：' + code('node testkit/tools/gen-coverage.mjs --check') + '。', '',
     ...c.notes.map(n => '- ' + n), '',
     '统计口径：已覆盖 = 可在 axp 执行的场景具有明确配置/步骤/事件断言证据；存疑不计覆盖。字段触达允许只覆盖某种形式，表达列注明限制，不能解读成所有值域、回调异常或分支都覆盖。安装只证明工厂/install 调用，不证明 enable 等选项。', '',
-    '“单插件缺口”表示没有严格单插件证据；组合场景中的证据仍列在明细。组合矩阵只说明共同声明/安装，不证明有交互断言。', '',
-    `扫描 **${contexts.length}** 个场景；可执行 **${contexts.filter(x => x.eligible).length}** 个。14 插件 API **${pluginRows.length}** 项，已覆盖 **${pluginRows.length - gaps.length}** 项，API 缺口 **${gaps.length}** 项（含存疑 **${gaps.filter(r => r.doubt.length).length}** 项）；严格单插件缺口 **${singles.length}** 项。可执行组合缺口 **${pairGaps.length}/91**，其中有明确交互风险 **${pairGaps.filter(r => r.risk).length}** 对。`, '',
+    '“单插件缺口”表示没有严格单插件证据；组合场景中的证据仍列在明细。core 是内核条目，始终可用、不要求装配，不存在单插件口径（记“—”），覆盖按任意可执行场景统计。组合矩阵只说明共同声明/安装，不证明有交互断言。', '',
+    `扫描 **${contexts.length}** 个场景；可执行 **${contexts.filter(x => x.eligible).length}** 个。${plugins.length} 个插件 API **${pluginRows.length}** 项，已覆盖 **${pluginRows.length - gaps.length}** 项，API 缺口 **${gaps.length}** 项（含存疑 **${gaps.filter(r => r.doubt.length).length}** 项）；严格单插件缺口 **${singles.length}** 项。`, '',
+    `core 内核 API **${coreRows.length}** 项（另计），已覆盖 **${coreRows.length - coreGaps.length}** 项，API 缺口 **${coreGaps.length}** 项（含存疑 **${coreGaps.filter(r => r.doubt.length).length}** 项）。`, '',
+    `可执行组合缺口 **${pairGaps.length}/${pairRows.length}**（${c.plugins.length} 项两两组合，含 core），其中有明确交互风险 **${pairGaps.filter(r => r.risk).length}** 对。`, '',
     '## 每插件汇总', '',
     '| 插件 | API 总数 | 已覆盖（任意组合） | 覆盖率 | API 缺口 | 严格单插件已覆盖 | 单插件缺口 |',
     '|---|---:|---:|---:|---:|---:|---:|',
   ];
   for (const p of [...c.plugins, 'public']) {
     const list = rows.filter(r => r.a.plugin === p), hit = list.filter(r => r.covered.length).length, single = list.filter(r => r.single.length).length;
-    md.push(`| ${p === 'public' ? '入口/装配（另计）' : p} | ${list.length} | ${hit} | ${pct(hit, list.length)} | ${list.length-hit} | ${p === 'public' ? '—' : single} | ${p === 'public' ? '—' : list.length-single} |`);
+    md.push(`| ${p === 'public' ? '入口/装配（另计）' : p === CORE ? 'core（内核，另计）' : p} | ${list.length} | ${hit} | ${pct(hit, list.length)} | ${list.length-hit} | ${alwaysOn(p) ? '—' : single} | ${alwaysOn(p) ? '—' : list.length-single} |`);
   }
   md.push('', '## 逐 API 明细', '', '类别：opt 选项、cb 回调、req 请求配置、global 全局配置、fn 导出函数、const 常量、method 生命周期、prop 属性、export/handle/member 入口及公共成员。源码位置相对 axp 根目录。JSDoc 明确 @internal 的导出另列，不计外部验收目标；index 明确重导出的符号仍按公开 API 计。', '');
   for (const p of [...c.plugins, 'public']) {
@@ -167,7 +190,7 @@ export function buildCoverage(dir = DEFAULT_DIR, catalogFile = CATALOG) {
       let evidence = r.covered.length ? refsOf(r.covered) : '**缺口**';
       if (r.doubt.length) evidence += '；存疑：' + refsOf(r.doubt);
       if (r.skipped.length) evidence += '；不可执行候选：' + refsOf(r.skipped);
-      md.push(`| ${code(a.id)} | ${escape(a.description)}；${code(a.source)}${a.internal ? '（@internal）' : ''} | ${a.expressible ? '' : '**中立 schema 无法表达**；'}${escape(a.expression)} | ${evidence} | ${p === 'public' ? '—' : r.single.length ? refsOf(r.single) : '**缺口**'} |`);
+      md.push(`| ${code(a.id)} | ${escape(a.description)}；${code(a.source)}${a.internal ? '（@internal）' : ''} | ${a.expressible ? '' : '**中立 schema 无法表达**；'}${escape(a.expression)} | ${evidence} | ${alwaysOn(p) ? '—' : r.single.length ? refsOf(r.single) : '**缺口**'} |`);
     }
     md.push('');
   }
@@ -175,7 +198,7 @@ export function buildCoverage(dir = DEFAULT_DIR, catalogFile = CATALOG) {
   for (const a of internal) md.push(`| ${code(a.id)} | ${code(a.source)} | ${escape(a.description)} |`);
   md.push('', '## src/index.ts 公开导出', '', '别名指向同一 API，不重复计数。类型导出全部列出；JSON 场景无法验证类型契约，需另设 TS 编译验收。', '', '| 导出名 | 来源 | 类型/运行时 | API 对应 |', '|---|---|---|---|');
   for (const e of c.publicExports) md.push(`| ${code(e.name)} | ${code(e.module)}（${code(e.source)}） | ${e.typeOnly ? '仅类型：编译验收缺口' : '运行时'} | ${e.api ? code(e.api) : escape(e.note)} |`);
-  md.push('', '## 插件两两组合矩阵', '', '14×14 上三角。每格为“涉及场景数 / axp 可执行且共同安装场景数”，覆盖 combos.json 及所有其它场景；同一场景只计一次，不按网络/风格倍增。**0** 显式标出，后一数为 0 时仍是组合缺口。', '', '| 插件 | ' + c.plugins.join(' | ') + ' |', '|---|' + c.plugins.map(() => '---:').join('|') + '|');
+  md.push('', '## 插件两两组合矩阵', '', `${c.plugins.length}×${c.plugins.length} 上三角（共 ${pairRows.length} 对），core 作为一行/一列参与。每格为“涉及场景数 / axp 可执行且共同安装场景数”，覆盖 combos.json 及所有其它场景；同一场景只计一次，不按网络/风格倍增。**0** 显式标出，后一数为 0 时仍是组合缺口。core 的“涉及”= 场景在 client.plugins 或 requires 里声明了 ${KERNEL_CAPS.join('/')} 任一内核能力；内核始终可用，可执行只要求另一端插件已安装。`, '', '| 插件 | ' + c.plugins.join(' | ') + ' |', '|---|' + c.plugins.map(() => '---:').join('|') + '|');
   for (let i = 0; i < c.plugins.length; i++) {
     const cells = c.plugins.map((p, j) => {
       if (j <= i) return j === i ? '—' : '';
@@ -190,7 +213,9 @@ export function buildCoverage(dir = DEFAULT_DIR, catalogFile = CATALOG) {
   const sortGap = (x, y) => x.a.priority-y.a.priority || (x.a.rank ?? 999)-(y.a.rank ?? 999) || x.a.id.localeCompare(y.a.id, 'en');
   for (const r of [...singles].sort(sortGap)) md.push(`| P${r.a.priority} | ${code(r.a.id)} | ${r.covered.length ? '仅组合覆盖，缺独立场景' : r.doubt.length ? '存疑，未计覆盖' : '无有效场景'}；${escape(r.a.expression)} |`);
   const publicGaps = rows.filter(r => r.a.plugin === 'public' && !r.covered.length);
-  md.push('', '### 入口及装配缺口（另计）', '', ...publicGaps.map(r => '- ' + code(r.a.id) + '：' + escape(r.a.expression) + (r.doubt.length ? '；存疑' : '')), '', '### 再补有交互风险的组合缺口', '', '| 优先级 | 组合 | 涉及数 / 可执行数 | 风险 |', '|---|---|---:|---|');
+  md.push('', '### 入口及装配缺口（另计）', '', ...publicGaps.map(r => '- ' + code(r.a.id) + '：' + escape(r.a.expression) + (r.doubt.length ? '；存疑' : '')), '', '### 内核 API 缺口（另计）', '', 'core 条目不分单插件口径，只列没有任何可执行场景证据的项；优先级含义同上。', '', '| 优先级 | API | 缺口原因 |', '|---|---|---|');
+  for (const r of [...coreGaps].sort(sortGap)) md.push(`| P${r.a.priority} | ${code(r.a.id)} | ${r.doubt.length ? '存疑，未计覆盖' : '无有效场景'}；${escape(r.a.expression)} |`);
+  md.push('', '### 再补有交互风险的组合缺口', '', '| 优先级 | 组合 | 涉及数 / 可执行数 | 风险 |', '|---|---|---:|---|');
   for (const r of pairGaps.filter(r => r.risk).sort((x,y) => x.risk.priority-y.risk.priority || (x.a+x.b).localeCompare(y.a+y.b, 'en'))) md.push(`| P${r.risk.priority + 2} | ${r.a} + ${r.b} | ${r.declared.length} / 0 | ${escape(r.risk.risk)} |`);
   md.push('', '其它可执行组合缺口：' + (pairGaps.filter(r => !r.risk).map(r => code(r.a + '+' + r.b)).join('、') || '无') + '。', '', '### 已有共同安装但尚需核实交互断言', '', '以下只列风险，不计作“零场景缺口”；共同安装数不能证明隔离、重放次数、清理或异常分支。', '', ...pairRows.filter(r => r.risk && r.eligible.length).map(r => '- ' + code(r.a + '+' + r.b) + '：' + escape(r.risk.risk)), '', '## 维护方式', '', '1. axp 类型/JSDoc 变化时人工核对并更新 API 清单（id 保持稳定，源码位置及 declaration 留作依据）。', '2. 每条映射规则只按明确字段、step 或事件断言匹配；没有证据就留空 rules，拿不准用 confidence=doubt。', '3. 执行生成、--check 及 tools/validate.mjs --check-index；--check 不写文件，任何差异均非零退出。', '');
   return md.join('\n');
