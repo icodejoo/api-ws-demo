@@ -4,7 +4,8 @@
     "title": "总超时：hang 到点即超时",
     "why": "total_ms 是硬上限",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -150,7 +151,8 @@
     "title": "总超时覆盖慢吐 body",
     "why": "size=20000、chunk_bytes=1024（约 20 块）×400ms：每块间隔都没超过 receive_ms，但总时长远超 total_ms，仍应超时",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -251,7 +253,8 @@
     "title": "请求级超时更短",
     "why": "请求自己的 timeout_ms 能收紧",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -298,7 +301,8 @@
     "title": "请求级超时更长",
     "why": "请求自己的 timeout_ms 能放宽",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -344,7 +348,8 @@
     "title": "预算内的慢响应成功",
     "why": "不能误杀未超时的请求",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -387,7 +392,8 @@
     "title": "超时之后客户端仍正常",
     "why": "一次超时不能让后续请求也超时",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -448,7 +454,8 @@
     "title": "并发超时并行计时",
     "why": "5 个并发超时总耗时不应叠加",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -556,7 +563,8 @@
     "title": "弱网下宽松预算成功",
     "why": "预算足够时弱网照样成功",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal",
@@ -612,7 +620,8 @@
     "title": "总超时：小块慢吐",
     "why": "size=4000、chunk_bytes=100：至少 40 块 ×100ms，每块都没超 receive_ms，但总时长超过 total_ms，仍应超时",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -660,7 +669,8 @@
     "title": "总超时预算足够时慢吐 body 成功",
     "why": "对照组：同样的慢吐 body，total_ms 放宽后应完整收下",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -707,7 +717,8 @@
     "title": "接收超时看块间隔，不看块大小",
     "why": "chunk_bytes 很大（一块发完）时没有间隔，不应触发 receive 超时",
     "requires": [
-      "timeout"
+      "timeout",
+      "timeout-total"
     ],
     "networks": [
       "normal"
@@ -754,7 +765,9 @@
     "title": "timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
     "why": "timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
     "requires": [
-      "timeout"
+      "timeout",
+      "raw-business-code",
+      "cancel"
     ],
     "networks": [
       "normal"
@@ -773,7 +786,101 @@
             "data": "{\"matrix\":true}"
           },
           "options": {
-            "mock": false
+            "mock": false,
+            "key": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "styles": [
+      "business"
+    ]
+  },
+  {
+    "id": "plugins.single-timeout-http",
+    "title": "timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。 HTTP 部分独立执行，不依赖未归一化业务码透传。",
+    "requires": [
+      "timeout",
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "timeout": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false,
+            "key": false
           }
         }
       },
@@ -834,16 +941,12 @@
             "error": "status:500"
           }
         }
-      },
-      "normal@business": {
-        "results": {
-          "error": {
-            "ok": true
-          }
-        }
       }
     },
-    "timeout_ms": 40000
+    "timeout_ms": 40000,
+    "styles": [
+      "http"
+    ]
   },
   {
     "id": "plugins.boundary-timeout-connect-ms-0",

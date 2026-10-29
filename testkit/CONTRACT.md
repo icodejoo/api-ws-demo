@@ -262,7 +262,7 @@ profile 可以直接写预设名的字符串，也可以写对象：
 
 - **能力声明**：场景用 `requires` 声明需要哪些能力，名字与语言无关，取 `auth`、`cache`、`retry`、`share`、`cancel`、
   `loading`、`mock`、`normalize`、`notify`、`repath`、`key`、`filter`、`envs`、`breaker`、`offline`、`timeout`、`log`，以及下面的细分能力
-  `multipart`、`keep-alive`、`share-retry`、`timeout-send`、`mock-in-chain`。
+  `multipart`、`keep-alive`、`share-retry`、`timeout-send`、`mock-in-chain`、`raw-business-code`、`timeout-total`。
   客户端缺少某项能力时跳过该场景，并在报告里写 `skipped: missing <cap>`，不算失败。
 - **`filter` 能力的中立语义**：`client.plugins.filter` 只表示"装配了过滤能力"，**不会对任何请求自动生效**；
   请求必须显式写 `options.filter: true` 才开启。开启后，客户端在发送前剔除查询参数（`query`）和请求体（`body`，
@@ -276,6 +276,8 @@ profile 可以直接写预设名的字符串，也可以写对象：
 
   | 能力 | 执行器要做到什么 |
   |---|---|
+  | `raw-business-code` | 未启用 normalize（包括请求级关闭）时，HTTP 成功响应中的非成功业务码原样透传；auth 仍识别 401/403（D21），不要求识别一般业务失败。始终归一化业务信封的客户端不具备此能力 |
+  | `timeout-total` | 支持 `timeout.total_ms` 整体预算：覆盖完整逻辑请求的耗时（含响应体），超过预算以 timeout 失败；请求级 `timeout_ms` 可覆盖该预算。不能由执行器额外计时器模拟 |
   | `multipart` | 能发 `request.body.multipart`（见下文），并且 auth 刷新重放、retry/share 内部重试时重新构造请求体，不重用已被读完的流 |
   | `keep-alive` | 默认就复用 TCP 连接：同一个客户端实例上串行的请求，只要服务端没有关连接，就走同一条连接（`meta.conn` 不变）。每个请求都新建连接或强制 `Connection: close` 的执行器不具备此能力 |
   | `share-retry` | `share.policy` 支持 `retry`（见下文） |

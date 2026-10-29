@@ -270,3 +270,23 @@
 - **新增能力名**：`multipart`、`keep-alive`、`share-retry`、`timeout-send`、`mock-in-chain`（schema `$defs/capability` 与 CONTRACT §7 同步）。`tools/validate.mjs` 增加一致性检查：场景用了 multipart 请求体、`share.policy: retry`（含请求级 `share: "retry"`）或 `timeout.send_ms` 却没在 `requires` 声明对应能力时报错，避免缺能力的执行器漏跳过。
 - **未落地**：netem 丢 SYN 的 connect 超时（D22）；HTTP 日期形式的 Retry-After（D20，服务端无此能力）。
 - **拍板**：用户（jelon）授权，主会话代拍，2026-10-28。
+
+
+## D24 · 2026-10-29 · B7 能力声明与完整验收收口
+
+- **背景**：洋葱管线始终归一化业务信封，且不提供整体超时预算；原场景未区分这些可选能力，导致不同客户端之间误报。axp 反馈状态码矩阵 blackhole 无请求超时、取消场景未声明 cancel。
+- **选项**：A. 执行器补能力或改变场景预期；B. 契约显式登记可选能力，按缺能力跳过。选择 B，不改变 D21 的透传结论。
+- **结论**：新增 `raw-business-code` 与 `timeout-total`（CONTRACT §7、schema 同步）。前者挂在全部未归一化业务码透传场景，后者挂在全部配置 total_ms 的场景。dioman 不声明两者；axp 需依据实际实现补能力声明。执行器不得补整体计时器。
+- **超时与取消**：`basic.status-matrix` 增加 base_timeout_ms=4000（场景预算仍 40000ms），保证 blackhole 有限结束；所有 cancel_after_ms/cancel_all 场景 requires 补 cancel，校验器持续检查。
+- **校验**：新增特性的 requires 一致性检查；重新生成场景索引。能力声明只影响客户端适用性，无服务端行为变更。
+- **拍板**：用户（jelon）本次 B7 指令授权，当前执行会话落实，2026-10-29。
+
+- **首轮真实验收发现的场景问题**：`plugins.full-workflow` 在 expire_local 后重用同一路径，缓存命中使刷新断言失去触发条件；刷新请求明确 cache=false（只绕过缓存，仍实际请求受保护端点）。`conc.barrier-64-desc-order` 的 5ms 放行间隔在 Windows 四 worker 负载下发生一次相邻完成乱序，放宽为 50ms；保持全部 64 个顺序与服务端计数断言。
+
+- **审查修正**：16 个依赖 raw-business-code 的单体拆为 business 原 id 与独立 `-http` 场景，后者不声明 raw-business-code；保留有效 HTTP 成功、500、取消验收，避免整场景 requires 丢失 HTTP 覆盖。总数 443→459；normalize 单体无需拆分。
+
+- **校验器复审修正**：能力推导只遍历 sequence/parallel/fire/repeat 的实际 step；cancel_after_ms 仅看 request 控制字段，cancel_all 仅看 step，multipart/share-retry/raw-business-code 同样不扫描普通请求体。新增 Node 内置测试覆盖普通 JSON 同名键、嵌套取消控制和缺能力拒绝。
+
+- **repeat 声明回归**：结构遍历按 walkStep 的展开规则匹配 r#i（含 id_suffix=false），保证重复请求也能由成功预期推导 raw-business-code；新增正反例，Node 校验回归共 5 条。
+
+- **生成矩阵 key 开关复审**：单体成功请求与 pairwise 请求显式 options.key=是否装配 key，使 key-on 实际生成键、key-off 不使用内核自动键；源生成器同步。重新执行完整方法矩阵，不沿用旧 key 配置的结果。

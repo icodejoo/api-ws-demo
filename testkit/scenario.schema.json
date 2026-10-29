@@ -128,7 +128,9 @@
         "keep-alive",
         "share-retry",
         "timeout-send",
-        "mock-in-chain"
+        "mock-in-chain",
+        "raw-business-code",
+        "timeout-total"
       ]
     },
     "network": {
@@ -576,7 +578,7 @@
           "description": "{ scope?: 'user' }：scope=user 时 key 并入当前登录用户标识，切换用户不串缓存/共享；请求级 options.key=true 才生成 key"
         },
         "timeout": {
-          "description": "{ connect_ms?, send_ms?, receive_ms?, total_ms? }：send_ms 只在写请求体阶段计时，需要 timeout-send 能力（CONTRACT §7）"
+          "description": "{ connect_ms?, send_ms?, receive_ms?, total_ms? }：send_ms 只在写请求体阶段计时，需要 timeout-send 能力（CONTRACT §7）；total_ms 是整体预算，需要 timeout-total 能力，执行器不得补计时器"
         },
         "breaker": {
           "description": "{ threshold, open_ms }"

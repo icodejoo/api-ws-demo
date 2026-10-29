@@ -14,6 +14,8 @@
   这个维度专门验证客户端在 business 风格下，能不能从 HTTP 200 的响应里识别出 401 并触发刷新，识别出 403 并触发越权处理，识别出 500 并触发重试。
 - **adapter**：每个客户端自己声明。axp 是 `http`（Node http 模块）和 `fetch`（undici）；dioman 是 `io`（dart:io HttpClient），以后可以再加。
 
+细分能力影响可执行格：未归一化业务码透传需 `raw-business-code`，整体预算需 `timeout-total`（D24）。16 个单体的 HTTP 检查拆为独立 `-http` 场景，business 原 id 保留透传能力要求；因此缺少透传能力的客户端仍执行全部 HTTP 单体。使用取消参数的场景必须声明 `cancel`。
+
 不适用的组合要在场景的 `expect.<网络>.skip` 里写明原因，不能空着。
 
 ## 2. 网络维度的统一断言规则

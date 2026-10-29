@@ -6,7 +6,7 @@
 与语言无关的客户端验收场景，格式见 `../scenario.schema.json`，契约见 `../CONTRACT.md`。axp（TS/axios）与 dioman（Dart/dio）共用同一份。
 校验：`node tools/validate.mjs`（合法 JSON、schema 关键规则、id 唯一、expect 覆盖 networks 与 styles、results 引用的 id 存在）。
 
-共 **443** 个场景，19 个文件，每个文件顶层是场景数组；按（网络 × 风格）展开共 **1346** 次运行。
+共 **459** 个场景，19 个文件，每个文件顶层是场景数组；按（网络 × 风格）展开共 **1346** 次运行。
 
 ## 约定（执行器必读）
 
@@ -34,26 +34,26 @@
 
 | 领域 | 合计 | normal | weak | lossy | offline | blackhole | flap | dns |
 |---|---|---|---|---|---|---|---|---|
-| 基础（basic.json） | 22 | 22 | 14 | 1 | 8 | 5 | 1 | 7 |
-| 鉴权（auth.json） | 73 | 72 | 27 | 0 | 10 | 10 | 0 | 9 |
-| 重试（retry.json） | 49 | 45 | 10 | 8 | 5 | 4 | 5 | 4 |
-| 缓存（cache.json） | 32 | 32 | 4 | 0 | 1 | 1 | 0 | 1 |
-| 请求合并（share.json） | 21 | 20 | 4 | 0 | 2 | 2 | 0 | 2 |
+| 基础（basic.json） | 24 | 24 | 14 | 1 | 8 | 5 | 1 | 7 |
+| 鉴权（auth.json） | 74 | 73 | 27 | 0 | 10 | 10 | 0 | 9 |
+| 重试（retry.json） | 50 | 46 | 10 | 8 | 5 | 4 | 5 | 4 |
+| 缓存（cache.json） | 33 | 33 | 4 | 0 | 1 | 1 | 0 | 1 |
+| 请求合并（share.json） | 22 | 21 | 4 | 0 | 2 | 2 | 0 | 2 |
 | 并发（concurrency.json） | 16 | 16 | 9 | 0 | 1 | 1 | 0 | 1 |
-| 取消（cancel.json） | 13 | 12 | 2 | 0 | 1 | 2 | 0 | 1 |
-| 加载状态（loading.json） | 21 | 21 | 6 | 1 | 4 | 3 | 1 | 3 |
-| 通知与信封（notify-normalize.json） | 22 | 22 | 6 | 1 | 3 | 1 | 0 | 2 |
+| 取消（cancel.json） | 14 | 13 | 2 | 0 | 1 | 2 | 0 | 1 |
+| 加载状态（loading.json） | 22 | 22 | 6 | 1 | 4 | 3 | 1 | 3 |
+| 通知与信封（notify-normalize.json） | 23 | 23 | 6 | 1 | 3 | 1 | 0 | 2 |
 | 故障响应（faults.json） | 16 | 16 | 12 | 1 | 1 | 1 | 1 | 1 |
 | 网络条件（network.json） | 14 | 4 | 2 | 1 | 3 | 3 | 3 | 4 |
-| 超时（dioman）（timeout.json） | 20 | 19 | 1 | 0 | 0 | 1 | 0 | 0 |
-| 熔断（dioman）（breaker.json） | 19 | 18 | 2 | 0 | 1 | 0 | 0 | 1 |
-| 离线（dioman）（offline.json） | 9 | 3 | 1 | 0 | 4 | 2 | 1 | 1 |
-| 路径/键/过滤（repath-key-filter.json） | 18 | 18 | 3 | 0 | 0 | 0 | 0 | 0 |
+| 超时（dioman）（timeout.json） | 21 | 20 | 1 | 0 | 0 | 1 | 0 | 0 |
+| 熔断（dioman）（breaker.json） | 20 | 19 | 2 | 0 | 1 | 0 | 0 | 1 |
+| 离线（dioman）（offline.json） | 10 | 4 | 1 | 0 | 4 | 2 | 1 | 1 |
+| 路径/键/过滤（repath-key-filter.json） | 21 | 21 | 3 | 0 | 0 | 0 | 0 | 0 |
 | 组合交互（combos.json） | 33 | 31 | 6 | 4 | 1 | 0 | 1 | 1 |
-| 模拟（mock.json） | 8 | 8 | 2 | 0 | 1 | 1 | 0 | 1 |
+| 模拟（mock.json） | 9 | 9 | 2 | 0 | 1 | 1 | 0 | 1 |
 | filter（filter.json） | 3 | 3 | 3 | 0 | 0 | 0 | 0 | 0 |
 | plugins（plugins.json） | 34 | 33 | 1 | 0 | 0 | 0 | 1 | 0 |
-| **合计** | 443 | 415 | 115 | 17 | 46 | 37 | 14 | 39 |
+| **合计** | 459 | 431 | 115 | 17 | 46 | 37 | 14 | 39 |
 
 （一个场景可声明多个网络，所以每行网络列之和大于合计。）
 
@@ -61,32 +61,32 @@
 
 | 领域 | 两种风格都跑 | 仅 http | 仅 business | 含 `@business` 专属预期 |
 |---|---|---|---|---|
-| 基础 | 22 | 0 | 0 | 2 |
-| 鉴权 | 70 | 3 | 0 | 1 |
-| 重试 | 42 | 7 | 0 | 1 |
-| 缓存 | 32 | 0 | 0 | 1 |
-| 请求合并 | 21 | 0 | 0 | 1 |
+| 基础 | 20 | 2 | 2 | 2 |
+| 鉴权 | 69 | 4 | 1 | 1 |
+| 重试 | 41 | 8 | 1 | 1 |
+| 缓存 | 31 | 1 | 1 | 1 |
+| 请求合并 | 20 | 1 | 1 | 1 |
 | 并发 | 16 | 0 | 0 | 0 |
-| 取消 | 13 | 0 | 0 | 1 |
-| 加载状态 | 21 | 0 | 0 | 1 |
-| 通知与信封 | 20 | 2 | 0 | 3 |
+| 取消 | 12 | 1 | 1 | 1 |
+| 加载状态 | 20 | 1 | 1 | 1 |
+| 通知与信封 | 19 | 3 | 1 | 3 |
 | 故障响应 | 15 | 1 | 0 | 2 |
 | 网络条件 | 14 | 0 | 0 | 0 |
-| 超时（dioman） | 20 | 0 | 0 | 1 |
-| 熔断（dioman） | 19 | 0 | 0 | 1 |
-| 离线（dioman） | 9 | 0 | 0 | 1 |
-| 路径/键/过滤 | 18 | 0 | 0 | 3 |
+| 超时（dioman） | 19 | 1 | 1 | 1 |
+| 熔断（dioman） | 18 | 1 | 1 | 1 |
+| 离线（dioman） | 8 | 1 | 1 | 1 |
+| 路径/键/过滤 | 15 | 3 | 3 | 3 |
 | 组合交互 | 30 | 3 | 0 | 0 |
-| 模拟 | 6 | 2 | 0 | 1 |
+| 模拟 | 5 | 3 | 1 | 1 |
 | filter | 3 | 0 | 0 | 0 |
 | plugins | 34 | 0 | 0 | 0 |
-| **合计** | 425 | 18 | 0 | 20 |
+| **合计** | 409 | 34 | 16 | 20 |
 
 ## 场景索引
 
 方括号内依次是网络预设，竖线后是收窄的风格（缺省表示两种都跑）。
 
-### 基础（basic.json，22 个）
+### 基础（basic.json，24 个）
 
 - `basic.get-ok` [normal,weak,offline,dns,blackhole] 最简 GET 成功
 - `basic.post-json-body` [normal,weak,offline,dns,blackhole] POST JSON 请求体原样到达
@@ -107,11 +107,13 @@
 - `basic.head-request` [normal] HEAD 请求
 - `basic.status-201-empty-data` [normal] 2xx 非 200 也算成功
 - `basic.safe-status-matrix` [normal,weak] 不含 429/503 的状态码子矩阵
-- `plugins.single-envs` [normal] envs 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
-- `plugins.single-log` [normal] log 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-envs` [normal | business] envs 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-envs-http` [normal | http] envs 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-log` [normal | business] log 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-log-http` [normal | http] log 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `basic.keep-alive-recovery-isolated` [normal] 连接复用下，401 恢复失败与 500 重试耗尽之后，同一连接上的下一个响应完整无污染
 
-### 鉴权（auth.json，73 个）
+### 鉴权（auth.json，74 个）
 
 - `auth.anon-and-private-mix` [normal,weak,offline,dns,blackhole] 匿名与鉴权接口混合
 - `auth.logout-then-private-fails` [normal,weak] 登出后访问受保护接口失败
@@ -183,11 +185,12 @@
 - `auth.style-switch-refresh` [normal,weak | http] 运行中从 http 切到 business 后 401 仍触发刷新
 - `auth.style-switch-concurrent` [normal | http] 切换风格后并发 401 仍只刷新一次
 - `auth.style-switch-expired` [normal | http] 切换风格后刷新失败仍判 expired
-- `plugins.single-auth` [normal] auth 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-auth` [normal | business] auth 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-auth-http` [normal | http] auth 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `auth.refresh-window-blocked-expired` [normal] 刷新失败窗口内被阻断的请求同样判 expired
 - `auth.expired-multipart-replay` [normal] access 过期 401 后刷新并重放 multipart 上传，文件字节与首发一致
 
-### 重试（retry.json，49 个）
+### 重试（retry.json，50 个）
 
 - `retry.500-then-ok` [normal,weak,lossy] 前两次 500 后恢复
 - `retry.exhausted` [normal,weak] 重试耗尽后返回最后一次错误
@@ -225,7 +228,8 @@
 - `retry.fail-on-noncontiguous-no-retry` [normal] fail_on 非连续失败无重试原样暴露
 - `retry.fail-on-union-fail-times` [normal] fail_on 与 fail_times 取并集
 - `retry.fail-on-gap-exhausts` [normal] fail_on 连续失败超过重试次数
-- `plugins.single-retry` [normal] retry 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-retry` [normal | business] retry 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-retry-http` [normal | http] retry 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `plugins.boundary-retry-max-0` [normal] retry.max = 0、retry.delay_ms = 0（合并等价缺省配置）
 - `plugins.boundary-retry-max-1` [normal] retry.max = 1
 - `plugins.boundary-retry-max-2` [normal] retry.max = 5
@@ -239,7 +243,7 @@
 - `retry.single-retry-after-ignored` [normal | http] retry 单独：respect_retry_after=false 时忽略 Retry-After
 - `retry.single-req-retry-after-override` [normal | http] retry 单独：请求级 respect_retry_after 覆盖插件默认
 
-### 缓存（cache.json，32 个）
+### 缓存（cache.json，33 个）
 
 - `cache.hit-no-server` [normal,weak,offline,dns,blackhole] 命中缓存不到服务器
 - `cache.ttl-expiry` [normal,weak] TTL 过期后重新请求
@@ -262,7 +266,8 @@
 - `cache.max-entries-evicts` [normal] 容量上限淘汰最旧条目
 - `cache.timeout-not-cached` [normal] 超时不入缓存
 - `cache.concurrent-no-share-all-miss` [normal] 无 share 时并发同 key 各自请求
-- `plugins.single-cache` [normal] cache 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-cache` [normal | business] cache 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-cache-http` [normal | http] cache 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `plugins.boundary-cache-ttl-ms-0` [normal] cache.ttl_ms = 0
 - `plugins.boundary-cache-ttl-ms-1` [normal] cache.ttl_ms = 1
 - `plugins.boundary-cache-ttl-ms-2` [normal] cache.ttl_ms = 2147483647
@@ -274,7 +279,7 @@
 - `cache.single-explicit-key-expires` [normal] cache 单独：请求级显式 key 共享缓存，请求级 ttl 到期失效
 - `cache.single-clear-cache` [normal] cache 单独：clear_cache 后同 key 重新回源
 
-### 请求合并（share.json，21 个）
+### 请求合并（share.json，22 个）
 
 - `share.start-single-flight` [normal,weak,offline,dns,blackhole] 同 key 并发只发一次
 - `share.start-32` [normal] 32 个并发同 key 只发一次
@@ -292,7 +297,8 @@
 - `share.race-first-fails-second-wins` [normal] race 策略：一个失败另一个成功仍成功
 - `share.none-policy` [normal] none 策略等同关闭
 - `share.reuse-after-failure` [normal] 失败后同 key 新请求不被旧失败污染
-- `plugins.single-share` [normal] share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-share` [normal | business] share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-share-http` [normal | http] share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `share.single-start-explicit-key` [normal] share 单独：显式 key 下 start 策略只发一次
 - `share.single-req-policy-race` [normal] share 单独：请求级 policy=race 覆盖插件默认 start
 - `share.single-all-timeout-aborts-server` [normal] share 单独：所有订阅者都超时后掐断底层请求
@@ -317,7 +323,7 @@
 - `conc.fire-then-settle` [normal,weak] fire 的请求在场景结束前落定
 - `conc.barrier-mixed-with-other` [normal] 栅栏请求与普通请求混跑
 
-### 取消（cancel.json，13 个）
+### 取消（cancel.json，14 个）
 
 - `cancel.single` [normal,weak,offline,dns,blackhole] 单个请求取消
 - `cancel.hang-is-canceled-not-timeout` [normal] 挂起的请求被取消归为 canceled
@@ -331,9 +337,10 @@
 - `cancel.before-reach-server` [normal] 发出即取消
 - `cancel.parallel-32` [normal] 32 个请求同时取消
 - `cancel.blackhole-cancel-before-timeout` [blackhole] 黑洞下取消先于超时
-- `plugins.single-cancel` [normal] cancel 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-cancel` [normal | business] cancel 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-cancel-http` [normal | http] cancel 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 
-### 加载状态（loading.json，21 个）
+### 加载状态（loading.json，22 个）
 
 - `loading.single-pair` [normal,weak,offline,dns,blackhole] 单个请求一对 show/hide
 - `loading.concurrent-single-pair` [normal,weak,offline,dns,blackhole] 并发多个请求只有一对
@@ -352,12 +359,13 @@
 - `loading.mixed-silent-and-normal` [normal] 静默与普通请求混合
 - `loading.parallel-partial-fail` [normal] 并发中部分失败仍一对
 - `loading.network-switch-pairs` [normal] 断网又恢复各自成对
-- `plugins.single-loading` [normal] loading 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-loading` [normal | business] loading 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-loading-http` [normal | http] loading 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `plugins.boundary-loading-delay-ms-0` [normal] loading.delay_ms = 0、loading.delay_close_ms = 0（合并等价缺省配置）
 - `plugins.boundary-loading-delay-ms-1` [normal] loading.delay_ms = 1
 - `plugins.boundary-loading-delay-close-ms-1` [normal] loading.delay_close_ms = 1
 
-### 通知与信封（notify-normalize.json，22 个）
+### 通知与信封（notify-normalize.json，23 个）
 
 - `notify.http-error-once` [normal,weak,offline,dns,blackhole] HTTP 失败只通知一次
 - `notify.silent` [normal,offline] silent 请求不通知
@@ -379,7 +387,8 @@
 - `normalize.business-notify-retry-combo` [normal] 业务失败：不重试、通知一次
 - `normalize.style-switch` [normal | http] 运行中切换风格后错误分类不变
 - `plugins.single-normalize` [normal] normalize 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
-- `plugins.single-notify` [normal] notify 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-notify` [normal | business] notify 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-notify-http` [normal | http] notify 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `notify.single-silent-and-stringify` [normal | http] notify 单独：失败提示一次，silent 请求与成功请求不提示
 
 ### 故障响应（faults.json，16 个）
@@ -418,7 +427,7 @@
 - `network.recovery-state-clean` [normal] 断网失败后同 key 恢复正常
 - `network.dns-failure` [dns] DNS 失败归为 network
 
-### 超时（dioman）（timeout.json，20 个）
+### 超时（dioman）（timeout.json，21 个）
 
 - `timeout.total-hang` [normal] 总超时：hang 到点即超时
 - `timeout.receive-slow-body` [normal] 接收超时：块间隔过大
@@ -434,14 +443,15 @@
 - `timeout.total-slow-chunks-small` [normal] 总超时：小块慢吐
 - `timeout.total-budget-slow-body-ok` [normal] 总超时预算足够时慢吐 body 成功
 - `timeout.receive-gap-vs-chunk-bytes` [normal] 接收超时看块间隔，不看块大小
-- `plugins.single-timeout` [normal] timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-timeout` [normal | business] timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-timeout-http` [normal | http] timeout 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `plugins.boundary-timeout-connect-ms-0` [normal] timeout.connect_ms = 1
 - `plugins.boundary-timeout-connect-ms-1` [normal] timeout.connect_ms = 2147483647
 - `plugins.boundary-timeout-receive-ms-0` [normal] timeout.receive_ms = 1
 - `plugins.boundary-timeout-receive-ms-1` [normal] timeout.receive_ms = 2147483647
 - `timeout.send-slow-reader` [normal] 发送超时：对端迟迟不读请求体，send_ms 必须在发送阶段生效
 
-### 熔断（dioman）（breaker.json，19 个）
+### 熔断（dioman）（breaker.json，20 个）
 
 - `breaker.open-after-threshold` [normal,weak] 连续失败后熔断，快速失败不打服务端
 - `breaker.half-open-recovers` [normal] open_ms 后半开探测成功则恢复
@@ -455,7 +465,8 @@
 - `breaker.retry-halts-on-trip` [normal] 重试在熔断后立刻停止
 - `breaker.parallel-trip` [normal] 并发失败触发熔断
 - `breaker.open-fast-fail` [normal,weak] 熔断状态下失败几乎零耗时
-- `plugins.single-breaker` [normal] breaker 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-breaker` [normal | business] breaker 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-breaker-http` [normal | http] breaker 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `plugins.boundary-breaker-threshold-0` [normal] breaker.threshold = 1
 - `plugins.boundary-breaker-threshold-1` [normal] breaker.threshold = 64
 - `plugins.boundary-breaker-open-ms-0` [normal] breaker.open_ms = 0
@@ -463,7 +474,7 @@
 - `plugins.boundary-breaker-open-ms-2` [normal] breaker.open_ms = 2147483647
 - `breaker.half-open-probe-cancel` [normal] 半开探测在途被取消：名额归还，不计成败，下一个探测照常放行
 
-### 离线（dioman）（offline.json，9 个）
+### 离线（dioman）（offline.json，10 个）
 
 - `offline.probe-fails-fast` [offline,dns,blackhole] 探测判无网直接 offline 错误
 - `offline.online-passes` [normal,weak] 在线时放行
@@ -473,9 +484,10 @@
 - `offline.cache-hit-still-served` [normal] 缓存命中不受离线影响
 - `offline.cancel-while-probing` [blackhole] 探测期间取消
 - `offline.then-online-no-stale-state` [offline] 离线失败后不残留状态
-- `plugins.single-offline` [normal] offline 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-offline` [normal | business] offline 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-offline-http` [normal | http] offline 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 
-### 路径/键/过滤（repath-key-filter.json，18 个）
+### 路径/键/过滤（repath-key-filter.json，21 个）
 
 - `repath.basic` [normal,weak] 路径变量替换
 - `repath.multi-vars` [normal] 多个路径变量
@@ -492,9 +504,12 @@
 - `key.share-without-key-not-merged` [normal] share 缺 key 不合并
 - `repath.key-after-repath` [normal] repath 先于 key
 - `repath.key-cache-no-mixup` [normal,weak] repath + key + cache 不串
-- `plugins.single-filter` [normal] filter 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
-- `plugins.single-key` [normal] key 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
-- `plugins.single-repath` [normal] repath 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-filter` [normal | business] filter 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-filter-http` [normal | http] filter 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-key` [normal | business] key 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-key-http` [normal | http] key 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-repath` [normal | business] repath 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-repath-http` [normal | http] repath 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 
 ### 组合交互（combos.json，33 个）
 
@@ -532,7 +547,7 @@
 - `combo.logger-retry-recovers-and-exhausts` [normal] logger + retry：装配 logger 后重试恢复与耗尽的次数照旧
 - `combo.repath-retry-path-stable` [normal] repath + retry：重试重放时路径变量不丢
 
-### 模拟（mock.json，8 个）
+### 模拟（mock.json，9 个）
 
 - `mock.routes-to-mock-server` [normal,weak,offline,dns,blackhole] 请求被路由到 /t/mock
 - `mock.per-request-off-goes-real` [normal,weak] 请求级 mock:false 走真实接口
@@ -540,7 +555,8 @@
 - `mock.query-and-body-forwarded` [normal] mock 请求保留查询和请求体
 - `mock.fallback-to-real-on-404` [normal | http] mock 返回 404 时回落到真实接口且只回落一次
 - `mock.mock-then-retry-untouched` [normal] mock 请求成功时 retry 不介入
-- `plugins.single-mock` [normal] mock 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-mock` [normal | business] mock 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
+- `plugins.single-mock-http` [normal | http] mock 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。
 - `mock.single-fallback-disabled` [normal | http] mock 单独：fallback_on_404=false 时 404 不回落
 
 ### filter（filter.json，3 个）

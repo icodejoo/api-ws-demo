@@ -211,6 +211,39 @@ function checkExpectation(where, e, ids) {
   if (e.duration_ms) checkRange(`${where}.duration_ms`, e.duration_ms);
 }
 
+/** 只访问契约 step 的控制结构，不把请求体中的普通 JSON 当作控制字段。 */
+function visitSteps(steps, visit, suffix = '') {
+  if (!Array.isArray(steps)) return;
+  for (const step of steps) {
+    if (!isObj(step)) continue;
+    visit(step, suffix);
+    if (Array.isArray(step.parallel)) visitSteps(step.parallel, visit, suffix);
+    if (Array.isArray(step.sequence)) visitSteps(step.sequence, visit, suffix);
+    if (isObj(step.fire)) visitSteps([step.fire], visit, suffix);
+    if (isObj(step.repeat?.step)) {
+      const repeat = step.repeat;
+      const times = Number.isInteger(repeat.times) && repeat.times > 0 ? repeat.times : 1;
+      for (let i = 0; i < times; i++) {
+        visitSteps([repeat.step], visit, repeat.id_suffix === false ? suffix : `#${i}${suffix}`);
+      }
+    }
+  }
+}
+
+/** 从实际请求与成功预期识别未归一化业务码透传，避免依赖场景 id。 */
+function usesRawBusinessCode(sc, requests) {
+  return requests.some((r) => {
+    const q = r.query ?? {};
+    if (!(q.code && q.code !== 0 || q.status && q.status !== 200)) return false;
+    const normalize = sc.client?.plugins?.normalize != null && r.options?.normalize !== false;
+    if (normalize) return false;
+    return Object.entries(sc.expect ?? {}).some(([key, e]) => {
+      const ok = e.results?.[r.id]?.ok === true;
+      return ok && (q.code && q.code !== 0 || key.endsWith('@business') || q.style === 'business');
+    });
+  });
+}
+
 /** 校验单个场景 */
 function checkScenario(file, sc, idx) {
   const where = `${file}[${idx}]${sc && sc.id ? ' ' + sc.id : ''}`;
@@ -246,12 +279,20 @@ function checkScenario(file, sc, idx) {
 
   // 新能力名的一致性：用到对应特性就必须在 requires 里声明，否则缺能力的执行器不会跳过
   if (Array.isArray(sc.requires)) {
-    const usesJson = JSON.stringify(sc.steps ?? []);
+    const requests = [];
+    let cancelsAll = false;
+    visitSteps(sc.steps, (step, suffix) => {
+      if (isObj(step.request)) requests.push({ ...step.request, id: `${step.request.id}${suffix}` });
+      if ('cancel_all' in step) cancelsAll = true;
+    });
     const plugins = sc.client?.plugins ?? {};
     const need = [
-      ['multipart', /"multipart":s*{/.test(usesJson)],
-      ['share-retry', plugins.share?.policy === 'retry' || /"share":s*"retry"/.test(usesJson)],
+      ['multipart', requests.some((r) => isObj(r.body) && 'multipart' in r.body)],
+      ['share-retry', plugins.share?.policy === 'retry' || requests.some((r) => r.options?.share === 'retry')],
       ['timeout-send', plugins.timeout?.send_ms != null],
+      ['timeout-total', plugins.timeout?.total_ms != null],
+      ['cancel', cancelsAll || requests.some((r) => r.cancel_after_ms != null)],
+      ['raw-business-code', usesRawBusinessCode(sc, requests)],
     ];
     for (const [cap, used] of need) if (used && !sc.requires.includes(cap)) err(where, `用到了 ${cap} 相关特性但 requires 未声明 ${cap}`);
   }

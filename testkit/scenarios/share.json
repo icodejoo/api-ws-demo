@@ -2344,7 +2344,9 @@
     "title": "share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
     "why": "share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
     "requires": [
-      "share"
+      "share",
+      "raw-business-code",
+      "cancel"
     ],
     "networks": [
       "normal"
@@ -2363,7 +2365,101 @@
             "data": "{\"matrix\":true}"
           },
           "options": {
-            "mock": false
+            "mock": false,
+            "key": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "error",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "status": 500,
+            "code": 500
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          }
+        }
+      },
+      {
+        "request": {
+          "id": "cancel",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}",
+            "delay_ms": 300
+          },
+          "options": {
+            "mock": false,
+            "key": false,
+            "cache": false
+          },
+          "cancel_after_ms": 10
+        }
+      }
+    ],
+    "expect": {
+      "normal": {
+        "results": {
+          "ok": {
+            "ok": true,
+            "data": {
+              "payload": {
+                "matrix": true
+              }
+            }
+          },
+          "cancel": {
+            "ok": false,
+            "error": "canceled"
+          }
+        }
+      },
+      "normal@business": {
+        "results": {
+          "error": {
+            "ok": true
+          }
+        }
+      }
+    },
+    "timeout_ms": 40000,
+    "styles": [
+      "business"
+    ]
+  },
+  {
+    "id": "plugins.single-share-http",
+    "title": "share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。",
+    "why": "share 单独启用：成功、500、主动取消；不代表全部公开选项已覆盖。 HTTP 部分独立执行，不依赖未归一化业务码透传。",
+    "requires": [
+      "share",
+      "cancel"
+    ],
+    "networks": [
+      "normal"
+    ],
+    "client": {
+      "plugins": {
+        "share": {}
+      }
+    },
+    "steps": [
+      {
+        "request": {
+          "id": "ok",
+          "path": "/t/echo",
+          "query": {
+            "data": "{\"matrix\":true}"
+          },
+          "options": {
+            "mock": false,
+            "key": false
           }
         }
       },
@@ -2424,16 +2520,12 @@
             "error": "status:500"
           }
         }
-      },
-      "normal@business": {
-        "results": {
-          "error": {
-            "ok": true
-          }
-        }
       }
     },
-    "timeout_ms": 40000
+    "timeout_ms": 40000,
+    "styles": [
+      "http"
+    ]
   },
   {
     "id": "share.single-start-explicit-key",
