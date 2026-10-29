@@ -290,3 +290,5 @@
 - **repeat 声明回归**：结构遍历按 walkStep 的展开规则匹配 r#i（含 id_suffix=false），保证重复请求也能由成功预期推导 raw-business-code；新增正反例，Node 校验回归共 5 条。
 
 - **生成矩阵 key 开关复审**：单体成功请求与 pairwise 请求显式 options.key=是否装配 key，使 key-on 实际生成键、key-off 不使用内核自动键；源生成器同步。重新执行完整方法矩阵，不沿用旧 key 配置的结果。
+
+- D24 补充（2026-10-29，用户 B8 裁决）：share 中以请求级 `timeout_ms` 表达单一整体预算的两个场景补 `requires: timeout-total`；阶段超时之和不能冒充单一预算，不支持者按缺能力跳过。本次不增加参与者取消或超大 Retry-After 场景。

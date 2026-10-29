@@ -2711,7 +2711,8 @@
     "title": "share 单独：所有订阅者都超时后掐断底层请求",
     "why": "每个订阅者按自己的 timeout 退出；最后一个也超时后必须 abort 底层请求，服务端才能观察到断开，不能留着空跑到 delay 结束",
     "requires": [
-      "share"
+      "share",
+      "timeout-total"
     ],
     "networks": [
       "normal"
