@@ -1,8 +1,11 @@
 //! 独立 TCP 网络模拟器及本地 HTTP 控制服务。
 mod bucket;
+mod host;
 mod manager;
 mod profile;
 mod relay;
+mod tls;
+mod upstream;
 
 use axum::{
     extract::{Path, State},
@@ -17,12 +20,12 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
     collections::HashMap,
-    net::SocketAddr,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc, Mutex,
     },
 };
+use upstream::Upstream;
 use uuid::Uuid;
 
 /// 控制服务共享状态。
@@ -71,17 +74,15 @@ fn lookup(state: &ControlState, id: &str) -> Option<Arc<Proxy>> {
     state.proxies.lock().unwrap().get(id).cloned()
 }
 
-/// 创建本地随机端口代理，成功返回 id 和 port。
+/// 创建本地随机端口代理，成功返回 id 和 port；upstream 可写 `IP:port` 或 `https://host[:port]`（TLS 上游）。
 async fn create(State(state): State<Arc<ControlState>>, Json(input): Json<Input>) -> Response {
     let Some(upstream) = input.upstream else {
         return error(StatusCode::BAD_REQUEST, "upstream required");
     };
-    if upstream.parse::<SocketAddr>().is_err() {
-        return error(
-            StatusCode::BAD_REQUEST,
-            "upstream must be a numeric socket address",
-        );
-    }
+    let upstream = match Upstream::parse(&upstream) {
+        Ok(v) => v,
+        Err(e) => return error(StatusCode::BAD_REQUEST, e),
+    };
     let (p, flap) = match Profile::parse(&input.profile) {
         Ok(v) => v,
         Err(e) => return error(StatusCode::BAD_REQUEST, e),

@@ -1,7 +1,10 @@
 //! 可被 profile 广播中断的双向 TCP 转发。
 use super::{
     bucket::Bucket,
+    host::HostRewriter,
     profile::{chance, random, Mode, Profile, CHUNK},
+    tls,
+    upstream::Upstream,
     ProxyStats,
 };
 use std::{
@@ -17,6 +20,29 @@ use tokio::{
     net::TcpStream,
     sync::watch,
 };
+
+/// 到上游的双向字节流（明文 TCP 或 TLS），可对底层 TCP 注入 RST。
+pub(super) trait Duplex: AsyncRead + AsyncWrite + Send + Unpin {
+    /// 对底层 TCP 注入 RST。
+    fn reset(&self);
+}
+
+impl Duplex for TcpStream {
+    /// 设置 SO_LINGER=0，关闭时发 RST。
+    fn reset(&self) {
+        reset(self);
+    }
+}
+
+/// 连接上游：TCP 连接成功后，若声明了 SNI 则完成 TLS 握手。
+async fn dial(upstream: &Upstream) -> io::Result<Box<dyn Duplex>> {
+    let tcp = TcpStream::connect(&upstream.connect).await?;
+    let _ = tcp.set_nodelay(true);
+    match &upstream.sni {
+        Some(sni) => tls::connect(tcp, sni).await,
+        None => Ok(Box::new(tcp)),
+    }
+}
 
 /// 一条连接在所有退出路径都会减少 active。
 struct Active {
@@ -40,7 +66,7 @@ fn reset(stream: &TcpStream) {
 /// 运行一条连接；done 广播会取消并关闭上下游。
 pub(super) async fn connection(
     mut client: TcpStream,
-    upstream: String,
+    upstream: Upstream,
     mut profile: watch::Receiver<Profile>,
     mut done: watch::Receiver<bool>,
     stats: Arc<ProxyStats>,
@@ -69,7 +95,7 @@ pub(super) async fn connection(
                 }
             }
         }
-        let connecting = TcpStream::connect(&upstream);
+        let connecting = dial(&upstream);
         tokio::pin!(connecting);
         let server = loop {
             tokio::select! {
@@ -84,36 +110,38 @@ pub(super) async fn connection(
                 }
             }
         };
-        let Ok(mut server) = server else {
+        let Ok(server) = server else {
             return;
         };
         let _ = client.set_nodelay(true);
-        let _ = server.set_nodelay(true);
         {
             let (read_client, write_client) = client.split();
-            let (read_server, write_server) = server.split();
+            let (mut read_server, mut write_server) = tokio::io::split(server);
+            let rewriter = upstream.host.as_deref().map(HostRewriter::new);
             let result = tokio::try_join!(
                 pump(
                     read_client,
-                    write_server,
+                    &mut write_server,
                     profile.clone(),
                     stats.clone(),
                     false,
                     number,
-                    reset_flag.clone()
+                    reset_flag.clone(),
+                    rewriter
                 ),
                 pump(
-                    read_server,
+                    &mut read_server,
                     write_client,
                     profile.clone(),
                     stats.clone(),
                     true,
                     number,
-                    reset_flag.clone()
+                    reset_flag.clone(),
+                    None
                 )
             );
             if result.is_err() && reset_flag.load(Ordering::Relaxed) {
-                reset(&server);
+                read_server.unsplit(write_server).reset();
             }
         }
     };
@@ -162,7 +190,8 @@ fn threshold(profile: &Profile, probabilistic: Option<u64>, down: bool) -> Optio
     }
 }
 
-/// 转发单方向；所有 I/O 与等待都监听配置变化。
+#[allow(clippy::too_many_arguments)]
+/// 转发单方向；所有 I/O 与等待都监听配置变化。`rewriter` 仅上行 TLS 模式使用，改写 Host 头。
 async fn pump<R: AsyncRead + Unpin, W: AsyncWrite + Unpin>(
     mut reader: R,
     mut writer: W,
@@ -171,6 +200,7 @@ async fn pump<R: AsyncRead + Unpin, W: AsyncWrite + Unpin>(
     down: bool,
     number: u64,
     reset_flag: Arc<AtomicBool>,
+    mut rewriter: Option<HostRewriter>,
 ) -> io::Result<()> {
     let mut buffer = [0u8; CHUNK];
     let mut bucket = Bucket::new();
@@ -195,6 +225,15 @@ async fn pump<R: AsyncRead + Unpin, W: AsyncWrite + Unpin>(
             writer.shutdown().await?;
             return Ok(());
         }
+        // 延迟与限速仍按客户端原始字节数计，写出的是改写后的字节。
+        let rewritten;
+        let payload: &[u8] = match rewriter.as_mut() {
+            Some(r) => {
+                rewritten = r.feed(&buffer[..count]);
+                &rewritten
+            }
+            None => &buffer[..count],
+        };
         loop {
             let p = pass(&mut profile, &reset_flag).await?;
             if seed != p.seed {
@@ -242,18 +281,19 @@ async fn pump<R: AsyncRead + Unpin, W: AsyncWrite + Unpin>(
             break;
         }
         let mut offset = 0;
-        while offset < count {
+        while offset < payload.len() {
             let p = pass(&mut profile, &reset_flag).await?;
             let limit = threshold(&p, reset_at, down);
+            let remaining = payload.len() - offset;
             let available = limit
-                .map(|v| v.saturating_sub(total).min((count - offset) as u64) as usize)
-                .unwrap_or(count - offset);
+                .map(|v| v.saturating_sub(total).min(remaining as u64) as usize)
+                .unwrap_or(remaining);
             if available == 0 {
                 reset_flag.store(true, Ordering::Relaxed);
                 return Err(io::ErrorKind::ConnectionReset.into());
             }
             let wrote = tokio::select! {
-                value = writer.write(&buffer[offset..offset+available]) => value?,
+                value = writer.write(&payload[offset..offset+available]) => value?,
                 _ = profile.changed() => continue,
             };
             if wrote == 0 {
@@ -314,13 +354,114 @@ mod tests {
         let (done, done_rx) = watch::channel(false);
         let task = tokio::spawn(connection(
             server,
-            upstream_addr,
+            upstream_addr.into(),
             receiver,
             done_rx,
             Arc::new(ProxyStats::default()),
             0,
         ));
         (client, profiles, done, task)
+    }
+
+    /// 起一个只记录收到字节的上游，返回地址与接收通道。
+    async fn sink() -> (String, tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap().to_string();
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut bytes = [0u8; CHUNK];
+            while let Ok(n) = socket.read(&mut bytes).await {
+                if n == 0 || tx.send(bytes[..n].to_vec()).is_err() {
+                    break;
+                }
+            }
+        });
+        (addr, rx)
+    }
+
+    /// 在真实套接字上接入一条带上游描述的连接，返回客户端。
+    async fn dial_via(
+        upstream: Upstream,
+    ) -> (TcpStream, watch::Sender<Profile>, watch::Sender<bool>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let client = TcpStream::connect(listener.local_addr().unwrap())
+            .await
+            .unwrap();
+        let (server, _) = listener.accept().await.unwrap();
+        let (profiles, receiver) = watch::channel(Profile::default());
+        let (done, done_rx) = watch::channel(false);
+        tokio::spawn(connection(
+            server,
+            upstream,
+            receiver,
+            done_rx,
+            Arc::new(ProxyStats::default()),
+            0,
+        ));
+        (client, profiles, done)
+    }
+
+    /// 配置了 Host 改写时，keep-alive 上的两个请求都被改写，且限速仍作用在客户端侧。
+    #[tokio::test]
+    async fn host_rewritten_on_every_request() {
+        let (addr, mut rx) = sink().await;
+        let upstream = Upstream {
+            connect: addr,
+            sni: None,
+            host: Some("api.example.com".into()),
+        };
+        let (mut client, _profiles, _done) = dial_via(upstream).await;
+        client
+            .write_all(b"GET /a HTTP/1.1\r\nHost: 127.0.0.1:9\r\n\r\n")
+            .await
+            .unwrap();
+        client
+            .write_all(b"GET /b HTTP/1.1\r\nHost: 127.0.0.1:9\r\n\r\n")
+            .await
+            .unwrap();
+        let mut got = Vec::new();
+        while got.len() < 84 {
+            let chunk = tokio::time::timeout(Duration::from_secs(2), rx.recv())
+                .await
+                .unwrap()
+                .unwrap();
+            got.extend(chunk);
+        }
+        let text = String::from_utf8(got).unwrap();
+        assert_eq!(
+            text.matches("Host: api.example.com\r\n").count(),
+            2,
+            "{text}"
+        );
+        assert!(!text.contains("127.0.0.1:9"));
+    }
+
+    /// 上游不是 TLS 服务时握手失败，客户端连接被干净关闭而不是挂住。
+    #[tokio::test]
+    async fn tls_handshake_failure_closes_client() {
+        // 明文 HTTP 服务器收到 ClientHello 会回一段非 TLS 数据并关闭。
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap().to_string();
+        tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let _ = socket.write_all(b"HTTP/1.1 400 Bad Request\r\n\r\n").await;
+        });
+        let upstream = Upstream {
+            connect: addr,
+            sni: Some("localhost".into()),
+            host: Some("localhost".into()),
+        };
+        let (mut client, _profiles, _done) = dial_via(upstream).await;
+        client
+            .write_all(b"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+            .await
+            .unwrap();
+        let mut byte = [0u8; 1];
+        let read = tokio::time::timeout(Duration::from_secs(5), client.read(&mut byte))
+            .await
+            .unwrap();
+        assert!(matches!(read, Ok(0) | Err(_)));
     }
 
     /// 黑洞切换能保持字节完整，已有连接立即响应 reset。

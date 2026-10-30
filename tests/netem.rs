@@ -299,3 +299,36 @@ async fn assert_offline_window(address: SocketAddr, window: Duration) {
         Ok(Ok(_)) => panic!("offline window accepted a connection"),
     }
 }
+
+/// 控制 API 接受 `https://host[:port]` 的 TLS 上游并拒绝非法写法，原 `IP:port` 写法不受影响。
+#[tokio::test]
+async fn https_upstream_declaration() {
+    let control = start(api_ws_demo::netem::control_router()).await;
+    let create = |upstream: &'static str| {
+        let addr = control.addr;
+        async move {
+            json(
+                addr,
+                "POST",
+                PROXIES,
+                "",
+                json!({"upstream":upstream,"profile":"normal"}),
+            )
+            .await
+        }
+    };
+    for ok in [
+        "https://api.example.com",
+        "https://api.example.com:8443",
+        "127.0.0.1:47080",
+    ] {
+        let (status, v) = create(ok).await;
+        assert_eq!(status, 200, "{ok}");
+        assert!(v["port"].as_u64().unwrap() > 0);
+    }
+    for bad in ["https://", "https://a.com/x", "https://a.com:x", "a.com:80"] {
+        let (status, v) = create(bad).await;
+        assert_eq!(status, 400, "{bad}");
+        assert!(v["error"].is_string());
+    }
+}

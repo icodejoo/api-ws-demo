@@ -2,6 +2,7 @@
 use super::{
     profile::{Mode, Profile},
     relay,
+    upstream::Upstream,
 };
 use std::{
     sync::{
@@ -68,7 +69,7 @@ impl Drop for Proxy {
 }
 
 /// 创建代理的监听器与生命周期，返回共享句柄或绑定错误。
-pub(super) async fn create(upstream: String, profile: Profile) -> std::io::Result<Arc<Proxy>> {
+pub(super) async fn create(upstream: Upstream, profile: Profile) -> std::io::Result<Arc<Proxy>> {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let port = listener.local_addr()?.port();
     let (changes, receiver) = mpsc::channel(16);
@@ -138,7 +139,7 @@ pub(super) fn start_schedule(proxy: &Arc<Proxy>, steps: Vec<(u64, Profile)>, gen
 /// 监听与切换串行化，连接各自订阅最新配置。
 async fn listen(
     mut listener: Option<TcpListener>,
-    upstream: String,
+    upstream: Upstream,
     initial: Profile,
     mut changes: mpsc::Receiver<Change>,
     mut done: watch::Receiver<bool>,
@@ -211,7 +212,7 @@ mod tests {
             }
         });
         let proxy = create(
-            address,
+            address.into(),
             Profile {
                 mode: Mode::Refuse,
                 ..Profile::default()
