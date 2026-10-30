@@ -100,6 +100,9 @@ cargo run --release --bin netem
 
 执行器（以 axp 为例）默认连上面两个地址；改了端口就用环境变量对齐：`TESTKIT_SERVER`、`TESTKIT_NETEM`。
 创建 netem 代理时 `upstream` 要写成测试服务器的实际地址。
+**测线上部署**：服务端设 `RATE_LIMIT_BYPASS_TOKEN`，执行器设同值的 `TESTKIT_TOKEN`（所有请求自动带 `x-testkit-token` 头，绕过限流，CPU 熔断仍在）；
+`TESTKIT_SERVER` 写 https 地址，netem 的 upstream 写 `https://host[:port]`。别把 token 写进仓库。
+测线上 https 部署（Render 等按 SNI/Host 路由）时写 `https://host[:port]`，netem 会做 TLS 并改写 Host，客户端 baseURL 用 `http://127.0.0.1:<port>`，详见 CONTRACT §6。
 
 **端口被占时**：启动会报 `AddrInUse`，换个端口即可，不要去杀占用进程，那多半是别的项目的开发服务。
 注意 `0.0.0.0:<端口>` 和 `127.0.0.1:<端口>` 可以各被一个进程占住，后者优先，客户端连到的可能是别人的服务。
@@ -113,4 +116,4 @@ cargo run --release --bin netem
 - **business 风格下判定失败依赖 normalize 类插件**。场景作者已经给相关场景自动加上了 normalize，客户端缺少这个能力时应该跳过，不能算失败。
 - **`scenarios/README.md` 不要手改**，要改就改 `tools/gen-index.mjs`。
 - **`/t/*` 在线上也挂载着**，但线上只适合做冒烟测试。冷启动、限流、共享计数器都会让精确断言失效（D6）。本地运行时要加 `TEST_MODE=1`。
-- **netem 不进 Docker 镜像**。Dockerfile 只构建 `--bin api-ws-demo`，新增可执行文件时要保持这一点（D4）。
+- **netem 不进 Docker 镜像**。Dockerfile 只构建 `--bin api-ws-demo`，新增可执行文件时要保持这一点（D4）。netem 的 TLS 依赖在 `tls` 特性里，Dockerfile 用 `--no-default-features` 构建，别去掉。

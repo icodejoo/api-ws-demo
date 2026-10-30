@@ -77,16 +77,97 @@ pub fn build_router(state: AppState) -> Router {
     // still carries CORS headers (otherwise a browser can't even read the
     // rejection body). CPU breaker runs before the rate limiter (cheapest
     // possible rejection under load).
+    let app = app.with_state(state.clone());
     let app = if std::env::var("TEST_MODE").as_deref() == Ok("1") {
         app
     } else {
-        app.layer(ratelimit::build_layer())
-            .layer(axum::middleware::from_fn_with_state(
-                state.clone(),
-                cpu::cpu_breaker_mw,
-            ))
+        let breaker = axum::middleware::from_fn_with_state(state, cpu::cpu_breaker_mw);
+        // 熔断对所有请求生效；限流只作用于 limited 分支。
+        let plain = app.clone().layer(breaker.clone());
+        let limited = app.layer(ratelimit::build_layer()).layer(breaker);
+        with_bypass(ratelimit::Bypass::from_env(), plain, limited)
     };
     app.layer(CorsLayer::permissive())
         .layer(axum::middleware::from_fn(crate::connection::peer_info))
-        .with_state(state)
+}
+
+/// 按 x-testkit-token 分流：token 正确走 plain（无限流），否则走 limited。
+/// 未配置 RATE_LIMIT_BYPASS_TOKEN 时直接返回 limited，行为与原先完全一致。
+fn with_bypass(bypass: ratelimit::Bypass, plain: Router, limited: Router) -> Router {
+    if !bypass.enabled() {
+        return limited;
+    }
+    Router::new().fallback(move |request: axum::extract::Request| {
+        let target = if bypass.allows(request.headers()) {
+            plain.clone()
+        } else {
+            limited.clone()
+        };
+        async move {
+            match tower::ServiceExt::oneshot(target, request).await {
+                Ok(response) => response,
+                Err(never) => match never {},
+            }
+        }
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use tower::ServiceExt;
+
+    /// 构造极小的被测路由：限流为突发 2、几乎不补充，对比两个分支。
+    fn app(bypass: ratelimit::Bypass) -> Router {
+        std::env::set_var("RATE_LIMIT_BURST", "2");
+        std::env::set_var("RATE_LIMIT_PER_SECOND", "1");
+        let base = Router::new().route("/p", get(|| async { "ok" }));
+        let limited = base.clone().layer(ratelimit::build_layer());
+        with_bypass(bypass, base, limited)
+    }
+
+    /// 发 n 次请求，返回状态码列表。
+    async fn hit(app: &Router, token: Option<&str>, n: usize) -> Vec<StatusCode> {
+        let mut out = Vec::new();
+        for _ in 0..n {
+            let mut req = Request::builder()
+                .uri("/p")
+                .header("x-forwarded-for", "10.0.0.1");
+            if let Some(t) = token {
+                req = req.header(ratelimit::BYPASS_HEADER, t);
+            }
+            let res = app
+                .clone()
+                .oneshot(req.body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            out.push(res.status());
+        }
+        out
+    }
+
+    /// 正确 token 不被限；错误、缺失 token 超出突发后 429；未配置变量时带 token 也被限。
+    #[tokio::test]
+    async fn bypass_routing() {
+        let on = app(ratelimit::Bypass::new(Some("s3cret")));
+        assert!(hit(&on, Some("s3cret"), 8)
+            .await
+            .iter()
+            .all(|s| *s == StatusCode::OK));
+        assert!(hit(&on, Some("bad"), 8)
+            .await
+            .contains(&StatusCode::TOO_MANY_REQUESTS));
+        let on = app(ratelimit::Bypass::new(Some("s3cret")));
+        assert!(hit(&on, None, 8)
+            .await
+            .contains(&StatusCode::TOO_MANY_REQUESTS));
+        for off in [ratelimit::Bypass::new(None), ratelimit::Bypass::new(Some(""))] {
+            let off = app(off);
+            assert!(hit(&off, Some("s3cret"), 8)
+                .await
+                .contains(&StatusCode::TOO_MANY_REQUESTS));
+        }
+    }
 }

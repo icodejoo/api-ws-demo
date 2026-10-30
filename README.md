@@ -262,8 +262,11 @@ JSON——发 `"hello"` 过去，所有订阅者收到的是 `{"response":"hello
 
 - **按 IP 限流**（基于 `tower_governor`）：识别 `X-Forwarded-For`/`X-Real-Ip` 头来判断真实客户端 IP
   （因为 Render 在前面加了一层反向代理，直接看 TCP 连接的对端地址只会看到 Render 自己的负载均衡器）。
-  超过限制返回 `429 Too Many Requests`。环境变量可调：`RATE_LIMIT_PER_SECOND`（默认 5）、
-  `RATE_LIMIT_BURST`（默认 10，允许短时间内的突发请求）。
+  超过限制返回 `429 Too Many Requests`。环境变量可调：`RATE_LIMIT_PER_SECOND`（每秒允许的请求数，
+  默认 5；0 或非法值回退默认，超过 1000 按 1000 处理）、`RATE_LIMIT_BURST`（默认 10，允许短时间内的突发请求）。
+- **限流绕过（给自动化测试用）**：设置环境变量 `RATE_LIMIT_BYPASS_TOKEN` 后，带请求头
+  `x-testkit-token: <该值>` 的请求跳过限流（常量时间比较；CPU 熔断照常生效）。变量未设或为空时整体关闭，
+  行为与不加这个功能完全一致。token 请只放在部署平台的环境变量里，不要写进仓库。
 - **CPU 熔断**：后台每秒读一次 `/proc/stat` 算出 CPU 使用率（仅 Linux 有效，本地 Windows/macOS
   开发时永远读到 0%，熔断不会触发），一旦达到阈值（环境变量 `CPU_BREAKER_THRESHOLD_PCT`，默认
   `90`），**所有新请求会立刻收到 `503`**（连限流那一层都不会走到，是最外层最早拦截的一道防线），

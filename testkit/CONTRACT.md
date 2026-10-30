@@ -192,6 +192,8 @@ barrier 分组、测试用户、token 都按 runId 隔离，不同轮次、不�
 ## 5. 服务器开关
 
 - `TEST_MODE=1`：关闭限流和 CPU 熔断，避免并发用例被它们拦下。线上默认不开。
+- `RATE_LIMIT_BYPASS_TOKEN`：线上部署设置后，请求头 `x-testkit-token` 与之相等的请求跳过限流（CPU 熔断仍生效）；未设或为空则关闭。执行器通过环境变量 `TESTKIT_TOKEN` 读取同一个值，给所有发往测试服务器的请求（含 `/t/*` 控制请求）加这个头。
+- 限流速率 `RATE_LIMIT_PER_SECOND` 的含义是「每秒 n 个」（此前实现成了每 n 秒 1 个，已修正）；线上跑完整验收仍建议配合 token。
 - `/t/*` 在线上也挂载，但有上限：barrier `n ≤ 64`，hang 最长 60s，`size ≤ 1MB`，每个轮次 log 最多 1000 条；同时存活的轮次最多 64 个（满了淘汰最久未访问的），每轮不同 key 最多 1024 个（超出后新 key 不再计数：hit 恒为 1、不进 by_key/by_path）。
 
 > **实现澄清（2026-10-27）**：barrier 的 `rank` 从 0 开始；首个到达者锁定本代配置，组内配置不同、
@@ -209,7 +211,7 @@ barrier 分组、测试用户、token 都按 runId 隔离，不同轮次、不�
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| `POST` | `/proxies` | 请求体 `{upstream:"127.0.0.1:47080", profile}`，返回 `{id, port}`，其中 port 是新分配的监听端口 |
+| `POST` | `/proxies` | 请求体 `{upstream:"127.0.0.1:47080", profile}`，返回 `{id, port}`，其中 port 是新分配的监听端口；upstream 也可写 `https://host[:port]`（TLS 上游，见下） |
 | `PUT` | `/proxies/{id}` | 请求体 `{profile}`，立即切换，对已建立和新建的连接都生效 |
 | `POST` | `/proxies/{id}/schedule` | 请求体 `[{at_ms, profile}]`，相对调用时刻按时间表切换，例如断 1500ms 后恢复 |
 | `GET` | `/proxies/{id}/stats` | 返回 `{connections, active, bytes_up, bytes_down, resets, refused}` |
@@ -232,6 +234,15 @@ profile 可以直接写预设名的字符串，也可以写对象：
 - `refuse`：关闭监听，客户端得到 ECONNREFUSED；换成其它模式时恢复监听，端口不变。
 - `blackhole`：接受连接但从不转发、从不回包，客户端得到超时。
 - `reset`：接受连接后立即 RST，客户端得到 ECONNRESET。
+
+**TLS 上游**：`upstream` 写成 `https://host[:port]`（默认 443，不接受路径、凭据、IPv6 字面量）时，netem 对客户端一侧仍是明文 TCP，
+对上游侧用 host 作 SNI 做 TLS（rustls + ring，webpki 内置根证书，只协商 http/1.1），用来测试按 SNI 与 Host 路由的线上部署。
+执行器应把 baseURL 设为 `http://127.0.0.1:<port>`。延迟、限速、丢包、断连、flap 等故障仍作用在客户端一侧的明文字节流上；
+`bytes_down` 是转发给客户端的明文字节，`bytes_up` 是发往上游的明文字节（Host 被改写后长度可能与客户端发出的不同）。
+Host 改写：TLS 上游模式下，netem 按 HTTP/1.x 请求边界（Content-Length、chunked 含 trailer）解析客户端字节流，把**每个请求**的 `Host` 头换成上游的
+`host`（非 443 端口为 `host:port`），keep-alive 与流水线下都生效，请求体里长得像 Host 的内容不动；遇到 `Upgrade`（WebSocket）、`CONNECT` 或头部超过 64KiB 后整条连接改为透传。
+明文 `IP:port` 上游不改写任何字节。上游握手或证书校验失败时，客户端连接被关闭。
+该功能在 `tls` cargo 特性下（默认开启）；线上镜像用 `--no-default-features` 构建，不含 TLS 依赖。
 
 内置预设（**场景里的 `networks` 字段只引用这些名字**）：
 
